@@ -47,17 +47,14 @@ export default async function PhotosPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       
       {/* 1. HEADER CARD WITH ACTIONS */}
-      <div className="card">
-        <div style={{ 
-            padding: '16px', 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center' 
-        }}>
-          <h2 style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>Photos</h2>
-          <div style={{ display: 'flex', gap: '8px' }}>
-             <PhotoUploader albums={albums} />
-          </div>
+      <div className="card photos-toolbar">
+        <div className="photos-toolbar-title">
+          <h2>Photos</h2>
+          <p>Upload and manage your campus photos.</p>
+        </div>
+
+        <div className="photos-toolbar-uploader">
+          <PhotoUploader albums={albums} />
         </div>
       </div>
 

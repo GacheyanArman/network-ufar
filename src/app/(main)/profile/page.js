@@ -1,11 +1,11 @@
 import { db } from "@/lib/db";
-import { posts, photos } from "@/lib/schema"; 
-import { desc, eq } from "drizzle-orm";
-import { createPost, deletePost } from "@/app/actions/post"; 
+import { users, posts, photos, friendships, communities } from "@/lib/schema";
+import { and, desc, eq, or } from "drizzle-orm";
+import { deletePost } from "@/app/actions/post";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
-import Link from "next/link"; 
-import PostComposer from "@/components/PostComposer"; 
+import Link from "next/link";
+import PostComposer from "@/components/PostComposer";
 import PhotoGallery from "@/components/PhotoGallery";
 
 export default async function ProfilePage({ searchParams }) {
@@ -14,6 +14,25 @@ export default async function ProfilePage({ searchParams }) {
 
   const params = await searchParams;
   const currentTab = params?.tab || "posts";
+  const saved = params?.saved === "1";
+
+  const [currentUser] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      fullName: users.fullName,
+      username: users.username,
+      faculty: users.faculty,
+      bio: users.bio,
+      image: users.image,
+      coverImage: users.coverImage,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, session.userId))
+    .limit(1);
+
+  if (!currentUser) redirect("/login");
 
   const userPosts = await db
     .select({
@@ -21,106 +40,344 @@ export default async function ProfilePage({ searchParams }) {
       content: posts.content,
       imageUrl: posts.imageUrl,
       createdAt: posts.createdAt,
+      likesCount: posts.likesCount,
+      commentsCount: posts.commentsCount,
     })
     .from(posts)
     .where(eq(posts.authorId, session.userId))
     .orderBy(desc(posts.createdAt));
 
-  let userPhotos = [];
-  if (currentTab === "photos") {
-    userPhotos = await db
-      .select()
-      .from(photos)
-      .where(eq(photos.ownerId, session.userId))
-      .orderBy(desc(photos.createdAt));
-  }
+  const userPhotos = await db
+    .select()
+    .from(photos)
+    .where(eq(photos.ownerId, session.userId))
+    .orderBy(desc(photos.createdAt));
 
-  const safeName = session?.fullName || "Student";
-  const safeInitial = session?.fullName?.charAt(0) || "U";
-  const safeEmail = session?.email || "No email provided";
+  const userFriends = await db
+    .select({ id: friendships.id })
+    .from(friendships)
+    .where(
+      and(
+        eq(friendships.status, "accepted"),
+        or(
+          eq(friendships.requesterId, session.userId),
+          eq(friendships.receiverId, session.userId)
+        )
+      )
+    );
+
+  const userCommunities = await db
+    .select({
+      id: communities.id,
+      name: communities.name,
+    })
+    .from(communities)
+    .where(eq(communities.ownerId, session.userId));
+
+  const safeName = currentUser.fullName || "Student";
+  const safeInitial = safeName.charAt(0).toUpperCase() || "U";
+  const safeEmail = currentUser.email || "No email provided";
+  const safeUsername = currentUser.username ? `@${currentUser.username}` : "@username";
+  const safeFaculty = currentUser.faculty || "Faculty not specified";
+  const safeBio = currentUser.bio || "No bio yet.";
+  const avatarImage = currentUser.image || "";
+  const coverImage = currentUser.coverImage || "";
+
+  const postsCount = userPosts.length;
+  const photosCount = userPhotos.length;
+  const friendsCount = userFriends.length;
+  const communitiesCount = userCommunities.length;
+
+  const joinedAt = currentUser.createdAt
+    ? new Date(currentUser.createdAt).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      })
+    : "Recently";
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      
-      <div className="card profile-header-card" style={{ position: 'relative', overflow: 'hidden', paddingBottom: '0' }}>
-          <div className="empty-cover-upload" style={{ height: '160px', backgroundColor: 'var(--border-color)', backgroundImage: 'linear-gradient(45deg, #e0e5ec 25%, transparent 25%, transparent 75%, #e0e5ec 75%, #e0e5ec), linear-gradient(45deg, #e0e5ec 25%, transparent 25%, transparent 75%, #e0e5ec 75%, #e0e5ec)', backgroundSize: '20px 20px', backgroundPosition: '0 0, 10px 10px' }}></div>
-          <div className="profile-info-overlay" style={{ padding: '0 24px', display: 'flex', gap: '24px', transform: 'translateY(-40px)' }}>
-              <div className="empty-avatar-upload" style={{ backgroundColor: 'var(--ufar-blue)', color: 'white', fontSize: '3.5rem', width: '120px', height: '120px', borderRadius: '50%', border: '4px solid var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                  {safeInitial}
-              </div>
-              <div className="profile-name-promo" style={{ paddingTop: '50px' }}>
-                  <h1 style={{ fontSize: '1.8rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>{safeName}</h1>
-                  <span style={{ color: 'var(--text-secondary)' }}>{safeEmail}</span>
-              </div>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '24px', padding: '0 24px', borderTop: '1px solid var(--border-color-light)' }}>
-              <Link href="?tab=posts" scroll={false} style={{ padding: '16px 0', borderBottom: currentTab === 'posts' ? '3px solid var(--ufar-blue)' : '3px solid transparent', color: currentTab === 'posts' ? 'var(--ufar-blue)' : 'var(--text-secondary)', fontWeight: '600', textDecoration: 'none' }}>Posts</Link>
-              <Link href="?tab=about" scroll={false} style={{ padding: '16px 0', borderBottom: currentTab === 'about' ? '3px solid var(--ufar-blue)' : '3px solid transparent', color: currentTab === 'about' ? 'var(--ufar-blue)' : 'var(--text-secondary)', fontWeight: '600', textDecoration: 'none' }}>About</Link>
-              <Link href="?tab=photos" scroll={false} style={{ padding: '16px 0', borderBottom: currentTab === 'photos' ? '3px solid var(--ufar-blue)' : '3px solid transparent', color: currentTab === 'photos' ? 'var(--ufar-blue)' : 'var(--text-secondary)', fontWeight: '600', textDecoration: 'none' }}>Photos</Link>
-          </div>
+    <div className="ot-profile-page">
+      <div className="ot-profile-cover">
+        {coverImage ? (
+          <img
+            src={coverImage}
+            alt="Profile cover"
+            className="ot-profile-cover-img"
+          />
+        ) : null}
+        <div className="ot-profile-cover-overlay" />
       </div>
 
-      {currentTab === "posts" && (
-        <>
-          <div className="card" style={{ padding: '16px' }}>
-            <PostComposer />
+      <div className="ot-profile-statsbar">
+        <div className="ot-profile-statsbar-inner">
+          <div className="ot-profile-stats-spacer" />
+
+          <div className="ot-profile-stats-links">
+            <Link
+              href="?tab=posts"
+              scroll={false}
+              className={currentTab === "posts" ? "active" : ""}
+            >
+              <span>POSTS</span>
+              <strong>{postsCount}</strong>
+            </Link>
+
+            <Link
+              href="?tab=photos"
+              scroll={false}
+              className={currentTab === "photos" ? "active" : ""}
+            >
+              <span>PHOTOS</span>
+              <strong>{photosCount}</strong>
+            </Link>
+
+            <Link
+              href="?tab=about"
+              scroll={false}
+              className={currentTab === "about" ? "active" : ""}
+            >
+              <span>ABOUT</span>
+              <strong>Info</strong>
+            </Link>
+
+            <div className="ot-profile-stat-box">
+              <span>FRIENDS</span>
+              <strong>{friendsCount}</strong>
+            </div>
+
+            <div className="ot-profile-stat-box">
+              <span>GROUPS</span>
+              <strong>{communitiesCount}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="ot-profile-body">
+        <aside className="ot-profile-left">
+          <div className="ot-profile-avatar-wrap">
+            {avatarImage ? (
+              <img
+                src={avatarImage}
+                alt={safeName}
+                className="ot-profile-avatar-img"
+              />
+            ) : (
+              <div className="ot-profile-avatar">{safeInitial}</div>
+            )}
           </div>
 
-          {userPosts.length === 0 ? (
-            <div className="card" style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                <p>Your wall is empty.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {userPosts.map((post) => (
-                <div key={post.id} className="card" style={{ padding: '16px', position: 'relative' }}>
-                  
-                  <form action={deletePost} style={{ position: 'absolute', top: '12px', right: '12px' }}>
-                    <input type="hidden" name="postId" value={post.id} />
-                    <button type="submit" style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.2rem' }} title="Delete">
-                      &times;
-                    </button>
-                  </form>
+          <div className="ot-profile-userinfo">
+            <h1>{safeName}</h1>
+            <span>{safeUsername}</span>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <div className="avatar-blank-sm" style={{ backgroundColor: 'var(--ufar-blue)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>{safeInitial}</div>
-                    <div>
-                      <h4 style={{ margin: 0 }}>{safeName}</h4>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        {new Date(post.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ marginTop: '12px' }}>
-                    <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{post.content}</p>
-                    {post.imageUrl && (
-                      <img 
-                        src={post.imageUrl} 
-                        alt="Post attachment" 
-                        style={{ marginTop: '12px', borderRadius: '14px', maxHeight: '400px', width: 'auto', objectFit: 'cover', border: '1px solid var(--border-color)' }} 
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div className="ot-profile-chip-row">
+              <span className="ot-profile-chip">🎓 {safeFaculty}</span>
+              <span className="ot-profile-chip">📅 Joined {joinedAt}</span>
+            </div>
+
+            <p className="ot-profile-bio">{safeBio}</p>
+
+            <div className="ot-profile-meta">
+              <div>✉️ {safeEmail}</div>
+              <div>
+                👥 {friendsCount} friend{friendsCount === 1 ? "" : "s"}
+              </div>
+              <div>
+                🤝 {communitiesCount} communit
+                {communitiesCount === 1 ? "y" : "ies"}
+              </div>
+              <div>
+                🖼️ {photosCount} photo{photosCount === 1 ? "" : "s"}
+              </div>
+            </div>
+
+            <div className="ot-profile-action-row">
+              <Link href="/profile/edit" className="ot-profile-message-btn">
+                Edit profile
+              </Link>
+
+              <Link href="/messages" className="ot-profile-secondary-btn">
+                Messages
+              </Link>
+            </div>
+          </div>
+
+          <div className="ot-profile-side-card">
+            <h3 className="ot-profile-side-title">Quick overview</h3>
+
+            <div className="ot-profile-kpi-grid">
+              <div className="ot-profile-kpi">
+                <strong>{postsCount}</strong>
+                <span>Posts</span>
+              </div>
+
+              <div className="ot-profile-kpi">
+                <strong>{friendsCount}</strong>
+                <span>Friends</span>
+              </div>
+
+              <div className="ot-profile-kpi">
+                <strong>{photosCount}</strong>
+                <span>Photos</span>
+              </div>
+
+              <div className="ot-profile-kpi">
+                <strong>{communitiesCount}</strong>
+                <span>Groups</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section className="ot-profile-center">
+          <div className="ot-profile-tabs">
+            <Link
+              href="?tab=posts"
+              scroll={false}
+              className={currentTab === "posts" ? "active" : ""}
+            >
+              Posts
+            </Link>
+
+            <Link
+              href="?tab=about"
+              scroll={false}
+              className={currentTab === "about" ? "active" : ""}
+            >
+              About
+            </Link>
+
+            <Link
+              href="?tab=photos"
+              scroll={false}
+              className={currentTab === "photos" ? "active" : ""}
+            >
+              Photos
+            </Link>
+          </div>
+
+          {saved && (
+            <div className="profile-save-success">
+              Profile updated successfully.
             </div>
           )}
-        </>
-      )}
 
-      {currentTab === "about" && (
-        <div className="card" style={{ padding: '32px 24px', borderRadius: '14px' }}>
-          <h2 style={{ marginBottom: '12px' }}>About {safeName}</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Detailed information and bio settings will be available here soon.</p>
-        </div>
-      )}
+          {saved && (
+            <div className="profile-save-success">
+              Profile updated successfully.
+            </div>
+          )}
 
-      {currentTab === "photos" && (
-        <div className="card" style={{ padding: '16px' }}>
-          <PhotoGallery photos={userPhotos} />
-        </div>
-      )}
+          
+
+          {currentTab === "posts" && (
+            <div className="ot-profile-feed">
+              <div className="ot-profile-composer-wrap">
+                <PostComposer />
+              </div>
+
+              {userPosts.length === 0 ? (
+                <div className="ot-profile-empty">
+                  <h2>No posts yet</h2>
+                  <p>
+                    Create your first post and share updates, announcements or
+                    thoughts.
+                  </p>
+                </div>
+              ) : (
+                userPosts.map((post) => (
+                  <article key={post.id} className="ot-profile-post">
+                    <div className="ot-profile-post-avatar">{safeInitial}</div>
+
+                    <div className="ot-profile-post-content">
+                      <div className="ot-profile-post-head">
+                        <strong>{safeName}</strong>
+                        <span>
+                          {new Date(post.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+
+                      <p>{post.content}</p>
+
+                      {post.imageUrl ? (
+                        <img
+                          src={post.imageUrl}
+                          alt="Post attachment"
+                          className="ot-profile-post-media"
+                        />
+                      ) : null}
+
+                      <div className="ot-profile-post-actions">
+                        <span>❤️ {post.likesCount}</span>
+                        <span>💬 {post.commentsCount}</span>
+
+                        <form action={deletePost}>
+                          <input type="hidden" name="postId" value={post.id} />
+                          <button type="submit">Delete</button>
+                        </form>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          )}
+
+          {currentTab === "about" && (
+            <div className="ot-profile-about-grid">
+              <div className="ot-profile-side-card">
+                <h3 className="ot-profile-side-title">Personal info</h3>
+
+                <div className="ot-profile-about-item">
+                  <span>Full name</span>
+                  <strong>{safeName}</strong>
+                </div>
+
+                <div className="ot-profile-about-item">
+                  <span>Username</span>
+                  <strong>{safeUsername}</strong>
+                </div>
+
+                <div className="ot-profile-about-item">
+                  <span>Email</span>
+                  <strong>{safeEmail}</strong>
+                </div>
+
+                <div className="ot-profile-about-item">
+                  <span>Faculty</span>
+                  <strong>{safeFaculty}</strong>
+                </div>
+
+                <div className="ot-profile-about-item">
+                  <span>Joined</span>
+                  <strong>{joinedAt}</strong>
+                </div>
+              </div>
+
+              <div className="ot-profile-side-card">
+                <h3 className="ot-profile-side-title">Bio</h3>
+                <p className="ot-profile-bio" style={{ marginBottom: 0 }}>
+                  {safeBio}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {currentTab === "photos" && (
+            <div className="ot-profile-photos-wrap">
+              {userPhotos.length === 0 ? (
+                <div className="ot-profile-empty">
+                  <h2>No photos yet</h2>
+                  <p>Upload your first photo to make your profile more alive.</p>
+                </div>
+              ) : (
+                <PhotoGallery photos={userPhotos} />
+              )}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

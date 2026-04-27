@@ -4,19 +4,22 @@ import { usePathname } from "next/navigation";
 
 export default function MainShell({ children, rightPanel }) {
   const pathname = usePathname();
+
   const isMessagesPage = pathname === "/messages";
+  const isProfilePage = pathname === "/profile";
 
   return (
     <div
-      className={
-        isMessagesPage
-          ? "app-container simple-layout simple-layout-messages"
-          : "app-container simple-layout"
-      }
+      className={[
+        "app-container",
+        "simple-layout",
+        isMessagesPage ? "simple-layout-messages" : "",
+        isProfilePage ? "simple-layout-profile" : "",
+      ].join(" ")}
     >
       {children}
 
-      {!isMessagesPage && rightPanel}
+      {!isMessagesPage && !isProfilePage && rightPanel}
     </div>
   );
 }

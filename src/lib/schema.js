@@ -1,27 +1,26 @@
-import { pgTable, text, timestamp, integer, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, uniqueIndex, boolean } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
-import { boolean } from "drizzle-orm/pg-core";
 
 export const users = pgTable("user", {
   id: text("id").$defaultFn(() => createId()).primaryKey(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("fullName").notNull(),
+
   username: text("username").unique(),
   faculty: text("faculty"),
   bio: text("bio"),
   image: text("image"),
   coverImage: text("cover_image"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
   avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const posts = pgTable("post", {
   id: text("id").$defaultFn(() => createId()).primaryKey(),
   content: text("content").notNull(),
-  imageUrl: text("image_url"), // НОВАЯ КОЛОНКА ДЛЯ ССЫЛКИ НА ФОТО
+  imageUrl: text("image_url"), 
   authorId: text("author_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   likesCount: integer("likes_count").default(0).notNull(),
   commentsCount: integer("comments_count").default(0).notNull(),
@@ -84,4 +83,3 @@ export const studyMaterials = pgTable("study_material", {
   ownerId: text("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-

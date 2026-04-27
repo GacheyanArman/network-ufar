@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { posts, users } from "@/lib/schema";
 import { desc, eq } from "drizzle-orm";
-import { deletePost } from "@/app/actions/post"; 
+import { createPost, deletePost } from "@/app/actions/post"; 
 import { getSession } from "@/lib/session";
 import PostComposer from "@/components/PostComposer"; 
 
@@ -25,43 +25,45 @@ export default async function Home() {
     .orderBy(desc(posts.createdAt));
 
   return (
-    <section className="card old-feed-card">
-      <div className="old-feed-tabs">
-        <a className="active">Top News</a>
-      </div>
-
+    <>
       <PostComposer />
 
-      <div className="old-feed-title">
-        <h2>News Feed</h2>
-        <span>{allPosts.length} posts</span>
-      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+        {allPosts.length === 0 ? (
+          <div className="card" style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <p>No posts yet. Be the first to post something.</p>
+          </div>
+        ) : (
+          allPosts.map((post) => (
+            <div key={post.id} className="card" style={{ padding: '16px', position: 'relative' }}>
+              
+              {session && post.authorId === session.userId && (
+                <form action={deletePost} style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                  <input type="hidden" name="postId" value={post.id} />
+                  <button 
+                    type="submit" 
+                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem' }}
+                    title="Delete post"
+                  >
+                    &times;
+                  </button>
+                </form>
+              )}
 
-      {allPosts.length === 0 ? (
-        <div className="old-empty">
-          No posts yet. Be the first to post something.
-        </div>
-      ) : (
-        allPosts.map((post) => (
-          <article className="old-post" key={post.id}>
-            <div className="old-avatar">
-              {post.authorName?.charAt(0) || "U"}
-            </div>
-
-            <div className="old-post-body">
-              <div className="old-post-head">
-                <strong>{post.authorName}</strong>
-                <span>
-                  {post.authorFaculty || "Student"} ·{" "}
-                  {new Date(post.createdAt).toLocaleDateString('en-US', { 
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                  })}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div className="avatar-blank-sm" style={{ backgroundColor: 'var(--ufar-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', borderRadius: '50%', width: '40px', height: '40px' }}>
+                  {post.authorName.charAt(0)}
+                </div>
+                <div>
+                  <h4 style={{ margin: 0 }}>{post.authorName}</h4>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    {post.authorFaculty || "Student"} · {new Date(post.createdAt).toLocaleString()}
+                  </span>
+                </div>
               </div>
-
-              {/* КОНТЕНТ ПОСТА И КАРТИНКА */}
-              <div className="old-post-content">
-                <p style={{ whiteSpace: 'pre-wrap' }}>{post.content}</p>
+              
+              <div className="post-content" style={{ marginTop: '12px' }}>
+                <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{post.content}</p>
                 {post.imageUrl && (
                   <img 
                     src={post.imageUrl} 
@@ -70,24 +72,16 @@ export default async function Home() {
                   />
                 )}
               </div>
-
-              <div className="old-post-actions">
-                <button type="button">👍 Like</button>
-                <span>{post.likesCount || 0}</span>
-                <button type="button">💬 Comment</button>
-                <span>{post.commentsCount || 0}</span>
-
-                {session?.userId === post.authorId && (
-                  <form action={deletePost} style={{ marginLeft: 'auto' }}>
-                    <input type="hidden" name="postId" value={post.id} />
-                    <button type="submit" style={{ color: 'var(--danger)' }}>🗑️ Delete</button>
-                  </form>
-                )}
+              
+              <div style={{ display: 'flex', gap: '16px', marginTop: '16px', borderTop: '1px solid var(--border-color-light)', paddingTop: '12px' }}>
+                <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 'bold' }}>👍 Like ({post.likesCount || 0})</button>
+                <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 'bold' }}>💬 Comment ({post.commentsCount || 0})</button>
               </div>
             </div>
-          </article>
-        ))
-      )}
-    </section>
+          ))
+        )}
+      </div>
+    </>
   );
 }
+        

@@ -31,85 +31,92 @@ export default async function StudyMaterialsPage() {
     .orderBy(desc(studyMaterials.createdAt));
 
   return (
-    <section className="old-page">
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '1.8rem', letterSpacing: '-0.04em' }}>Library & Materials</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Photos of notes, PDF books, and shared documents.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      
+      {/* 1. HEADER & ACTIONS (Breadcrumbs and Upload buttons) */}
+      <div className="card" style={{ 
+          padding: '16px', 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center' 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2 style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>Materials</h2>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>/ Root</span>
+        </div>
       </div>
 
       <MaterialUploader />
 
-      <div className="old-list">
+      {/* 2. FILE MANAGER VIEW */}
+      <div className="card" style={{ padding: '0' }}>
+        
+        {/* Table Header (Data Grid style) */}
+        <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '3fr 1fr 1fr', 
+            padding: '12px 20px', 
+            borderBottom: '1px solid var(--border-color-light)', 
+            backgroundColor: 'var(--bg-main)', 
+            color: 'var(--text-secondary)', 
+            fontSize: '0.85rem', 
+            fontWeight: '600', 
+            textTransform: 'uppercase' 
+        }}>
+            <span>Name</span>
+            <span>Date Modified</span>
+            <span>Actions</span>
+        </div>
+
         {materials.length === 0 ? (
-          <div className="old-empty">No materials shared yet.</div>
-        ) : (
-          materials.map((item) => (
-            <div className="card" key={item.id} style={{ padding: '16px', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div className="old-avatar tiny" style={{ background: 'var(--ufar-blue)' }}>
-                    {isImage(item.fileUrl) ? "🖼️" : "📄"}
-                  </div>
-                  <div>
-                    <strong style={{ display: 'block', fontSize: '1.1rem' }}>{item.title}</strong>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      Shared by {item.ownerName} • {new Date(item.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-
-                {item.ownerId === session.userId && (
-                  <form action={deleteMaterial}>
-                    <input type="hidden" name="materialId" value={item.id} />
-                    <button type="submit" style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
-                  </form>
-                )}
-              </div>
-
-              {item.description && <p style={{ fontSize: '0.95rem', margin: 0 }}>{item.description}</p>}
-
-              {isImage(item.fileUrl) && (
-                <div style={{ marginTop: '8px' }}>
-                  <a href={item.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block' }}>
-                    <img 
-                      src={item.fileUrl} 
-                      alt={item.title} 
-                      style={{ 
-                        maxWidth: '100%', 
-                        maxHeight: '300px', 
-                        borderRadius: '12px', 
-                        border: '1px solid var(--border-color-light)', 
-                        cursor: 'zoom-in' 
-                      }}
-                    />
-                  </a>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
-                <a 
-                  href={item.fileUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ textDecoration: 'none', background: 'var(--bg-main)', color: 'var(--text-primary)', padding: '8px 16px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold', border: '1px solid var(--border-color)' }}
-                >
-                  👁️ View / Open
-                </a>
-                <a 
-                  href={item.fileUrl} 
-                  download 
-                  className="btn-primary-old" 
-                  style={{ textDecoration: 'none', padding: '8px 16px', fontSize: '0.9rem' }}
-                >
-                  ⬇️ Download
-                </a>
-              </div>
-
+            <div style={{ 
+                padding: '80px 20px', 
+                textAlign: 'center', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center' 
+            }}>
+              <span style={{ fontSize: '3.5rem', opacity: 0.3, display: 'block', marginBottom: '16px' }}>🗂️</span>
+              <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>This folder is empty</h3>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', maxWidth: '400px', lineHeight: '1.5' }}>
+                You haven't uploaded any study materials or created any folders yet. Use this space to organize your academic files and share them with peers.
+              </p>
             </div>
-          ))
+        ) : (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {materials.map((item) => (
+                    <div key={item.id} style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: '3fr 1fr 1fr', 
+                        padding: '12px 20px', 
+                        borderBottom: '1px solid var(--border-color-light)',
+                        alignItems: 'center'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontSize: '1.5rem' }}>{isImage(item.fileUrl) ? "🖼️" : "📄"}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <a href={item.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-primary)', fontWeight: '500', textDecoration: 'none' }}>{item.title}</a>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>By {item.ownerName}</span>
+                            </div>
+                        </div>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                            {new Date(item.createdAt).toLocaleDateString()}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <a href={item.fileUrl} download className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.8rem', textDecoration: 'none' }}>⬇️</a>
+                            {item.ownerId === session.userId && (
+                                <form action={deleteMaterial}>
+                                    <input type="hidden" name="materialId" value={item.id} />
+                                    <button type="submit" style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.2rem' }}>&times;</button>
+                                </form>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
         )}
       </div>
-    </section>
+
+    </div>
   );
 }

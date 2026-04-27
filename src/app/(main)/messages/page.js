@@ -5,109 +5,58 @@ export default async function MessagesPage() {
   const session = await getSession();
 
   return (
-    <>
-      <style>{`
-        .app-container:has(.twitter-messages-shell) {
-          grid-template-columns: 220px minmax(0, 1fr) !important;
-        }
-        .app-container:has(.twitter-messages-shell) .sidebar-right {
-          display: none !important;
-        }
-      `}</style>
+    <div className="messenger-card">
+      
+      {/* === LEFT PANE: CHAT LIST === */}
+      <aside className="messenger-sidebar">
+        
+        <div className="messenger-search-header">
+          <input 
+            type="text" 
+            className="messenger-search-input" 
+            placeholder="Search messages..." 
+          />
+        </div>
 
-      <section className="twitter-messages-shell">
-        <aside className="twitter-dm-sidebar">
-          <div className="twitter-dm-sidebar-header">
-            <div>
-              <h1>Messages</h1>
-              <p>Private conversations</p>
-            </div>
-
-            <Link href="/friends" className="twitter-new-message-btn">
-              ✎
-            </Link>
+        <div className="chat-list-container">
+          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '20px', textAlign: 'center', color: 'var(--text-secondary)'}}>
+              <span style={{fontSize: '2rem', opacity: '0.5', marginBottom: '10px'}}>📭</span>
+              <p style={{fontSize: '0.9rem', fontWeight: '500'}}>No recent chats</p>
+              <p style={{fontSize: '0.8rem', marginTop: '4px'}}>Search for a student to start messaging.</p>
           </div>
+        </div>
 
-          <form action="/search" className="twitter-dm-search">
-            <span>⌕</span>
-            <input
-              name="q"
-              placeholder="Search people"
-              autoComplete="off"
-            />
-          </form>
+      </aside>
 
-          <div className="twitter-dm-tabs">
-            <button className="active" type="button">
-              Inbox
-            </button>
-            <button type="button">
-              Requests
-            </button>
+      {/* === RIGHT PANE: ACTIVE CHAT WINDOW === */}
+      <main className="messenger-chat-area">
+        
+        {/* Шапка чата (пустая, так как чат не выбран) */}
+        <div className="chat-window-header">
+          <span style={{fontWeight: '600', color: 'var(--text-secondary)'}}>New Message</span>
+        </div>
+
+        {/* История сообщений (пустая) */}
+        <div className="chat-messages-history">
+          <div className="empty-state-mini">
+            <span style={{fontSize: '2rem', display: 'block', marginBottom: '10px', opacity: '0.5'}}>💬</span>
+            <p style={{fontSize: '1rem', color: 'var(--text-secondary)'}}>No messages here yet.</p>
           </div>
+        </div>
 
-          <div className="twitter-dm-empty-list">
-            <div className="twitter-dm-empty-icon">✉</div>
-            <h2>No conversations yet</h2>
-            <p>
-              When you start messaging classmates, your chats will appear here.
-            </p>
+        <div className="chat-input-area">
+          <button className="btn-attach">📎</button>
+          <input 
+            type="text"
+            className="chat-message-input" 
+            placeholder="Write a message..."
+            disabled
+          />
+          <button className="btn btn-send" disabled>Send</button>
+        </div>
 
-            <Link href="/friends">
-              Find people
-            </Link>
-          </div>
-        </aside>
+      </main>
 
-        <main className="twitter-dm-main">
-          <header className="twitter-dm-chat-header">
-            <div className="twitter-dm-user">
-              <div className="twitter-dm-avatar">
-                {session?.fullName?.charAt(0) || "U"}
-              </div>
-
-              <div>
-                <strong>New message</strong>
-                <span>
-                  {session?.fullName
-                    ? `Signed in as ${session.fullName}`
-                    : "Choose someone to start"}
-                </span>
-              </div>
-            </div>
-          </header>
-
-          <div className="twitter-dm-hero">
-            <div className="twitter-dm-hero-card">
-              <div className="twitter-dm-hero-icon">💬</div>
-
-              <h2>Select a message</h2>
-              <p>
-                Choose an existing conversation or find a student to start a new one.
-              </p>
-
-              <Link href="/friends" className="twitter-dm-primary-link">
-                Start a conversation
-              </Link>
-            </div>
-          </div>
-
-          <form className="twitter-dm-composer">
-            <button type="button" aria-label="Attach file">
-              ＋
-            </button>
-
-            <input
-              disabled
-              placeholder="Choose a conversation first"
-            />
-
-            <button type="button" disabled>
-              Send
-            </button>
-          </form>
-        </main>
-      </section>
-    </>
+    </div>
   );
 }

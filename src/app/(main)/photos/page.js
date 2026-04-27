@@ -4,7 +4,7 @@ import { photoAlbums, photos, users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import PhotoUploader from "@/components/PhotoUploader";
-import { deletePhoto, deletePhotoAlbum } from "@/app/actions/photo"; // ИМПОРТИРУЕМ ОБА ЭКШЕНА
+import { deletePhoto, deletePhotoAlbum } from "@/app/actions/photo"; 
 
 export default async function PhotosPage() {
   const session = await getSession();
@@ -44,75 +44,132 @@ export default async function PhotosPage() {
     .orderBy(desc(photos.createdAt));
 
   return (
-    <section className="old-page">
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '1.8rem', letterSpacing: '-0.03em' }}>Photos Gallery</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Upload your university memories.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      
+      {/* 1. HEADER CARD WITH ACTIONS */}
+      <div className="card">
+        <div style={{ 
+            padding: '16px', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center' 
+        }}>
+          <h2 style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>Photos</h2>
+          <div style={{ display: 'flex', gap: '8px' }}>
+             <PhotoUploader albums={albums} />
+          </div>
+        </div>
       </div>
 
-      <PhotoUploader albums={albums} />
-
-      {albums.length === 0 && realPhotos.length === 0 ? (
-        <div className="old-empty card" style={{ padding: '60px 20px' }}>
-          No photos yet.
-        </div>
-      ) : (
-        <>
-          {albums.length > 0 && (
-            <>
-              <div className="old-feed-title" style={{ marginTop: '32px' }}>
-                <h2>Albums</h2>
-                <span>{albums.length}</span>
+      {/* 2. INNER LAYOUT: Albums Widget vs Photo Grid Area */}
+      <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '260px 1fr', 
+          gap: '16px', 
+          alignItems: 'flex-start' 
+      }}>
+          
+          {/* A. LEFT: Albums Navigation Widget */}
+          <aside className="card" style={{ padding: '10px' }}>
+              <div style={{ padding: '8px 12px', borderRadius: '4px', background: '#eaf0fa', color: 'var(--ufar-blue)', fontWeight: '600', cursor: 'pointer', marginBottom: '4px' }}>
+                  My Albums ({albums.length})
               </div>
-              <div className="old-grid">
-                {albums.map((album) => (
-                  <div className="card old-tile" key={album.id} style={{ position: 'relative' }}>
+              <div style={{ padding: '8px 12px', borderRadius: '4px', color: 'var(--text-secondary)', fontWeight: '500', cursor: 'pointer' }}>
+                  Photos of me (0)
+              </div>
+          </aside>
 
-                    {album.ownerId === session.userId && (
-                      <form action={deletePhotoAlbum} style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}>
-                        <input type="hidden" name="albumId" value={album.id} />
-                        <button type="submit" style={{ background: 'rgba(217, 45, 32, 0.1)', color: 'var(--danger)', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', fontWeight: 'bold' }}>×</button>
-                      </form>
-                    )}
-
-                    <div className="old-tile-preview" style={{ background: 'var(--ufar-blue-soft)' }} />
-                    <strong>{album.title}</strong>
-                    <p>{album.description || `by ${album.ownerName}`}</p>
+          {/* B. RIGHT: Main Photo Area */}
+          <main style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* ALBUMS SECTION */}
+              <div className="card">
+                  <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color-light)' }}>
+                      <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>Albums</h3>
                   </div>
-                ))}
+                  
+                  {albums.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>No albums yet.</div>
+                  ) : (
+                    <div style={{ 
+                        padding: '16px', 
+                        display: 'grid', 
+                        gridTemplateColumns: 'repeat(3, 1fr)', 
+                        gap: '16px' 
+                    }}>
+                        {albums.map((album) => (
+                          <div key={album.id} style={{ textAlign: 'center', cursor: 'pointer', position: 'relative' }}>
+                              {album.ownerId === session.userId && (
+                                <form action={deletePhotoAlbum} style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}>
+                                  <input type="hidden" name="albumId" value={album.id} />
+                                  <button type="submit" style={{ background: 'rgba(217, 45, 32, 0.1)', color: 'var(--danger)', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', fontWeight: 'bold' }}>×</button>
+                                </form>
+                              )}
+                              <div style={{ 
+                                  aspectRatio: '1', 
+                                  background: 'var(--ufar-blue-soft)', 
+                                  borderRadius: '8px', 
+                                  border: '1px solid var(--border-color-light)', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center',
+                                  fontSize: '2rem',
+                                  color: 'var(--ufar-blue)',
+                                  marginBottom: '8px'
+                              }}>
+                                  📷
+                              </div>
+                              <strong style={{ display: 'block', fontSize: '0.9rem' }}>{album.title}</strong>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{album.description || `by ${album.ownerName}`}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
               </div>
-            </>
-          )}
 
-          <div className="old-feed-title" style={{ marginTop: '32px' }}>
-            <h2>All Photos</h2>
-            <span>{realPhotos.length}</span>
-          </div>
-
-          <div className="old-grid">
-            {realPhotos.map((photo) => (
-              <div className="card old-tile" key={photo.id} style={{ padding: '10px', position: 'relative' }}>
-                
-                {/* КНОПКА УДАЛЕНИЯ ФОТОГРАФИИ */}
-                {photo.ownerId === session.userId && (
-                  <form action={deletePhoto} style={{ position: 'absolute', top: '5px', right: '5px', zIndex: 10 }}>
-                    <input type="hidden" name="photoId" value={photo.id} />
-                    <button type="submit" style={{ background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' }}>×</button>
-                  </form>
+              {/* PRIMARY PHOTO GRID */}
+              <div className="card">
+                <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color-light)' }}>
+                    <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>All Photos</h3>
+                </div>
+                {realPhotos.length === 0 ? (
+                  <div style={{ 
+                      padding: '60px 20px', 
+                      textAlign: 'center', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center' 
+                  }}>
+                    <span style={{ fontSize: '3.5rem', opacity: 0.3, display: 'block', marginBottom: '16px' }}>🖼️</span>
+                    <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Your Photo Library is Empty</h3>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', maxWidth: '350px', lineHeight: '1.5' }}>
+                      Upload photos from your academic life, campus events, or study sessions to share them with your peers.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                    {realPhotos.map((photo) => (
+                      <div key={photo.id} style={{ position: 'relative' }}>
+                        {photo.ownerId === session.userId && (
+                          <form action={deletePhoto} style={{ position: 'absolute', top: '5px', right: '5px', zIndex: 10 }}>
+                            <input type="hidden" name="photoId" value={photo.id} />
+                            <button type="submit" style={{ background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' }}>×</button>
+                          </form>
+                        )}
+                        {photo.isPrivate && (
+                          <span style={{ position: 'absolute', top: '5px', left: '5px', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>🔒</span>
+                        )}
+                        <img src={photo.imageUrl} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '10px', border: '1px solid var(--border-color-light)' }} />
+                        <strong style={{ display: 'block', marginTop: '8px', fontSize: '0.9rem' }}>{photo.caption || "Untitled"}</strong>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>by {photo.ownerName}</p>
+                      </div>
+                    ))}
+                  </div>
                 )}
-
-                {photo.isPrivate && (
-                  <span style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '4px 8px', borderRadius: '8px', fontSize: '0.75rem' }}>🔒</span>
-                )}
-                
-                <img src={photo.imageUrl} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '10px', marginBottom: '10px' }} />
-                <strong>{photo.caption || "Untitled"}</strong>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>by {photo.ownerName}</p>
               </div>
-            ))}
-          </div>
-        </>
-      )}
-    </section>
+          </main>
+      </div>
+
+    </div>
   );
 }

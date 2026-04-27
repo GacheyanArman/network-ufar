@@ -3,7 +3,6 @@ import { ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
-// import { addFriend } from "@/app/actions/content"; 
 
 export default async function FriendsPage() {
   const session = await getSession();
@@ -25,92 +24,92 @@ export default async function FriendsPage() {
   const myFriends = []; 
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-      <style>{`
-        .old-list-item a.old-avatar {
-          padding: 0 !important;
-          border: 2px solid var(--surface-bg) !important;
-          overflow: hidden; /* Чтобы картинка не вылезала за края */
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, var(--ufar-blue), var(--ufar-blue-hover)) !important;
-        }
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      
+      {/* 1. HEADER & TABS CARD */}
+      <div className="card">
+        {/* Title and Action */}
+        <div style={{ 
+            padding: '16px', 
+            borderBottom: '1px solid var(--border-color-light)', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center' 
+        }}>
+          <h2 style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>Friends</h2>
+          <button className="btn btn-primary" style={{ padding: '8px 16px' }}>Find Friends</button>
+        </div>
         
-        /* Стили для реальной картинки аватарки */
-        .old-list-item a.old-avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover; /* Чтобы картинка не плющилась */
-        }
-        
-        .old-list-item a.name-link {
-          padding: 0 !important;
-          background: transparent !important;
-          border: none !important;
-        }
-        .old-list-item a.name-link:hover strong {
-          color: var(--ufar-blue);
-        }
-      `}</style>
-
-      <section className="card old-page" style={{ paddingBottom: '24px' }}>
-        <h1 style={{ fontSize: '1.45rem', marginBottom: '16px', letterSpacing: '-0.03em' }}>My Friends</h1>
-
-        {myFriends.length === 0 ? (
-          <div className="old-empty" style={{ padding: '30px 10px', border: '2px dashed var(--border-color-light)', borderRadius: '14px' }}>
-            <p style={{ margin: 0 }}>You don't have any friends yet.</p>
+        {/* Navigation Tabs */}
+        <div style={{ display: 'flex', gap: '24px', padding: '0 20px' }}>
+          <div style={{ 
+              padding: '16px 0', 
+              borderBottom: '3px solid var(--ufar-blue)', 
+              color: 'var(--ufar-blue)', 
+              fontWeight: '600', 
+              cursor: 'pointer' 
+          }}>
+            Suggestions
           </div>
-        ) : (
-          <div className="old-list">
+          <div style={{ 
+              padding: '16px 0', 
+              color: 'var(--text-secondary)', 
+              fontWeight: '500', 
+              cursor: 'pointer',
+              borderBottom: '3px solid transparent'
+          }}>
+            All Friends
           </div>
-        )}
-      </section>
+        </div>
+      </div>
 
-      <section className="card old-page">
-        <h1 style={{ fontSize: '1.45rem', marginBottom: '4px', letterSpacing: '-0.03em' }}>People you may know</h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
-          Suggested students from your university.
-        </p>
+      {/* 2. LOCAL SEARCH BAR */}
+      <div className="card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <span style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>🔍</span>
+        <input 
+          type="text" 
+          placeholder="Search among your friends..." 
+          style={{ 
+              flex: 1, 
+              border: 'none', 
+              outline: 'none', 
+              fontSize: '0.95rem', 
+              backgroundColor: 'transparent',
+              color: 'var(--text-primary)'
+          }} 
+        />
+      </div>
 
+      {/* 3. SUGGESTIONS */}
+      <div className="card">
+        <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color-light)' }}>
+            <h3 style={{ fontSize: '1.1rem' }}>People you may know</h3>
+        </div>
         {suggestions.length === 0 ? (
-          <div className="old-empty">
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
             No suggestions right now. Invite classmates to join!
           </div>
         ) : (
-          <div className="old-list">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', padding: '16px' }}>
             {suggestions.map((user) => (
-              <div className="old-list-item" key={user.id}>
-
-                <Link href={`/profile/${user.id}`} className="old-avatar" style={{ textDecoration: 'none' }}>
-                  {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user.fullName} />
-                  ) : (
-                    <span>{user.fullName?.[0] || "U"}</span>
-                  )}
+              <div key={user.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', border: '1px solid var(--border-color-light)', padding: '16px', borderRadius: '12px' }}>
+                <Link href={`/profile/${user.id}`} style={{ textDecoration: 'none' }}>
+                  <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'var(--ufar-blue)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', marginBottom: '12px' }}>
+                    {user.avatarUrl ? <img src={user.avatarUrl} alt={user.fullName} style={{width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover'}} /> : user.fullName?.[0] || "U"}
+                  </div>
                 </Link>
-
-                <div>
-                  <Link href={`/profile/${user.id}`} className="name-link" style={{ textDecoration: 'none', color: 'inherit', display: 'inline-block' }}>
-                    <strong style={{ display: 'block', fontSize: '1.05rem', transition: 'color 0.15s ease' }}>
-                      {user.fullName}
-                    </strong>
-                  </Link>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    {user.faculty || user.email}
-                  </span>
-                </div>
-
-                <button type="submit" className="btn-primary-old" style={{ padding: '7px 14px', fontSize: '0.9rem' }}>
-                    Add friend
-                </button>
-
+                <Link href={`/profile/${user.id}`} style={{ textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 'bold' }}>
+                  {user.fullName}
+                </Link>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                  {user.faculty || "Student"}
+                </span>
+                <button className="btn btn-primary" style={{ width: '100%', padding: '6px' }}>Add friend</button>
               </div>
             ))}
           </div>
         )}
-      </section>
+      </div>
 
     </div>
   );

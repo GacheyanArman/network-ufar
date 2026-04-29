@@ -1,19 +1,26 @@
-import { db } from "@/lib/db";
-import { users, posts, photos, friendships, communities } from "@/lib/schema";
-import { and, desc, eq, or } from "drizzle-orm";
-import { deletePost } from "@/app/actions/post";
-import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { and, desc, eq, or } from "drizzle-orm";
+
+import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
+import { users, posts, photos, friendships, communities } from "@/lib/schema";
+import { deletePost } from "@/app/actions/post";
 import PostComposer from "@/components/PostComposer";
 import PhotoGallery from "@/components/PhotoGallery";
 
 export default async function ProfilePage({ searchParams }) {
   const session = await getSession();
-  if (!session) redirect("/login");
+
+  if (!session?.userId) {
+    redirect("/login");
+  }
 
   const params = await searchParams;
-  const currentTab = params?.tab || "posts";
+  const currentTab = Array.isArray(params?.tab)
+    ? params.tab[0]
+    : params?.tab || "posts";
+
   const saved = params?.saved === "1";
 
   const [currentUser] = await db
@@ -32,7 +39,9 @@ export default async function ProfilePage({ searchParams }) {
     .where(eq(users.id, session.userId))
     .limit(1);
 
-  if (!currentUser) redirect("/login");
+  if (!currentUser) {
+    redirect("/login");
+  }
 
   const userPosts = await db
     .select({
@@ -69,19 +78,19 @@ export default async function ProfilePage({ searchParams }) {
   const userCommunities = await db
     .select({
       id: communities.id,
-      name: communities.name,
     })
     .from(communities)
     .where(eq(communities.creatorId, session.userId));
 
   const safeName = currentUser.fullName || "Student";
   const safeInitial = safeName.charAt(0).toUpperCase() || "U";
-  const safeEmail = currentUser.email || "No email provided";
-  const safeUsername = currentUser.username ? `@${currentUser.username}` : "@username";
-  const safeFaculty = currentUser.faculty || "Faculty not specified";
-  const safeBio = currentUser.bio || "No bio yet.";
+  const safeEmail = currentUser.email || "";
+  const safeUsername = currentUser.username
+    ? `@${currentUser.username}`
+    : "@username";
+  const safeFaculty = currentUser.faculty || "Student";
+  const safeBio = currentUser.bio || "";
   const avatarImage = currentUser.image || "";
-  const coverImage = currentUser.coverImage || "";
 
   const postsCount = userPosts.length;
   const photosCount = userPhotos.length;
@@ -96,277 +105,778 @@ export default async function ProfilePage({ searchParams }) {
     : "Recently";
 
   return (
-    <div className="ot-profile-page">
-      <div className="ot-profile-cover">
-        {coverImage ? (
-          <img
-            src={coverImage}
-            alt="Profile cover"
-            className="ot-profile-cover-img"
-          />
-        ) : null}
-        <div className="ot-profile-cover-overlay" />
-      </div>
+    <div className="uf-profile-page">
+      <style>{profileStyles}</style>
 
-      <div className="ot-profile-statsbar">
-        <div className="ot-profile-statsbar-inner">
-          <div className="ot-profile-stats-spacer" />
-
-          <div className="ot-profile-stats-links">
-            <Link
-              href="?tab=posts"
-              scroll={false}
-              className={currentTab === "posts" ? "active" : ""}
-            >
-              <span>POSTS</span>
-              <strong>{postsCount}</strong>
-            </Link>
-
-            <Link
-              href="?tab=photos"
-              scroll={false}
-              className={currentTab === "photos" ? "active" : ""}
-            >
-              <span>PHOTOS</span>
-              <strong>{photosCount}</strong>
-            </Link>
-
-            <Link
-              href="?tab=about"
-              scroll={false}
-              className={currentTab === "about" ? "active" : ""}
-            >
-              <span>ABOUT</span>
-              <strong>Info</strong>
-            </Link>
-
-            <div className="ot-profile-stat-box">
-              <span>FRIENDS</span>
-              <strong>{friendsCount}</strong>
-            </div>
-
-            <div className="ot-profile-stat-box">
-              <span>GROUPS</span>
-              <strong>{communitiesCount}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="ot-profile-body">
-        <aside className="ot-profile-left">
-          <div className="ot-profile-avatar-wrap">
-            {avatarImage ? (
-              <img
-                src={avatarImage}
-                alt={safeName}
-                className="ot-profile-avatar-img"
-              />
-            ) : (
-              <div className="ot-profile-avatar">{safeInitial}</div>
-            )}
-          </div>
-
-          <div className="ot-profile-userinfo">
-            <h1>{safeName}</h1>
-            <span>{safeUsername}</span>
-
-            <div className="ot-profile-chip-row">
-              <span className="ot-profile-chip">🎓 {safeFaculty}</span>
-              <span className="ot-profile-chip">📅 Joined {joinedAt}</span>
-            </div>
-
-            <p className="ot-profile-bio">{safeBio}</p>
-
-            <div className="ot-profile-meta">
-              <div>✉️ {safeEmail}</div>
-              <div>
-                👥 {friendsCount} friend{friendsCount === 1 ? "" : "s"}
+      <div className="uf-profile-shell">
+        <div className="uf-profile-layout">
+          <aside className="uf-profile-sidebar">
+            <section className="uf-card uf-profile-card">
+              <div className="uf-profile-avatar">
+                {avatarImage ? (
+                  <img src={avatarImage} alt={safeName} />
+                ) : (
+                  <span>{safeInitial}</span>
+                )}
               </div>
-              <div>
-                🤝 {communitiesCount} communit
-                {communitiesCount === 1 ? "y" : "ies"}
-              </div>
-              <div>
-                🖼️ {photosCount} photo{photosCount === 1 ? "" : "s"}
-              </div>
-            </div>
 
-            <div className="ot-profile-action-row">
-              <Link href="/profile/edit" className="ot-profile-message-btn">
+              <div className="uf-profile-heading">
+                <h1>{safeName}</h1>
+                <p>{safeUsername}</p>
+              </div>
+
+              <div className="uf-profile-badges">
+                <div className="uf-profile-badge">
+                  <span className="uf-inline-icon">
+                    <UiIcon name="graduation" size={15} />
+                  </span>
+                  <strong>{safeFaculty}</strong>
+                </div>
+
+                <div className="uf-profile-badge">
+                  <span className="uf-inline-icon">
+                    <UiIcon name="calendar" size={15} />
+                  </span>
+                  <strong>Joined {joinedAt}</strong>
+                </div>
+              </div>
+
+              {safeBio ? <p className="uf-profile-bio">{safeBio}</p> : null}
+
+              <div className="uf-profile-info">
+                {safeEmail ? (
+                  <div className="uf-profile-info-row">
+                    <span className="uf-inline-icon">
+                      <UiIcon name="mail" size={15} />
+                    </span>
+                    <p>{safeEmail}</p>
+                  </div>
+                ) : null}
+
+                <Link href="/friends" className="uf-profile-info-row">
+                  <span className="uf-inline-icon">
+                    <UiIcon name="users" size={15} />
+                  </span>
+                  <p>
+                    {friendsCount} friend{friendsCount === 1 ? "" : "s"}
+                  </p>
+                </Link>
+
+                <Link href="/communities" className="uf-profile-info-row">
+                  <span>💛</span>
+                  <p>
+                    {communitiesCount} communit
+                    {communitiesCount === 1 ? "y" : "ies"}
+                  </p>
+                </Link>
+
+                <Link
+                  href="/profile?tab=photos"
+                  scroll={false}
+                  className="uf-profile-info-row"
+                >
+                  <span className="uf-inline-icon">
+                    <UiIcon name="photo" size={15} />
+                  </span>
+                  <p>
+                    {photosCount} photo{photosCount === 1 ? "" : "s"}
+                  </p>
+                </Link>
+              </div>
+
+              <Link href="/profile/edit" className="uf-profile-edit-btn">
                 Edit profile
               </Link>
-            </div>
-          </div>
+            </section>
 
-          <div className="ot-profile-side-card">
-            <h3 className="ot-profile-side-title">Quick overview</h3>
+            <section className="uf-card uf-profile-stats-card">
+              <StatRow href="/profile?tab=posts" label="Posts" value={postsCount} />
+              <StatRow href="/profile?tab=photos" label="Photos" value={photosCount} />
+              <StatRow href="/friends" label="Friends" value={friendsCount} />
+              <StatRow href="/communities" label="Groups" value={communitiesCount} />
+              <StatRow href="/profile?tab=about" label="About" value="Info" />
+            </section>
+          </aside>
 
-            <div className="ot-profile-kpi-grid">
-              <div className="ot-profile-kpi">
-                <strong>{postsCount}</strong>
-                <span>Posts</span>
+          <main className="uf-profile-main">
+            <nav className="uf-card uf-profile-tabs">
+              <TabLink href="/profile?tab=posts" active={currentTab === "posts"}>
+                Posts
+              </TabLink>
+
+              <TabLink href="/profile?tab=about" active={currentTab === "about"}>
+                About
+              </TabLink>
+
+              <TabLink href="/profile?tab=photos" active={currentTab === "photos"}>
+                Photos
+              </TabLink>
+            </nav>
+
+            {saved ? (
+              <div className="uf-card uf-profile-alert">
+                Profile updated successfully.
               </div>
+            ) : null}
 
-              <div className="ot-profile-kpi">
-                <strong>{friendsCount}</strong>
-                <span>Friends</span>
-              </div>
-
-              <div className="ot-profile-kpi">
-                <strong>{photosCount}</strong>
-                <span>Photos</span>
-              </div>
-
-              <div className="ot-profile-kpi">
-                <strong>{communitiesCount}</strong>
-                <span>Groups</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <section className="ot-profile-center">
-          <div className="ot-profile-tabs">
-            <Link
-              href="?tab=posts"
-              scroll={false}
-              className={currentTab === "posts" ? "active" : ""}
-            >
-              Posts
-            </Link>
-
-            <Link
-              href="?tab=about"
-              scroll={false}
-              className={currentTab === "about" ? "active" : ""}
-            >
-              About
-            </Link>
-
-            <Link
-              href="?tab=photos"
-              scroll={false}
-              className={currentTab === "photos" ? "active" : ""}
-            >
-              Photos
-            </Link>
-          </div>
-
-          {saved && (
-            <div className="profile-save-success">
-              Profile updated successfully.
-            </div>
-          )}
-
-          {currentTab === "posts" && (
-            <div className="ot-profile-feed">
-              <div className="ot-profile-composer-wrap">
-                <PostComposer currentUser={currentUser} />
-              </div>
-
-              {userPosts.length === 0 ? (
-                <div className="ot-profile-empty">
-                  <h2>No posts yet</h2>
-                  <p>
-                    Create your first post and share updates, announcements or
-                    thoughts.
-                  </p>
+            {currentTab === "posts" ? (
+              <section className="uf-profile-feed">
+                <div className="uf-card uf-profile-composer">
+                  <PostComposer currentUser={currentUser} />
                 </div>
-              ) : (
-                userPosts.map((post) => (
-                  <article key={post.id} className="ot-profile-post">
-                    <div className="ot-profile-post-avatar">{safeInitial}</div>
 
-                    <div className="ot-profile-post-content">
-                      <div className="ot-profile-post-head">
-                        <strong>{safeName}</strong>
-                        <span>
-                          {new Date(post.createdAt).toLocaleString()}
-                        </span>
+                {userPosts.length === 0 ? (
+                  <div className="uf-card uf-profile-empty">
+                    <h2>No posts yet</h2>
+                    <p>
+                      Create your first post and it will appear here in the same
+                      layout as in the reference.
+                    </p>
+                  </div>
+                ) : (
+                  userPosts.map((post) => (
+                    <article key={post.id} className="uf-card uf-post-card">
+                      <div className="uf-post-header">
+                        <div className="uf-post-author">
+                          <div className="uf-post-avatar">
+                            {avatarImage ? (
+                              <img src={avatarImage} alt={safeName} />
+                            ) : (
+                              <span>{safeInitial}</span>
+                            )}
+                          </div>
+
+                          <div className="uf-post-author-meta">
+                            <div className="uf-post-name-row">
+                              <strong>{safeName}</strong>
+                              <span>{safeUsername}</span>
+                            </div>
+
+                            <time>{formatPostDate(post.createdAt)}</time>
+                          </div>
+                        </div>
+
+                        <form action={deletePost}>
+                          <input type="hidden" name="postId" value={post.id} />
+                          <button
+                            type="submit"
+                            className="uf-post-delete-btn"
+                            title="Delete post"
+                          >
+                            ×
+                          </button>
+                        </form>
                       </div>
 
-                      <p>{post.content}</p>
+                      {post.content ? (
+                        <p className="uf-post-text">{post.content}</p>
+                      ) : null}
 
                       {post.imageUrl ? (
                         <img
                           src={post.imageUrl}
                           alt="Post attachment"
-                          className="ot-profile-post-media"
+                          className="uf-post-image"
                         />
                       ) : null}
 
-                      <div className="ot-profile-post-actions">
-                        <span>❤️ {post.likesCount}</span>
-                        <span>💬 {post.commentsCount}</span>
-
-                        <form action={deletePost}>
-                          <input type="hidden" name="postId" value={post.id} />
-                          <button type="submit">Delete</button>
-                        </form>
+                      <div className="uf-post-actions">
+                        <ActionItem icon="💬" value={post.commentsCount || 0} />
+                        <ActionItem icon="🔁" value={0} />
+                        <ActionItem icon="♡" value={post.likesCount || 0} />
+                        <ActionItem icon="📊" value={0} />
+                        <ActionItem icon="🔖" value={0} />
+                        <ActionItem icon="↗" value="" />
                       </div>
-                    </div>
-                  </article>
-                ))
-              )}
-            </div>
-          )}
+                    </article>
+                  ))
+                )}
+              </section>
+            ) : null}
 
-          {currentTab === "about" && (
-            <div className="ot-profile-about-grid">
-              <div className="ot-profile-side-card">
-                <h3 className="ot-profile-side-title">Personal info</h3>
-
-                <div className="ot-profile-about-item">
-                  <span>Full name</span>
-                  <strong>{safeName}</strong>
+            {currentTab === "about" ? (
+              <section className="uf-about-grid">
+                <div className="uf-card uf-about-card">
+                  <h3>Personal info</h3>
+                  <InfoBlock label="Full name" value={safeName} />
+                  <InfoBlock label="Username" value={safeUsername} />
+                  <InfoBlock label="Email" value={safeEmail || "No email"} />
+                  <InfoBlock label="Faculty" value={safeFaculty} />
+                  <InfoBlock label="Joined" value={joinedAt} />
                 </div>
 
-                <div className="ot-profile-about-item">
-                  <span>Username</span>
-                  <strong>{safeUsername}</strong>
+                <div className="uf-card uf-about-card">
+                  <h3>Bio</h3>
+                  <p className="uf-about-bio">{safeBio || "No bio yet."}</p>
                 </div>
+              </section>
+            ) : null}
 
-                <div className="ot-profile-about-item">
-                  <span>Email</span>
-                  <strong>{safeEmail}</strong>
-                </div>
-
-                <div className="ot-profile-about-item">
-                  <span>Faculty</span>
-                  <strong>{safeFaculty}</strong>
-                </div>
-
-                <div className="ot-profile-about-item">
-                  <span>Joined</span>
-                  <strong>{joinedAt}</strong>
-                </div>
-              </div>
-
-              <div className="ot-profile-side-card">
-                <h3 className="ot-profile-side-title">Bio</h3>
-                <p className="ot-profile-bio" style={{ marginBottom: 0 }}>
-                  {safeBio}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {currentTab === "photos" && (
-            <div className="ot-profile-photos-wrap">
-              {userPhotos.length === 0 ? (
-                <div className="ot-profile-empty">
-                  <h2>No photos yet</h2>
-                  <p>Upload your first photo to make your profile more alive.</p>
-                </div>
-              ) : (
-                <PhotoGallery photos={userPhotos} />
-              )}
-            </div>
-          )}
-        </section>
+            {currentTab === "photos" ? (
+              <section className="uf-photos-section">
+                {userPhotos.length === 0 ? (
+                  <div className="uf-card uf-profile-empty">
+                    <h2>No photos yet</h2>
+                    <p>Upload your first photo to fill this section.</p>
+                  </div>
+                ) : (
+                  <PhotoGallery photos={userPhotos} />
+                )}
+              </section>
+            ) : null}
+          </main>
+        </div>
       </div>
     </div>
   );
 }
 
+function StatRow({ href, label, value }) {
+  return (
+    <Link href={href} scroll={false} className="uf-stat-row">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </Link>
+  );
+}
+
+function TabLink({ href, active, children }) {
+  return (
+    <Link
+      href={href}
+      scroll={false}
+      className={active ? "uf-tab-link active" : "uf-tab-link"}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function ActionItem({ icon, value }) {
+  return (
+    <span className="uf-action-item">
+      <span className="uf-action-icon">{icon}</span>
+      {value !== "" ? <span>{value}</span> : null}
+    </span>
+  );
+}
+
+function InfoBlock({ label, value }) {
+  return (
+    <div className="uf-info-block">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function formatPostDate(value) {
+  if (!value) return "";
+
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const profileStyles = `
+.uf-profile-page {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+}
+
+.uf-profile-shell {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 0 36px;
+}
+
+.uf-profile-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.uf-profile-sidebar {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-self: start;
+}
+
+.uf-profile-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.uf-card {
+  background: #ffffff;
+  border: 1px solid #d9e2ef;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.uf-profile-card {
+  padding: 28px 22px 24px;
+}
+
+.uf-profile-avatar {
+  width: 106px;
+  height: 106px;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0 auto 22px;
+  border: 4px solid #ffffff;
+  box-shadow: 0 0 0 1px #d9e2ef, 0 8px 24px rgba(15, 23, 42, 0.08);
+  background: #0b3aa8;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 900;
+}
+
+.uf-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.uf-profile-heading {
+  margin-bottom: 18px;
+}
+
+.uf-profile-heading h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.uf-profile-heading p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.uf-profile-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.uf-profile-badge {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #f4f7fb;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  border: 1px solid #e3ebf5;
+}
+
+.uf-profile-bio {
+  margin: 0 0 18px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.uf-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.uf-profile-info-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #475569;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.uf-profile-info-row span {
+  width: 18px;
+  flex: 0 0 18px;
+  text-align: center;
+}
+
+.uf-profile-info-row p {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uf-profile-info-row:hover p {
+  color: #0b3aa8;
+}
+
+.uf-profile-edit-btn {
+  width: fit-content;
+  min-width: 132px;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: #0b3aa8;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 800;
+  border: 1px solid #0b3aa8;
+}
+
+.uf-profile-edit-btn:hover {
+  background: #062fae;
+}
+
+.uf-profile-stats-card {
+  padding: 18px 18px 16px;
+}
+
+.uf-stat-row {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  text-decoration: none;
+  color: #475569;
+  border-radius: 10px;
+  padding: 0 2px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.uf-stat-row + .uf-stat-row {
+  margin-top: 8px;
+}
+
+.uf-stat-row:hover {
+  color: #0b3aa8;
+}
+
+.uf-stat-row strong {
+  color: #0b3aa8;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.uf-profile-tabs {
+  min-height: 64px;
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+
+.uf-tab-link {
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  color: #536173;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 800;
+  border-bottom: 3px solid transparent;
+}
+
+.uf-tab-link.active {
+  color: #0b3aa8;
+  border-bottom-color: #0b3aa8;
+}
+
+.uf-profile-alert {
+  padding: 14px 18px;
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #ccebd5;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.uf-profile-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.uf-profile-composer {
+  overflow: hidden;
+}
+
+.uf-profile-empty {
+  padding: 54px 22px;
+  text-align: center;
+}
+
+.uf-profile-empty h2 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.uf-profile-empty p {
+  margin: 0 auto;
+  max-width: 420px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.uf-post-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+.uf-post-header {
+  padding: 20px 22px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.uf-post-author {
+  min-width: 0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.uf-post-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #0b3aa8;
+  color: #ffffff;
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
+.uf-post-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uf-post-author-meta {
+  min-width: 0;
+}
+
+.uf-post-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.uf-post-name-row strong {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.uf-post-name-row span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.uf-post-author-meta time {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.uf-post-delete-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.uf-post-delete-btn:hover {
+  background: #f4f7fb;
+  color: #0b3aa8;
+}
+
+.uf-post-text {
+  margin: 18px 22px 0;
+  color: #0f172a;
+  font-size: 15.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.uf-post-image {
+  width: calc(100% - 44px);
+  display: block;
+  margin: 18px 22px 0;
+  border-radius: 14px;
+  border: 1px solid #d9e2ef;
+  max-height: 560px;
+  object-fit: cover;
+  background: #f8fafc;
+}
+
+.uf-post-actions {
+  margin-top: 20px;
+  min-height: 58px;
+  padding: 0 18px;
+  border-top: 1px solid #e7edf5;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: center;
+  gap: 6px;
+}
+
+.uf-action-item {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.uf-action-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.uf-about-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.uf-about-card {
+  padding: 22px;
+}
+
+.uf-about-card h3 {
+  margin: 0 0 18px;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.uf-info-block {
+  padding: 14px 0;
+  border-top: 1px solid #e7edf5;
+}
+
+.uf-info-block span {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.uf-info-block strong {
+  color: #0f172a;
+  font-size: 15px;
+  word-break: break-word;
+}
+
+.uf-about-bio {
+  margin: 0;
+  color: #334155;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.uf-photos-section {
+  min-width: 0;
+}
+
+/* Главное: чтобы слева карточки не тянулись до низа и не касались края */
+.uf-profile-sidebar > * {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 980px) {
+  .uf-profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .uf-about-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .uf-profile-shell {
+    padding: 4px 0 24px;
+  }
+
+  .uf-profile-tabs {
+    padding: 0 16px;
+    gap: 20px;
+    overflow-x: auto;
+  }
+
+  .uf-post-header {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .uf-post-text {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  .uf-post-image {
+    width: calc(100% - 32px);
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  .uf-post-actions {
+    padding: 0 8px;
+  }
+}
+`;

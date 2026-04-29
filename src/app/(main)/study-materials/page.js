@@ -103,7 +103,7 @@ export default async function StudyMaterialsPage() {
                             {new Date(item.createdAt).toLocaleDateString()}
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <a href={item.fileUrl} download className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.8rem', textDecoration: 'none' }}>⬇️</a>
+                            <a href={item.fileUrl} download className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.8rem', textDecoration: 'none' }}><UiIcon name="download" size={16} /></a>
                             {item.ownerId === session.userId && (
                                 <form action={deleteMaterial}>
                                     <input type="hidden" name="materialId" value={item.id} />

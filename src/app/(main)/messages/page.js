@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { messages, users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { sendMessage } from "@/app/actions/messages";
+import Message from "@/components/Message";
 
 export default async function MessagesPage({ searchParams }) {
   const session = await getSession();
@@ -282,44 +283,16 @@ export default async function MessagesPage({ searchParams }) {
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "10px",
                 padding: "16px",
               }}
             >
-              {history.map((message) => {
-                const isMine = message.senderId === session.userId;
-
-                return (
-                  <div
-                    key={message.id}
-                    style={{
-                      alignSelf: isMine ? "flex-end" : "flex-start",
-                      maxWidth: "70%",
-                      background: isMine ? "var(--ufar-blue)" : "var(--bg-main)",
-                      color: isMine ? "white" : "var(--text-primary)",
-                      padding: "10px 14px",
-                      borderRadius: "16px",
-                    }}
-                  >
-                    <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-                      {message.content}
-                    </p>
-                    <span
-                      style={{
-                        display: "block",
-                        marginTop: "4px",
-                        fontSize: "0.72rem",
-                        opacity: 0.75,
-                      }}
-                    >
-                      {new Date(message.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
+              {history.map((message) => (
+                <Message 
+                  key={message.id} 
+                  message={message} 
+                  isOwnMessage={message.senderId === session.userId} 
+                />
+              ))}
             </div>
           )}
         </div>

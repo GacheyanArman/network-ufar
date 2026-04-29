@@ -55,8 +55,8 @@ export default async function MainLayout({ children }) {
 
   return (
     <>
-      <header className="topbar">
-        <div className="topbar-inner">
+      <header className="topbar clean-topbar">
+        <div className="topbar-inner clean-topbar-inner">
           <div className="brand">
             <Link href="/" className="brand-link">
               <div className="logo-circle">U</div>
@@ -64,67 +64,25 @@ export default async function MainLayout({ children }) {
             </Link>
           </div>
 
-          <form action="/search" className="search-container">
-            <span className="search-icon">
-              <UiIcon name="search" size={14} />
-            </span>
-            <input
-              name="q"
-              type="text"
-              className="search-input"
-              placeholder="Search students, groups, materials..."
-            />
-          </form>
-
-          <div className="topbar-actions">
-            <Link href="/messages" className="action-icon-btn">
-              <UiIcon name="message" />
-            </Link>
-
-            <Link href="/notifications" className="action-icon-btn" style={{ position: "relative", textDecoration: "none" }}>
-              <UiIcon name="bell" />
-              {unreadNotifications > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: "-4px",
-                    right: "-4px",
-                    background: "var(--ufar-red)",
-                    color: "white",
-                    borderRadius: "999px",
-                    minWidth: "18px",
-                    height: "18px",
-                    fontSize: "0.72rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "0 4px",
-                  }}
-                >
-                  {unreadNotifications > 99 ? "99+" : unreadNotifications}
-                </span>
+          <div className="clean-topbar-profile">
+            <Link href="/profile" className="topbar-avatar-link">
+              {avatarImage ? (
+                <img
+                  src={avatarImage}
+                  alt={safeName}
+                  className="topbar-avatar-img"
+                />
+              ) : (
+                <div className="avatar-blank-sm">{safeInitial}</div>
               )}
             </Link>
 
-            <div className="user-dropdown-btn">
-              <Link href="/profile" className="topbar-avatar-link">
-                {avatarImage ? (
-                  <img
-                    src={avatarImage}
-                    alt={safeName}
-                    className="topbar-avatar-img"
-                  />
-                ) : (
-                  <div className="avatar-blank-sm">{safeInitial}</div>
-                )}
-              </Link>
-
-              <form action={logoutUser}>
-                <button type="submit" className="logout-btn">
-                  Logout
-                </button>
-              </form>
-            </div>
+            <form action={logoutUser}>
+              <button type="submit" className="logout-btn clean-logout-btn">
+                <UiIcon name="logout" size={16} />
+                <span>Logout</span>
+              </button>
+            </form>
           </div>
         </div>
       </header>
@@ -134,42 +92,79 @@ export default async function MainLayout({ children }) {
           <nav className="student-nav card">
             <div className="nav-section">
               <Link href="/" className="nav-item">
-                <span className="nav-icon"><UiIcon name="news" /></span>
+                <span className="nav-icon">
+                  <UiIcon name="news" />
+                </span>
                 <span className="nav-label">My News</span>
               </Link>
 
+              <Link href="/search" className="nav-item">
+                <span className="nav-icon">
+                  <UiIcon name="search" />
+                </span>
+                <span className="nav-label">Search</span>
+              </Link>
+
+              <Link href="/notifications" className="nav-item nav-item-notifications">
+                <span className="nav-icon">
+                  <UiIcon name="bell" />
+                </span>
+
+                <span className="nav-label">Notifications</span>
+
+                {unreadNotifications > 0 && (
+                  <span className="nav-notification-badge">
+                    {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                  </span>
+                )}
+              </Link>
+
               <Link href="/messages" className="nav-item">
-                <span className="nav-icon"><UiIcon name="message" /></span>
+                <span className="nav-icon">
+                  <UiIcon name="message" />
+                </span>
                 <span className="nav-label">Messages</span>
               </Link>
 
               <Link href="/friends" className="nav-item">
-                <span className="nav-icon"><UiIcon name="users" /></span>
+                <span className="nav-icon">
+                  <UiIcon name="users" />
+                </span>
                 <span className="nav-label">Friends</span>
               </Link>
 
               <Link href="/profile" className="nav-item">
-                <span className="nav-icon"><UiIcon name="user" /></span>
+                <span className="nav-icon">
+                  <UiIcon name="user" />
+                </span>
                 <span className="nav-label">My Profile</span>
               </Link>
 
               <Link href="/communities" className="nav-item">
-                <span className="nav-icon"><UiIcon name="group" /></span>
+                <span className="nav-icon">
+                  <UiIcon name="group" />
+                </span>
                 <span className="nav-label">Communities</span>
               </Link>
 
               <Link href="/photos" className="nav-item">
-                <span className="nav-icon"><UiIcon name="image" /></span>
+                <span className="nav-icon">
+                  <UiIcon name="image" />
+                </span>
                 <span className="nav-label">Photos</span>
               </Link>
 
               <Link href="/library" className="nav-item">
-                <span className="nav-icon"><UiIcon name="book" /></span>
+                <span className="nav-icon">
+                  <UiIcon name="book" />
+                </span>
                 <span className="nav-label">UFAR Library</span>
               </Link>
 
               <Link href="/study-materials" className="nav-item">
-                <span className="nav-icon"><UiIcon name="folder" /></span>
+                <span className="nav-icon">
+                  <UiIcon name="folder" />
+                </span>
                 <span className="nav-label">Materials</span>
               </Link>
             </div>
@@ -180,12 +175,16 @@ export default async function MainLayout({ children }) {
               <h4 className="nav-section-title">University Help</h4>
 
               <Link href="/library" className="nav-item">
-                <span className="nav-icon">📚</span>
+                <span className="nav-icon">
+                  <UiIcon name="book" />
+                </span>
                 <span className="nav-label">UFAR Library</span>
               </Link>
 
               <Link href="/study-materials" className="nav-item">
-                <span className="nav-icon">📁</span>
+                <span className="nav-icon">
+                  <UiIcon name="folder" />
+                </span>
                 <span className="nav-label">Materials</span>
               </Link>
             </div>
@@ -306,9 +305,23 @@ export default async function MainLayout({ children }) {
             )}
           </div>
 
-          <div className="card">
-            <h4 className="widget-title">Birthdays</h4>
-            <div className="empty-state-mini">
+          <div className="uf-birthday-widget">
+            <div className="uf-birthday-head">
+              <div className="uf-birthday-icon">
+                <UiIcon name="cake" size={18} />
+              </div>
+
+              <div>
+                <h4>Birthdays</h4>
+                <p>Today</p>
+              </div>
+            </div>
+
+            <div className="uf-birthday-empty">
+              <div className="uf-birthday-empty-icon">
+                <UiIcon name="calendar" size={20} />
+              </div>
+
               <p>No birthdays today.</p>
             </div>
           </div>

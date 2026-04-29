@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -84,7 +85,9 @@ export const userFollows = pgTable("user_follow", {
   followerId: text("follower_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   followingId: text("following_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  unq: uniqueIndex("user_follow_unique_idx").on(table.followerId, table.followingId),
+}));
 
 export const messages = pgTable("message", {
   id: text("id").$defaultFn(() => createId()).primaryKey(),

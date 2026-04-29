@@ -2060,3 +2060,1460 @@ img {
         height: 36px;
     }
 }
+
+
+/* =========================================
+   OLD SOCIAL LOOK PATCH
+   Facebook/Twitter-like layout without changing colors
+   ========================================= */
+
+:root {
+    --topbar-height: 46px;
+    --page-max: 1040px;
+    --left-col: 178px;
+    --right-col: 260px;
+    --page-gap: 10px;
+
+    --radius-card: 3px;
+    --radius-btn: 3px;
+    --radius-input: 3px;
+}
+
+body {
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.card {
+    border-radius: var(--radius-card) !important;
+    box-shadow: none !important;
+    border: 1px solid var(--border-color-light) !important;
+}
+
+/* Top bar closer to old Facebook */
+.topbar {
+    height: var(--topbar-height) !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.topbar-inner {
+    max-width: var(--page-max) !important;
+    height: var(--topbar-height) !important;
+    padding: 0 8px !important;
+    grid-template-columns: 180px minmax(260px, 1fr) 245px !important;
+    gap: 10px !important;
+}
+
+.logo-circle {
+    display: none !important;
+}
+
+.brand-name {
+    font-size: 23px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.05em !important;
+}
+
+.search-container {
+    max-width: 330px !important;
+    justify-self: start !important;
+}
+
+.search-input {
+    height: 24px !important;
+    padding: 4px 8px 4px 28px !important;
+    border-radius: 2px !important;
+    background: var(--surface-bg) !important;
+    color: var(--text-primary) !important;
+    font-size: 12px !important;
+}
+
+.search-icon {
+    left: 8px !important;
+    color: var(--text-secondary) !important;
+    font-size: 11px !important;
+}
+
+.topbar-actions {
+    gap: 6px !important;
+}
+
+.action-icon-btn,
+.avatar-blank-sm,
+.topbar-avatar-img {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    border-radius: 2px !important;
+    font-size: 13px !important;
+}
+
+.logout-btn {
+    height: 26px !important;
+    padding: 0 8px !important;
+    border-radius: 2px !important;
+    font-size: 12px !important;
+}
+
+/* Main old social grid */
+.app-container {
+    max-width: var(--page-max) !important;
+    margin-top: 8px !important;
+    padding: 0 8px 18px !important;
+    grid-template-columns: var(--left-col) minmax(0, 1fr) var(--right-col) !important;
+    gap: var(--page-gap) !important;
+}
+
+.main-content {
+    min-width: 0 !important;
+}
+
+/* Left menu like old compact side nav */
+.student-nav.card,
+.sidebar-left > .card {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+.sidebar-left,
+.sidebar-right {
+    top: 54px !important;
+}
+
+.nav-section {
+    gap: 1px !important;
+}
+
+.nav-item {
+    min-height: 22px !important;
+    padding: 3px 5px !important;
+    border-radius: 2px !important;
+    gap: 6px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+
+.nav-item:hover,
+.nav-item.active {
+    background: var(--surface-bg) !important;
+    color: var(--ufar-blue) !important;
+}
+
+.nav-icon {
+    width: 15px !important;
+    flex-basis: 15px !important;
+    font-size: 12px !important;
+}
+
+.nav-section-title {
+    margin: 8px 0 4px 5px !important;
+    font-size: 10px !important;
+}
+
+.divider {
+    margin: 6px 0 !important;
+}
+
+/* Right widgets */
+.sidebar-right {
+    gap: 8px !important;
+}
+
+.sidebar-right > .card {
+    padding: 8px !important;
+}
+
+.widget-title {
+    padding: 0 0 6px !important;
+    margin-bottom: 6px !important;
+    font-size: 12px !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+}
+
+.empty-state-mini {
+    padding: 6px 0 !important;
+    font-size: 12px !important;
+}
+
+.sub-item {
+    padding: 6px 0 !important;
+    font-size: 12px !important;
+}
+
+.right-search-input {
+    height: 24px !important;
+    border-radius: 2px !important;
+    padding: 4px 7px !important;
+    font-size: 12px !important;
+}
+
+/* Buttons become older/smaller */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-primary-old {
+    min-height: 24px !important;
+    padding: 4px 9px !important;
+    border-radius: 2px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.btn-primary:hover,
+.btn-primary-old:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* My News unified feed */
+.old-feed-card {
+    overflow: hidden !important;
+}
+
+.old-feed-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 34px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-color-light);
+    background: var(--surface-bg);
+}
+
+.old-feed-header strong {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.old-feed-header span {
+    margin-left: 5px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.old-feed-header a {
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.old-feed-composer > .old-composer {
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    border-bottom: 1px solid var(--border-color-light) !important;
+    padding: 8px 10px !important;
+}
+
+.old-feed-list {
+    display: block !important;
+}
+
+.old-feed-list > .old-post {
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+}
+
+.old-feed-list > .old-post + .old-post {
+    border-top: 1px solid var(--border-color-light) !important;
+}
+
+.old-feed-empty {
+    padding: 26px 12px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+/* Composer old style */
+.old-composer {
+    box-shadow: none !important;
+}
+
+.old-composer textarea {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 6px 7px !important;
+    border: 1px solid var(--border-color-light) !important;
+    border-radius: 2px !important;
+    background: var(--surface-bg) !important;
+    font-size: 12px !important;
+}
+
+.old-composer > div:last-child {
+    padding-top: 7px !important;
+    margin-top: 7px !important;
+}
+
+.old-composer button[type="button"] {
+    font-size: 12px !important;
+}
+
+/* Post cards old feed style */
+.old-post {
+    margin: 0 !important;
+    padding: 10px !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.old-post h4 {
+    font-size: 13px !important;
+    color: var(--ufar-blue) !important;
+    line-height: 1.1 !important;
+}
+
+.old-post span {
+    font-size: 11px !important;
+}
+
+.old-post .avatar-blank-sm {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    border-radius: 2px !important;
+}
+
+.old-post .post-content {
+    margin-top: 7px !important;
+    font-size: 13px !important;
+}
+
+.old-post .post-content img {
+    max-height: 310px !important;
+    border-radius: 2px !important;
+}
+
+.old-post form[style],
+.old-post div[style] {
+    box-shadow: none !important;
+}
+
+.old-post input[name="content"] {
+    height: 24px !important;
+    border-radius: 2px !important;
+    padding: 4px 7px !important;
+    font-size: 12px !important;
+}
+
+.old-post button {
+    font-size: 12px !important;
+}
+
+/* Generic old pages: search, notifications, materials */
+.old-page {
+    padding: 12px !important;
+}
+
+.old-page h1 {
+    font-size: 16px !important;
+    margin-bottom: 8px !important;
+}
+
+.old-list {
+    gap: 0 !important;
+    border: 1px solid var(--border-color-light);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.old-list-item {
+    border: none !important;
+    border-bottom: 1px solid var(--border-color-light) !important;
+    border-radius: 0 !important;
+    padding: 8px !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.old-list-item:last-child {
+    border-bottom: none !important;
+}
+
+.old-avatar {
+    border-radius: 2px !important;
+}
+
+/* Profile: slightly different, but same old-social language */
+
+.ot-profile-page {
+    background: var(--surface-bg);
+    border: 1px solid var(--border-color-light);
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: none;
+}
+
+.ot-profile-cover {
+    height: 185px !important;
+    border-radius: 0 !important;
+}
+
+.ot-profile-statsbar {
+    border-top: 1px solid var(--border-color-light);
+}
+
+.ot-profile-statsbar-inner {
+    min-height: 46px !important;
+    grid-template-columns: 210px minmax(0, 1fr) !important;
+}
+
+.ot-profile-stat-box,
+.ot-profile-stats-links a {
+    min-width: 82px !important;
+    padding: 8px 10px !important;
+    border-bottom-width: 2px !important;
+}
+
+.ot-profile-stat-box span,
+.ot-profile-stats-links a span {
+    font-size: 10px !important;
+}
+
+.ot-profile-stat-box strong,
+.ot-profile-stats-links a strong {
+    font-size: 13px !important;
+}
+
+.ot-profile-body {
+    grid-template-columns: 210px minmax(0, 1fr) !important;
+}
+
+.ot-profile-left {
+    padding: 0 12px 16px !important;
+}
+
+.ot-profile-avatar-wrap {
+    margin-top: -82px !important;
+}
+
+.ot-profile-avatar,
+.ot-profile-avatar-img {
+    width: 150px !important;
+    height: 150px !important;
+    border-width: 4px !important;
+    border-radius: 3px !important;
+    box-shadow: none !important;
+}
+
+.ot-profile-userinfo {
+    padding-top: 10px !important;
+}
+
+.ot-profile-userinfo h1 {
+    font-size: 20px !important;
+    letter-spacing: -0.02em !important;
+}
+
+.ot-profile-userinfo > span,
+.ot-profile-bio,
+.ot-profile-meta,
+.ot-profile-chip {
+    font-size: 12px !important;
+}
+
+.ot-profile-chip {
+    padding: 4px 6px !important;
+    border-radius: 2px !important;
+}
+
+.ot-profile-action-row {
+    gap: 6px !important;
+}
+
+.ot-profile-message-btn,
+.ot-profile-secondary-btn {
+    min-height: 24px !important;
+    padding: 4px 8px !important;
+    border-radius: 2px !important;
+    font-size: 12px !important;
+}
+
+.ot-profile-center {
+    padding: 10px !important;
+}
+
+.ot-profile-tabs {
+    border: 1px solid var(--border-color-light);
+    border-radius: 2px;
+    background: var(--surface-bg);
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.ot-profile-tabs a,
+.ot-profile-tabs button {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    border-radius: 0 !important;
+}
+
+.ot-profile-composer-wrap > .old-composer {
+    margin-bottom: 8px !important;
+}
+
+.ot-profile-post {
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+    gap: 9px !important;
+    padding: 9px !important;
+    border: 1px solid var(--border-color-light) !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
+    background: var(--surface-bg) !important;
+}
+
+.ot-profile-post + .ot-profile-post {
+    margin-top: 8px !important;
+}
+
+.ot-profile-post-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 2px !important;
+    font-size: 13px !important;
+}
+
+.ot-profile-post-head strong {
+    color: var(--ufar-blue) !important;
+    font-size: 13px !important;
+}
+
+.ot-profile-post-head span {
+    font-size: 11px !important;
+}
+
+.ot-profile-post-content p {
+    font-size: 13px !important;
+}
+
+.ot-profile-post-media {
+    border-radius: 2px !important;
+}
+
+.ot-profile-side-card,
+.ot-profile-empty,
+.ot-profile-about-grid > div,
+.ot-profile-photos-wrap {
+    border-radius: 2px !important;
+    box-shadow: none !important;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .app-container,
+    .app-container:has(.ot-profile-page) {
+        grid-template-columns: 1fr !important;
+    }
+
+    .sidebar-left,
+    .sidebar-right {
+        position: static !important;
+    }
+
+    .sidebar-right {
+        display: none !important;
+    }
+
+    .student-nav.card {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 4px !important;
+        background: var(--surface-bg) !important;
+        border: 1px solid var(--border-color-light) !important;
+        padding: 6px !important;
+    }
+
+    .student-nav .divider,
+    .student-nav .nav-section-title {
+        display: none !important;
+    }
+
+    .ot-profile-body,
+    .ot-profile-statsbar-inner {
+        grid-template-columns: 1fr !important;
+    }
+
+    .ot-profile-left {
+        border-right: none !important;
+        border-bottom: 1px solid var(--border-color-light) !important;
+    }
+}
+
+@media (max-width: 560px) {
+    .topbar-inner {
+        grid-template-columns: 1fr auto !important;
+    }
+
+    .brand-name {
+        font-size: 20px !important;
+    }
+
+    .old-feed-header {
+        align-items: flex-start;
+        gap: 4px;
+        flex-direction: column;
+    }
+}
+
+/* =========================================
+   WIDER CENTER / 90% DISTANCE PATCH
+   ========================================= */
+
+:root {
+    --topbar-height: 42px;
+    --page-max: 1180px;
+    --left-col: 150px;
+    --right-col: 220px;
+    --page-gap: 18px;
+}
+
+/* Общий эффект "как 90%" */
+html {
+    font-size: 90%;
+}
+
+body {
+    background-size: 100%;
+}
+
+/* Верхняя панель чуть ниже и компактнее */
+.topbar {
+    height: var(--topbar-height) !important;
+}
+
+.topbar-inner {
+    max-width: var(--page-max) !important;
+    height: var(--topbar-height) !important;
+    grid-template-columns: 150px minmax(420px, 1fr) 215px !important;
+    gap: 14px !important;
+}
+
+.brand-name {
+    font-size: 21px !important;
+}
+
+.search-container {
+    max-width: 390px !important;
+}
+
+.search-input {
+    height: 22px !important;
+    font-size: 11px !important;
+}
+
+/* Главная сетка: центр становится толще */
+.app-container {
+    max-width: var(--page-max) !important;
+    grid-template-columns: var(--left-col) minmax(680px, 1fr) var(--right-col) !important;
+    gap: var(--page-gap) !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+/* Боковые части визуально отделены */
+.sidebar-left {
+    padding-right: 12px !important;
+    border-right: 1px solid var(--border-color-light);
+}
+
+.sidebar-right {
+    padding-left: 12px !important;
+    border-left: 1px solid var(--border-color-light);
+}
+
+.sidebar-left,
+.sidebar-right {
+    top: 52px !important;
+}
+
+/* Центральная часть получает больше воздуха и информации */
+.main-content {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+.old-feed-card,
+.ot-profile-page,
+.messenger-card,
+.old-page,
+.photos-toolbar,
+.main-content > .card {
+    width: 100% !important;
+}
+
+/* Лента шире, посты компактнее по вертикали */
+.old-feed-header {
+    min-height: 30px !important;
+    padding: 7px 10px !important;
+}
+
+.old-feed-composer > .old-composer {
+    padding: 7px 10px !important;
+}
+
+.old-post {
+    padding: 9px 10px !important;
+}
+
+.old-post .post-content {
+    margin-top: 5px !important;
+    font-size: 12.5px !important;
+}
+
+.old-post .post-content img {
+    max-height: 360px !important;
+}
+
+/* Левая навигация компактнее, чтобы не забирала внимание */
+.nav-item {
+    min-height: 20px !important;
+    padding: 2px 4px !important;
+    font-size: 11.5px !important;
+}
+
+.nav-icon {
+    width: 13px !important;
+    flex-basis: 13px !important;
+    font-size: 11px !important;
+}
+
+.nav-section-title {
+    font-size: 9.5px !important;
+}
+
+/* Правая колонка компактнее */
+.sidebar-right > .card {
+    padding: 7px !important;
+}
+
+.widget-title {
+    font-size: 11.5px !important;
+    margin-bottom: 5px !important;
+}
+
+.empty-state-mini,
+.sub-item {
+    font-size: 11.5px !important;
+}
+
+/* Кнопки и инпуты чуть компактнее */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-primary-old,
+.logout-btn {
+    min-height: 22px !important;
+    padding: 3px 8px !important;
+    font-size: 11.5px !important;
+}
+
+input,
+textarea,
+select {
+    font-size: 12px !important;
+}
+
+/* Профиль: центр тоже шире, боковая инфа уже */
+.app-container:has(.ot-profile-page) {
+    max-width: var(--page-max) !important;
+    grid-template-columns: var(--left-col) minmax(760px, 1fr) !important;
+}
+
+.ot-profile-body {
+    grid-template-columns: 195px minmax(0, 1fr) !important;
+}
+
+.ot-profile-left {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+.ot-profile-center {
+    padding: 10px 12px !important;
+}
+
+.ot-profile-cover {
+    height: 170px !important;
+}
+
+.ot-profile-avatar,
+.ot-profile-avatar-img {
+    width: 136px !important;
+    height: 136px !important;
+}
+
+.ot-profile-avatar-wrap {
+    margin-top: -74px !important;
+}
+
+.ot-profile-statsbar-inner {
+    grid-template-columns: 195px minmax(0, 1fr) !important;
+}
+
+/* Сообщения тоже получают больше центрального пространства */
+
+.messenger-card {
+    min-height: calc(100vh - 78px) !important;
+}
+
+/* На средних экранах сначала убираем правую колонку, центр остаётся большим */
+@media (max-width: 1100px) {
+    :root {
+        --page-max: 980px;
+        --left-col: 145px;
+    }
+
+    .app-container {
+        grid-template-columns: var(--left-col) minmax(0, 1fr) !important;
+    }
+
+    .sidebar-right {
+        display: none !important;
+    }
+
+    .sidebar-left {
+        border-right: 1px solid var(--border-color-light);
+    }
+}
+
+/* На маленьких экранах возвращаем обычную мобильную сетку */
+@media (max-width: 760px) {
+    html {
+        font-size: 100%;
+    }
+
+
+
+    .sidebar-left {
+        border-right: none !important;
+        padding-right: 0 !important;
+    }
+
+    .topbar-inner {
+        grid-template-columns: 1fr auto !important;
+    }
+}
+
+/* SAFE VERSION: no :has(), Turbopack friendly */
+
+.simple-layout-profile {
+    max-width: var(--page-max) !important;
+    grid-template-columns: var(--left-col) minmax(760px, 1fr) !important;
+}
+
+.simple-layout-messages {
+    max-width: var(--page-max) !important;
+    grid-template-columns: var(--left-col) minmax(760px, 1fr) !important;
+}
+
+.simple-layout-profile .sidebar-right,
+.simple-layout-messages .sidebar-right {
+    display: none !important;
+}
+
+.simple-layout-profile .main-content,
+.simple-layout-messages .main-content {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+@media (max-width: 760px) {
+    .simple-layout-profile,
+    .simple-layout-messages {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Following / suggestions widgets */
+
+.old-widget-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.old-widget-link,
+.old-widget-count {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.mini-user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mini-user-row {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 7px;
+    align-items: center;
+    padding: 5px 0;
+    border-top: 1px solid var(--border-color-light);
+}
+
+.mini-user-row:first-child {
+    border-top: none;
+}
+
+.mini-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 2px;
+    overflow: hidden;
+    background: var(--ufar-blue);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.mini-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mini-user-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.mini-user-main strong {
+    font-size: 12px;
+    line-height: 1.1;
+    color: var(--text-primary);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.mini-user-main span {
+    margin-top: 2px;
+    font-size: 10.5px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.smart-reason {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.mini-user-main {
+    text-decoration: none;
+}
+
+.mini-user-main:hover strong {
+    text-decoration: underline;
+}   
+
+.mini-user-main {
+    text-decoration: none;
+}
+
+.mini-user-main:hover strong {
+    text-decoration: underline;
+}
+
+/* =========================================
+   Sidebar Following without unfollow button
+   ========================================= */
+
+.mini-user-row-link {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+.mini-user-row-link:hover .mini-user-main strong {
+    text-decoration: underline;
+}
+
+
+/* =========================================
+   Messages layout fix
+   ========================================= */
+
+.chat-messages-history {
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    padding: 0 !important;
+}
+
+.chat-messages-history > .empty-state-mini {
+    margin: auto !important;
+}
+
+.chat-messages-history > div:not(.empty-state-mini) {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.chat-messages-history [style*="align-self: flex-end"] {
+    margin-left: auto !important;
+}
+
+.chat-messages-history [style*="align-self: flex-start"] {
+    margin-right: auto !important;
+}
+
+.messenger-chat-area {
+    min-height: 0 !important;
+}
+
+.messenger-card {
+    height: calc(100vh - 86px) !important;
+    min-height: 520px !important;
+}
+
+.chat-input-area {
+    flex-shrink: 0 !important;
+}
+
+/* =========================================
+   RESTORE WIDE LAYOUT
+   как на 1-м скрине, а не как на 2-м
+   ========================================= */
+
+:root {
+    --topbar-height: 55px;
+    --page-max: 100%;
+    --left-col: 220px;
+    --right-col: 290px;
+    --page-gap: 18px;
+}
+
+/* Убираем эффект "90%" */
+html {
+    font-size: 100% !important;
+    zoom: 1 !important;
+}
+
+body {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Верхняя панель во всю ширину */
+.topbar {
+    width: 100% !important;
+    height: var(--topbar-height) !important;
+}
+
+.topbar-inner {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 18px !important;
+    height: var(--topbar-height) !important;
+    display: grid !important;
+    grid-template-columns: 210px minmax(500px, 1fr) 320px !important;
+    gap: 18px !important;
+    align-items: center !important;
+}
+
+.brand-name {
+    font-size: 2rem !important;
+    font-weight: 800 !important;
+}
+
+.search-container {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+.search-input {
+    width: 100% !important;
+    height: 30px !important;
+    font-size: 1rem !important;
+}
+
+/* Главный контейнер растягиваем */
+.app-container {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 12px 18px 18px !important;
+    display: grid !important;
+    grid-template-columns: var(--left-col) minmax(0, 1fr) var(--right-col) !important;
+    gap: var(--page-gap) !important;
+    align-items: start !important;
+}
+
+/* Левая колонка */
+.sidebar-left {
+    width: 100% !important;
+    padding-right: 14px !important;
+    border-right: 1px solid var(--border-color-light) !important;
+}
+
+/* Центральная колонка */
+.main-content {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+/* Правая колонка */
+.sidebar-right {
+    width: 100% !important;
+    padding-left: 14px !important;
+    border-left: 1px solid var(--border-color-light) !important;
+}
+
+/* Карточки не сжимаем */
+.main-content > .card,
+.old-feed-card,
+.ot-profile-page,
+.old-page,
+.messenger-card {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Notifications / main cards — шире */
+.card {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Левая навигация — чуть крупнее */
+.nav-item {
+    font-size: 1rem !important;
+    padding: 8px 8px !important;
+    min-height: 30px !important;
+}
+
+.nav-section-title {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+}
+
+/* Правая колонка — как на первом скрине */
+.sidebar-right > .card {
+    margin-bottom: 14px !important;
+}
+
+.widget-title {
+    font-size: 1rem !important;
+}
+
+/* FOLLOWING / suggestions */
+.mini-user-list {
+    gap: 8px !important;
+}
+
+.mini-user-row,
+.mini-user-row-link {
+    padding: 8px 0 !important;
+}
+
+/* Notifications box */
+.old-page,
+.main-content .card {
+    min-height: auto !important;
+}
+
+/* Чтобы main area выглядела крупнее */
+.old-feed-header strong,
+.main-content h1,
+.main-content h2,
+.main-content h3 {
+    font-size: 1.15rem !important;
+}
+
+/* На меньших экранах */
+@media (max-width: 1200px) {
+    .topbar-inner {
+        grid-template-columns: 180px minmax(320px, 1fr) 260px !important;
+    }
+
+    .app-container {
+        grid-template-columns: 190px minmax(0, 1fr) 260px !important;
+    }
+}
+
+@media (max-width: 980px) {
+    .app-container {
+        grid-template-columns: 190px minmax(0, 1fr) !important;
+    }
+
+    .sidebar-right {
+        display: none !important;
+    }
+}
+
+@media (max-width: 760px) {
+    .topbar-inner {
+        grid-template-columns: 1fr auto !important;
+    }
+
+    .app-container {
+        grid-template-columns: 1fr !important;
+    }
+
+    .sidebar-left,
+    .sidebar-right {
+        border: none !important;
+        padding: 0 !important;
+    }
+}
+
+/* =========================================
+   SHOW RIGHT SIDEBAR ON PROFILE
+   ========================================= */
+
+.simple-layout-profile {
+    grid-template-columns: var(--left-col) minmax(0, 1fr) var(--right-col) !important;
+}
+
+.simple-layout-profile .sidebar-right {
+    display: block !important;
+}
+
+.simple-layout-profile .main-content {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Профиль не должен растягиваться на 2-колоночный режим */
+.app-container.simple-layout-profile {
+    grid-template-columns: var(--left-col) minmax(0, 1fr) var(--right-col) !important;
+}
+
+/* =========================================
+   FORCE RIGHT SIDEBAR ON PROFILE / DESKTOP
+   ========================================= */
+
+.app-container {
+    grid-template-columns: var(--left-col) minmax(0, 1fr) var(--right-col) !important;
+}
+
+.main-content {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+.sidebar-right {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Профиль не должен выталкивать правую колонку */
+.ot-profile-page {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+}
+
+.ot-profile-body {
+    min-width: 0 !important;
+}
+
+/* Правый sidebar остаётся справа и в профиле */
+body .app-container .sidebar-right {
+    grid-column: 3 !important;
+}
+
+/* Но на маленьких экранах всё равно прячем, чтобы не ломалось */
+@media (max-width: 980px) {
+    .app-container {
+        grid-template-columns: var(--left-col) minmax(0, 1fr) !important;
+    }
+
+    .sidebar-right {
+        display: none !important;
+    }
+}
+
+/* =========================================
+   HEADER SIZE + NORMAL SEARCH WIDTH
+   ========================================= */
+
+:root {
+    --topbar-height: 64px;
+}
+
+.topbar {
+    height: var(--topbar-height) !important;
+    min-height: var(--topbar-height) !important;
+}
+
+.topbar-inner {
+    height: var(--topbar-height) !important;
+    min-height: var(--topbar-height) !important;
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 22px !important;
+
+    display: grid !important;
+    grid-template-columns: 220px minmax(320px, 720px) auto !important;
+    gap: 28px !important;
+    align-items: center !important;
+}
+
+.brand-name {
+    font-size: 2.1rem !important;
+    line-height: 1 !important;
+}
+
+.search-container {
+    width: 100% !important;
+    max-width: 720px !important;
+    justify-self: start !important;
+}
+
+.search-input {
+    width: 100% !important;
+    height: 34px !important;
+    font-size: 0.95rem !important;
+    padding: 6px 12px 6px 34px !important;
+    border-radius: 3px !important;
+}
+
+.search-icon {
+    left: 11px !important;
+    font-size: 13px !important;
+}
+
+.topbar-actions {
+    justify-self: end !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+.action-icon-btn,
+.avatar-blank-sm,
+.topbar-avatar-img {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+}
+
+.logout-btn {
+    height: 34px !important;
+    padding: 0 12px !important;
+}
+
+/* =========================================
+   PROFILE WIDTH FIX
+   ========================================= */
+
+/* Левая колонка профиля чуть шире */
+.ot-profile-body {
+    grid-template-columns: 260px minmax(0, 1fr) !important;
+}
+
+.ot-profile-statsbar-inner {
+    grid-template-columns: 260px minmax(0, 1fr) !important;
+}
+
+.ot-profile-left {
+    width: 260px !important;
+    min-width: 260px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+}
+
+/* Чтобы аватар/текст не сжимались */
+.ot-profile-userinfo h1 {
+    word-break: break-word;
+}
+
+.ot-profile-bio,
+.ot-profile-meta {
+    word-break: break-word;
+}
+
+/* Верхняя полоса со вкладками/счётчиками */
+.ot-profile-stats-links {
+    display: flex !important;
+    align-items: stretch !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+}
+
+.ot-profile-stats-links a,
+.ot-profile-stat-box,
+.ot-profile-edit-toplink {
+    min-width: 84px !important;
+    padding: 8px 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    border-left: 1px solid var(--border-color-light) !important;
+}
+
+/* Edit Profile в конце второй полосы */
+.ot-profile-edit-toplink {
+    margin-left: auto !important;
+    color: var(--ufar-blue) !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    background: var(--surface-bg) !important;
+}
+
+.ot-profile-edit-toplink span {
+    font-size: 10px !important;
+    color: var(--text-secondary) !important;
+    margin-bottom: 2px !important;
+}
+
+.ot-profile-edit-toplink strong {
+    font-size: 13px !important;
+    color: var(--ufar-blue) !important;
+}
+
+.ot-profile-edit-toplink:hover strong {
+    text-decoration: underline;
+}
+
+.ui-icon {
+    display: inline-block;
+    vertical-align: -2px;
+    color: currentColor;
+}
+
+.nav-icon {
+    color: var(--ufar-blue) !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.meta-icon {
+    color: var(--text-secondary);
+    margin-right: 6px;
+    vertical-align: -2px;
+}
+
+.empty-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    background: var(--bg-main);
+    color: var(--ufar-blue);
+    border: 1px solid var(--border-color-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+}

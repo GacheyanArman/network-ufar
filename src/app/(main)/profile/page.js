@@ -72,7 +72,7 @@ export default async function ProfilePage({ searchParams }) {
       name: communities.name,
     })
     .from(communities)
-    .where(eq(communities.ownerId, session.userId));
+    .where(eq(communities.creatorId, session.userId));
 
   const safeName = currentUser.fullName || "Student";
   const safeInitial = safeName.charAt(0).toUpperCase() || "U";
@@ -90,9 +90,9 @@ export default async function ProfilePage({ searchParams }) {
 
   const joinedAt = currentUser.createdAt
     ? new Date(currentUser.createdAt).toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-      })
+      month: "long",
+      year: "numeric",
+    })
     : "Recently";
 
   return (
@@ -196,10 +196,6 @@ export default async function ProfilePage({ searchParams }) {
               <Link href="/profile/edit" className="ot-profile-message-btn">
                 Edit profile
               </Link>
-
-              <Link href="/messages" className="ot-profile-secondary-btn">
-                Messages
-              </Link>
             </div>
           </div>
 
@@ -263,18 +259,10 @@ export default async function ProfilePage({ searchParams }) {
             </div>
           )}
 
-          {saved && (
-            <div className="profile-save-success">
-              Profile updated successfully.
-            </div>
-          )}
-
-          
-
           {currentTab === "posts" && (
             <div className="ot-profile-feed">
               <div className="ot-profile-composer-wrap">
-                <PostComposer />
+                <PostComposer currentUser={currentUser} />
               </div>
 
               {userPosts.length === 0 ? (
@@ -381,3 +369,4 @@ export default async function ProfilePage({ searchParams }) {
     </div>
   );
 }
+

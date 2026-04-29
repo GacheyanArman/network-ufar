@@ -1,14 +1,23 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
+import { notifications, users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { logoutUser } from "@/app/actions/auth";
+import { followUser } from "@/app/actions/follow";
+import {
+  getFollowingSummary,
+  getPeopleYouMayKnow,
+} from "@/lib/social";
+import UiIcon from "@/components/UiIcon";
 
 export default async function MainLayout({ children }) {
   const session = await getSession();
 
   let currentUser = null;
+  let unreadNotifications = 0;
+  let followingSummary = { count: 0, users: [] };
+  let peopleYouMayKnow = [];
 
   if (session?.userId) {
     const result = await db
@@ -21,6 +30,23 @@ export default async function MainLayout({ children }) {
       .limit(1);
 
     currentUser = result[0] || null;
+
+    const [unreadRow] = await db
+      .select({ value: count() })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.userId, session.userId),
+          eq(notifications.isRead, false)
+        )
+      );
+
+    unreadNotifications = Number(unreadRow?.value || 0);
+
+    [followingSummary, peopleYouMayKnow] = await Promise.all([
+      getFollowingSummary(session.userId, 5),
+      getPeopleYouMayKnow(session.userId, 5),
+    ]);
   }
 
   const safeName = currentUser?.fullName || session?.fullName || "User";
@@ -38,23 +64,47 @@ export default async function MainLayout({ children }) {
             </Link>
           </div>
 
-          <div className="search-container">
-            <span className="search-icon">🔍</span>
+          <form action="/search" className="search-container">
+            <span className="search-icon">
+              <UiIcon name="search" size={14} />
+            </span>
             <input
+              name="q"
               type="text"
               className="search-input"
               placeholder="Search students, groups, materials..."
             />
-          </div>
+          </form>
 
           <div className="topbar-actions">
             <Link href="/messages" className="action-icon-btn">
-              💬
+              <UiIcon name="message" />
             </Link>
 
-            <button className="action-icon-btn" type="button">
-              🔔
-            </button>
+            <Link href="/notifications" className="action-icon-btn" style={{ position: "relative", textDecoration: "none" }}>
+              <UiIcon name="bell" />
+              {unreadNotifications > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-4px",
+                    right: "-4px",
+                    background: "var(--ufar-red)",
+                    color: "white",
+                    borderRadius: "999px",
+                    minWidth: "18px",
+                    height: "18px",
+                    fontSize: "0.72rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "0 4px",
+                  }}
+                >
+                  {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                </span>
+              )}
+            </Link>
 
             <div className="user-dropdown-btn">
               <Link href="/profile" className="topbar-avatar-link">
@@ -65,9 +115,7 @@ export default async function MainLayout({ children }) {
                     className="topbar-avatar-img"
                   />
                 ) : (
-                  <div className="avatar-blank-sm">
-                    {safeInitial}
-                  </div>
+                  <div className="avatar-blank-sm">{safeInitial}</div>
                 )}
               </Link>
 
@@ -86,33 +134,43 @@ export default async function MainLayout({ children }) {
           <nav className="student-nav card">
             <div className="nav-section">
               <Link href="/" className="nav-item">
-                <span className="nav-icon">📰</span>
+                <span className="nav-icon"><UiIcon name="news" /></span>
                 <span className="nav-label">My News</span>
               </Link>
 
               <Link href="/messages" className="nav-item">
-                <span className="nav-icon">💬</span>
+                <span className="nav-icon"><UiIcon name="message" /></span>
                 <span className="nav-label">Messages</span>
               </Link>
 
               <Link href="/friends" className="nav-item">
-                <span className="nav-icon">👥</span>
+                <span className="nav-icon"><UiIcon name="users" /></span>
                 <span className="nav-label">Friends</span>
               </Link>
 
               <Link href="/profile" className="nav-item">
-                <span className="nav-icon">👤</span>
+                <span className="nav-icon"><UiIcon name="user" /></span>
                 <span className="nav-label">My Profile</span>
               </Link>
 
               <Link href="/communities" className="nav-item">
-                <span className="nav-icon">🤝</span>
+                <span className="nav-icon"><UiIcon name="group" /></span>
                 <span className="nav-label">Communities</span>
               </Link>
 
               <Link href="/photos" className="nav-item">
-                <span className="nav-icon">🖼️</span>
+                <span className="nav-icon"><UiIcon name="image" /></span>
                 <span className="nav-label">Photos</span>
+              </Link>
+
+              <Link href="/library" className="nav-item">
+                <span className="nav-icon"><UiIcon name="book" /></span>
+                <span className="nav-label">UFAR Library</span>
+              </Link>
+
+              <Link href="/study-materials" className="nav-item">
+                <span className="nav-icon"><UiIcon name="folder" /></span>
+                <span className="nav-label">Materials</span>
               </Link>
             </div>
 
@@ -134,40 +192,118 @@ export default async function MainLayout({ children }) {
           </nav>
         </aside>
 
-        <main className="main-content">
-          {children}
-        </main>
+        <main className="main-content">{children}</main>
 
         <aside className="sidebar-right">
           <div className="card contextual-search-card">
-            <input type="text" className="right-search-input" placeholder="Search..." />
+            <form action="/search">
+              <input
+                name="q"
+                type="text"
+                className="right-search-input"
+                placeholder="Search..."
+              />
+            </form>
           </div>
 
           <div className="card">
-            <h4 className="widget-title">You may also know</h4>
-            <div className="empty-state-mini">
-              <p>No suggestions.</p>
+            <div className="old-widget-head">
+              <h4 className="widget-title">You may also know</h4>
+              <Link href="/friends" className="old-widget-link">
+                View all
+              </Link>
             </div>
+
+            {peopleYouMayKnow.length === 0 ? (
+              <div className="empty-state-mini">
+                <p>No suggestions.</p>
+              </div>
+            ) : (
+              <div className="mini-user-list">
+                {peopleYouMayKnow.map((user) => (
+                  <div className="mini-user-row" key={user.id}>
+                    <Link
+                      href={`/profile/${user.id}`}
+                      className="mini-user-avatar"
+                      style={{ textDecoration: "none" }}
+                    >
+                      {user.image || user.avatarUrl ? (
+                        <img
+                          src={user.image || user.avatarUrl}
+                          alt={user.fullName}
+                        />
+                      ) : (
+                        user.fullName?.[0] || "U"
+                      )}
+                    </Link>
+
+                    <Link
+                      href={`/profile/${user.id}`}
+                      className="mini-user-main"
+                    >
+                      <strong>{user.fullName}</strong>
+                      <span>{user.reason}</span>
+                    </Link>
+
+                    <form action={followUser}>
+                      <input type="hidden" name="targetId" value={user.id} />
+                      <button className="btn btn-secondary">Follow</button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="card" style={{ padding: "0" }}>
-            <h4 className="widget-title" style={{ borderBottom: "none" }}>
-              FOLLOWING
-            </h4>
+            <div
+              className="old-widget-head"
+              style={{ padding: "8px 8px 0" }}
+            >
+              <h4 className="widget-title" style={{ borderBottom: "none" }}>
+                FOLLOWING
+              </h4>
+              <span className="old-widget-count">
+                {followingSummary.count}
+              </span>
+            </div>
 
-            <ul className="subscriptions-list">
-              <li className="sub-item">
-                <span className="sub-icon">👥</span>
-                <span className="sub-label">followed students</span>
-                <span className="sub-count">--</span>
-              </li>
+            {followingSummary.users.length === 0 ? (
+              <div className="empty-state-mini" style={{ padding: "8px" }}>
+                <p>You are not following anyone yet.</p>
+              </div>
+            ) : (
+              <div
+                className="mini-user-list"
+                style={{ padding: "0 8px 8px" }}
+              >
+                {followingSummary.users.map((user) => (
+                  <Link
+                    href={`/profile/${user.id}`}
+                    className="mini-user-row mini-user-row-link"
+                    key={user.id}
+                  >
+                    <div className="mini-user-avatar">
+                      {user.image || user.avatarUrl ? (
+                        <img
+                          src={user.image || user.avatarUrl}
+                          alt={user.fullName}
+                        />
+                      ) : (
+                        user.fullName?.[0] || "U"
+                      )}
+                    </div>
 
-              <li className="sub-item">
-                <span className="sub-icon">🤝</span>
-                <span className="sub-label">followed groups</span>
-                <span className="sub-count">--</span>
-              </li>
-            </ul>
+                    <div className="mini-user-main">
+                      <strong>{user.fullName}</strong>
+                      <span>
+                        {user.faculty || user.username || "Student"}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="card">

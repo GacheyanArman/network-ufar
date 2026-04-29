@@ -3,90 +3,213 @@
 import { cookies } from "next/headers";
 import { SignJWT } from "jose";
 import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
+import { users, emailVerifications } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
+import { randomInt } from "crypto";
+import { sendVerificationEmail } from "@/lib/mail";
 
+// --- CONFIGURATION ---
+const ALLOWED_GMAILS = new Set([
+  "armangacheyan23@gmail.com",
+  "grechulka@gmail.com",
+  "third@gmail.com",
+]);
+
+const MAX_VERIFICATION_ATTEMPTS = 5;
+const OTP_TTL_MINUTES = 10;
+
+// --- UTILITIES ---
+function normalizeEmail(value) {
+  // SECURITY: Always sanitize and normalize input
+  return String(value || "").trim().toLowerCase();
+}
+
+function isAllowedEmail(email) {
+  return email.endsWith("@ufar.com") || email.endsWith("@ufar.am") || ALLOWED_GMAILS.has(email);
+}
+
+function generateOTP() {
+  return String(randomInt(100000, 999999));
+}
+
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error("CRITICAL ERROR: JWT_SECRET environment variable is missing.");
+  return new TextEncoder().encode(secret);
+}
+
+// --- ACTIONS ---
 export async function registerUser(prevState, formData) {
-  const email = formData.get("email");
-  const password = formData.get("password");
-  const fullName = formData.get("fullName");
+  const email = normalizeEmail(formData.get("email"));
+  const password = formData.get("password")?.toString();
+  const fullName = formData.get("fullName")?.toString().trim();
 
   if (!email || !password || !fullName) {
-    return { error: "All fields are required!" };
+    return { error: "All fields are required." };
   }
 
-  if (!email.endsWith("@ufar.com") && !email.endsWith("@ufar.am")) {
-    return { error: "Only @ufar.com or @ufar.am emails are allowed!" };
+  if (!isAllowedEmail(email)) {
+    return { error: "Access denied. Only @ufar.com domains or whitelisted accounts allowed." };
   }
 
   if (password.length < 6) {
-    return { error: "Password must be at least 6 characters!" };
+    return { error: "Password must be at least 6 characters long." };
   }
 
   try {
-    const existingUser = await db.select().from(users).where(eq(users.email, email));
+    const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    
+    const otpCode = generateOTP();
+    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+    const passwordHash = await bcrypt.hash(password, 12);
+    const codeHash = await bcrypt.hash(otpCode, 10);
 
-    if (existingUser.length > 0) {
-      return { error: "This email is already registered!" };
+    let currentUserId;
+
+    if (existingUser) {
+      if (existingUser.emailVerified) {
+        return { error: "Account with this email already exists and is verified." };
+      }
+      
+      // UPSERT LOGIC: Overwrite the unverified user and drop their old OTP codes
+      currentUserId = existingUser.id;
+      await db.update(users).set({
+        fullName,
+        password: passwordHash,
+        updatedAt: new Date(),
+      }).where(eq(users.id, currentUserId));
+
+      await db.delete(emailVerifications).where(eq(emailVerifications.userId, currentUserId));
+
+    } else {
+      const [newUser] = await db.insert(users).values({
+        email,
+        fullName,
+        password: passwordHash,
+        emailVerified: false,
+      }).returning({ id: users.id });
+      
+      currentUserId = newUser.id;
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await db.insert(users).values({
-      email,
-      fullName,
-      password: hashedPassword,
+    // Insert new OTP record in the separated table
+    await db.insert(emailVerifications).values({
+      userId: currentUserId,
+      codeHash,
+      expiresAt,
     });
 
-  } catch (e) {
-    console.error("DB Error:", e);
-    return { error: "Database connection failed. Check your Neon string." };
+    // Dispatch Email
+    try {
+      await sendVerificationEmail({ to: email, code: otpCode, fullName });
+    } catch (mailError) {
+      console.error("SMTP Delivery Failed:", mailError);
+      return { error: "Failed to send verification email. Please try again later." };
+    }
+
+  } catch (error) {
+    console.error("Database error during registration:", error);
+    return { error: "Internal server error." };
+  }
+
+  redirect(`/verify-email?email=${encodeURIComponent(email)}`);
+}
+
+
+export async function verifyEmailCode(prevState, formData) {
+  const email = normalizeEmail(formData.get("email"));
+  const code = String(formData.get("code") || "").trim();
+
+  if (!email || !/^\d{6}$/.test(code)) {
+    return { error: "Invalid payload. Provide a valid 6-digit code." };
+  }
+
+  try {
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (!user) return { error: "Account not found." };
+    if (user.emailVerified) return { error: "Account is already verified. Proceed to login." };
+
+    const [verification] = await db.select().from(emailVerifications).where(eq(emailVerifications.userId, user.id)).limit(1);
+
+    if (!verification) {
+      return { error: "No active verification process found. Register again." };
+    }
+
+    // Rate Limiting Enforcement
+    if (verification.attempts >= MAX_VERIFICATION_ATTEMPTS) {
+      await db.delete(emailVerifications).where(eq(emailVerifications.id, verification.id));
+      return { error: "Too many failed attempts. You must request a new code." };
+    }
+
+    // TTL Enforcement
+    if (new Date(verification.expiresAt).getTime() < Date.now()) {
+      await db.delete(emailVerifications).where(eq(emailVerifications.id, verification.id));
+      return { error: "Verification code expired. Please register again." };
+    }
+
+    // Hash check
+    const isValid = await bcrypt.compare(code, verification.codeHash);
+    if (!isValid) {
+      await db.update(emailVerifications).set({
+        attempts: verification.attempts + 1,
+      }).where(eq(emailVerifications.id, verification.id));
+      
+      return { error: "Incorrect verification code." };
+    }
+
+    // SUCCESS: Mark as verified and purge transient OTP data
+    await db.update(users).set({
+      emailVerified: true,
+      updatedAt: new Date(),
+    }).where(eq(users.id, user.id));
+
+    await db.delete(emailVerifications).where(eq(emailVerifications.userId, user.id));
+
+  } catch (error) {
+    console.error("Code Verification Error:", error);
+    return { error: "Internal server error during verification." };
   }
 
   redirect("/login");
 }
 
-const getJwtSecretKey = () => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret || secret.length === 0) {
-    throw new Error("JWT_SECRET environment variable is not set");
-  }
-  return new TextEncoder().encode(secret);
-};
 
 export async function loginUser(prevState, formData) {
-  const email = formData.get("email");
-  const password = formData.get("password");
+  const email = normalizeEmail(formData.get("email"));
+  const password = formData.get("password")?.toString();
 
   if (!email || !password) {
-    return { error: "Email and password are required!" };
+    return { error: "Email and password are required." };
   }
 
   try {
-    const userRecords = await db.select().from(users).where(eq(users.email, email));
-    
-    if (userRecords.length === 0) {
-      return { error: "Invalid email or password." };
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+    if (!user) {
+      return { error: "Invalid credentials." };
     }
 
-    const user = userRecords[0];
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return { error: "Invalid email or password." };
+    // Gatekeeper: Prevent unverified users from generating JWTs
+    if (!user.emailVerified) {
+      return { error: "Your account is not verified. Please complete registration." };
     }
 
-    const token = await new SignJWT({ 
-      userId: user.id, 
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return { error: "Invalid credentials." };
+    }
+
+    const token = await new SignJWT({
+      userId: user.id,
       email: user.email,
       fullName: user.fullName
     })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
-      .setExpirationTime("7d") 
-      .sign(getJwtSecretKey());
+      .setExpirationTime("7d")
+      .sign(getJwtSecret());
 
     const cookieStore = await cookies();
     cookieStore.set("session", token, {
@@ -94,16 +217,17 @@ export async function loginUser(prevState, formData) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, 
+      maxAge: 60 * 60 * 24 * 7,
     });
 
-  } catch (e) {
-    console.error("Login Error:", e);
-    return { error: "Something went wrong. Try again." };
+  } catch (error) {
+    console.error("Authentication Error:", error);
+    return { error: "Internal server error during authentication." };
   }
 
   redirect("/");
 }
+
 
 export async function logoutUser() {
   const cookieStore = await cookies();

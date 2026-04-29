@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UFARnet — University Student Network
 
-## Getting Started
+UFARnet is a modern, full-stack social platform built exclusively for university students. It provides a secure environment for students to connect, share study materials, join faculty-specific communities, and communicate in real-time.
 
-First, run the development server:
+## 🚀 Tech Stack
 
-```bash
+- **Framework:** [Next.js 16](https://nextjs.org/) (App Router)
+- **Database:** [PostgreSQL](https://postgresql.org/) (Hosted on [Neon Serverless](https://neon.tech/))
+- **ORM:** [Drizzle ORM](https://orm.drizzle.team/)
+- **Authentication:** Custom JWT-based Auth (using `jose` for Edge compatibility) + Bcrypt
+- **Email Service:** `nodemailer` (SMTP configured for OTP delivery)
+- **Styling:** Vanilla CSS (CSS Modules & Global Variables)
+
+## 🏗 Core Architecture & Security
+
+The project avoids heavy third-party monolithic Auth providers in favor of a custom, highly controlled authentication flow:
+
+- **Strict Domain Validation:** Registration is restricted to `@ufar.com` / `@ufar.am` domains (with a configurable whitelist for administrative/testing access).
+- **OTP Verification Separation:** Transient data (One-Time Passwords, attempt counters, TTL timestamps) is completely decoupled from the core `user` table into an isolated `email_verification` table. This prevents database bloating and solves the "dead-soul" unverified account registration loops.
+- **Optimistic UI:** Utilizes React's `useOptimistic` hook for immediate interface feedback on interactions (likes, comments, posts) before server confirmation.
+- **Stateless Sessions:** HTTP-only, secure JWT cookies ensure XSS protection without the overhead of database session lookups on every request.
+
+## 📂 Project Structure
+
+\`\`\`bash
+├── src/
+│   ├── app/
+│   │   ├── (auth)/          # Auth flow pages (Login, Register, Verify OTP)
+│   │   ├── (main)/          # Core application (Feed, Profile, Communities, Messages)
+│   │   └── actions/         # Next.js Server Actions (Business logic, DB transactions)
+│   ├── components/          # Reusable React components (PostCard, Uploaders, Modals)
+│   ├── lib/                 # Core utilities (DB connection, Schema, Drizzle setup, Mailer)
+│   └── public/              # Static assets and local uploads
+└── drizzle/                 # SQL Migration files
+\`\`\`
+
+## ⚙️ Local Development Setup
+
+### 1. Prerequisites
+- Node.js (v18+ recommended)
+- A [Neon.tech](https://neon.tech/) account (or local PostgreSQL database)
+- A Gmail account with 2-Step Verification and an **App Password** for SMTP.
+
+### 2. Environment Variables
+Create a `.env` file in the root directory and populate it with the following:
+
+\`\`\`env
+# Database
+DATABASE_URL="postgresql://<user>:<password>@<host>/<dbname>?sslmode=require"
+
+# Security
+JWT_SECRET="your_super_secret_random_string_here"
+
+# SMTP Configuration (Google App Passwords)
+EMAIL_DEV_MODE="false"
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="your_email@gmail.com"
+SMTP_PASS="your_16_char_app_password"
+SMTP_FROM="UFARnet <your_email@gmail.com>"
+\`\`\`
+
+### 3. Installation & Database Sync
+
+Install dependencies:
+\`\`\`bash
+npm install
+\`\`\`
+
+Push the schema to your database (Force sync):
+\`\`\`bash
+npx drizzle-kit push
+\`\`\`
+
+### 4. Run the Application
+\`\`\`bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+\`\`\`
+The application will be available at `http://localhost:3000`.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚠️ Known Limitations & Roadmap
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **File Storage:** Currently, uploads (photos, materials) utilize the local file system (`fs/promises`). This is functional for local development but must be migrated to an S3-compatible Object Storage (e.g., Vercel Blob, AWS S3) before serverless production deployment to prevent data loss due to ephemeral container storage.
+- **Request Validation:** Implementation of `zod` schema validation for all Server Actions is planned to ensure strict payload typing and prevent malicious bypasses.
+- **TypeScript Migration:** Gradual adoption of `.ts`/`.tsx` is planned to leverage Drizzle's full type-safety potential.

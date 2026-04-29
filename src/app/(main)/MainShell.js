@@ -6,7 +6,7 @@ export default function MainShell({ children, rightPanel }) {
   const pathname = usePathname();
 
   const isMessagesPage = pathname === "/messages";
-  const isProfilePage = pathname === "/profile";
+  const isProfilePage = pathname.startsWith("/profile");
 
   return (
     <div
@@ -19,7 +19,7 @@ export default function MainShell({ children, rightPanel }) {
     >
       {children}
 
-      {!isMessagesPage && !isProfilePage && rightPanel}
+      {!isMessagesPage && rightPanel}
     </div>
   );
 }

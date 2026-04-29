@@ -218,11 +218,3 @@ Library access
 📄 License
 
 Private project (educational / internal use)
-
-
----
-
-## 🔥 Идеальный commit для этого
-
-```bash
-git commit -m "Complete UI redesign, unified icon system, improved profiles, posts, and notifications"

@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { randomInt } from "crypto";
 import { sendVerificationEmail } from "@/lib/mail";
+import { registerSchema, loginSchema, verifyEmailSchema } from "@/lib/validations";
 
 // --- CONFIGURATION ---
 const ALLOWED_GMAILS = new Set([
@@ -43,27 +44,32 @@ function getJwtSecret() {
 // --- ACTIONS ---
 export async function registerUser(prevState, formData) {
   const email = normalizeEmail(formData.get("email"));
-  const password = formData.get("password")?.toString();
-  const fullName = formData.get("fullName")?.toString().trim();
+  const password = formData.get("password")?.toString() || "";
+  const fullName = formData.get("fullName")?.toString().trim() || "";
 
-  if (!email || !password || !fullName) {
-    return { error: "All fields are required." };
+  // Validate with Zod
+  const validatedFields = registerSchema.safeParse({
+    email,
+    password,
+    fullName,
+  });
+
+  if (!validatedFields.success) {
+    return { error: validatedFields.error.issues[0]?.message || "Invalid data" };
   }
 
-  if (!isAllowedEmail(email)) {
+  const validatedData = validatedFields.data;
+
+  if (!isAllowedEmail(validatedData.email)) {
     return { error: "Access denied. Only @ufar.com domains or whitelisted accounts allowed." };
   }
 
-  if (password.length < 6) {
-    return { error: "Password must be at least 6 characters long." };
-  }
-
   try {
-    const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    
+    const [existingUser] = await db.select().from(users).where(eq(users.email, validatedData.email)).limit(1);
+
     const otpCode = generateOTP();
     const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(validatedData.password, 12);
     const codeHash = await bcrypt.hash(otpCode, 10);
 
     let currentUserId;
@@ -72,11 +78,11 @@ export async function registerUser(prevState, formData) {
       if (existingUser.emailVerified) {
         return { error: "Account with this email already exists and is verified." };
       }
-      
+
       // UPSERT LOGIC: Overwrite the unverified user and drop their old OTP codes
       currentUserId = existingUser.id;
       await db.update(users).set({
-        fullName,
+        fullName: validatedData.fullName,
         password: passwordHash,
         updatedAt: new Date(),
       }).where(eq(users.id, currentUserId));
@@ -85,12 +91,12 @@ export async function registerUser(prevState, formData) {
 
     } else {
       const [newUser] = await db.insert(users).values({
-        email,
-        fullName,
+        email: validatedData.email,
+        fullName: validatedData.fullName,
         password: passwordHash,
         emailVerified: false,
       }).returning({ id: users.id });
-      
+
       currentUserId = newUser.id;
     }
 
@@ -103,7 +109,7 @@ export async function registerUser(prevState, formData) {
 
     // Dispatch Email
     try {
-      await sendVerificationEmail({ to: email, code: otpCode, fullName });
+      await sendVerificationEmail({ to: validatedData.email, code: otpCode, fullName: validatedData.fullName });
     } catch (mailError) {
       console.error("SMTP Delivery Failed:", mailError);
       return { error: "Failed to send verification email. Please try again later." };
@@ -114,7 +120,7 @@ export async function registerUser(prevState, formData) {
     return { error: "Internal server error." };
   }
 
-  redirect(`/verify-email?email=${encodeURIComponent(email)}`);
+  redirect(`/verify-email?email=${encodeURIComponent(validatedData.email)}`);
 }
 
 
@@ -122,9 +128,14 @@ export async function verifyEmailCode(prevState, formData) {
   const email = normalizeEmail(formData.get("email"));
   const code = String(formData.get("code") || "").trim();
 
-  if (!email || !/^\d{6}$/.test(code)) {
-    return { error: "Invalid payload. Provide a valid 6-digit code." };
+  // Validate with Zod
+  const validatedFields = verifyEmailSchema.safeParse({ code });
+
+  if (!validatedFields.success || !email) {
+    return { error: validatedFields.error?.issues[0]?.message || "Invalid payload. Provide a valid 6-digit code." };
   }
+
+  const validatedCode = validatedFields.data.code;
 
   try {
     const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -150,12 +161,12 @@ export async function verifyEmailCode(prevState, formData) {
     }
 
     // Hash check
-    const isValid = await bcrypt.compare(code, verification.codeHash);
+    const isValid = await bcrypt.compare(validatedCode, verification.codeHash);
     if (!isValid) {
       await db.update(emailVerifications).set({
         attempts: verification.attempts + 1,
       }).where(eq(emailVerifications.id, verification.id));
-      
+
       return { error: "Incorrect verification code." };
     }
 
@@ -178,14 +189,22 @@ export async function verifyEmailCode(prevState, formData) {
 
 export async function loginUser(prevState, formData) {
   const email = normalizeEmail(formData.get("email"));
-  const password = formData.get("password")?.toString();
+  const password = formData.get("password")?.toString() || "";
 
-  if (!email || !password) {
-    return { error: "Email and password are required." };
+  // Validate with Zod
+  const validatedFields = loginSchema.safeParse({
+    email,
+    password,
+  });
+
+  if (!validatedFields.success) {
+    return { error: validatedFields.error.issues[0]?.message || "Invalid data" };
   }
 
+  const validatedData = validatedFields.data;
+
   try {
-    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    const [user] = await db.select().from(users).where(eq(users.email, validatedData.email)).limit(1);
 
     if (!user) {
       return { error: "Invalid credentials." };
@@ -196,7 +215,7 @@ export async function loginUser(prevState, formData) {
       return { error: "Your account is not verified. Please complete registration." };
     }
 
-    const isValid = await bcrypt.compare(password, user.password);
+    const isValid = await bcrypt.compare(validatedData.password, user.password);
     if (!isValid) {
       return { error: "Invalid credentials." };
     }

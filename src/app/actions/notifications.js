@@ -1,7 +1,7 @@
 "use server";
 
 import { and, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/schema";
 import { getSession } from "@/lib/session";
@@ -23,6 +23,8 @@ export async function markNotificationRead(formData) {
     .set({ isRead: true })
     .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)));
 
+  // Инвалидируем кэш уведомлений
+  revalidateTag("notifications");
   revalidatePath("/notifications");
   return { ok: true };
 }
@@ -35,6 +37,8 @@ export async function markAllNotificationsRead() {
     .set({ isRead: true })
     .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
 
+  // Инвалидируем кэш уведомлений
+  revalidateTag("notifications");
   revalidatePath("/notifications");
   return { ok: true };
 }

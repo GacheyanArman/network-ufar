@@ -8,6 +8,8 @@ import { users, posts, photos, friendships, communities } from "@/lib/schema";
 import { deletePost } from "@/app/actions/post";
 import PostComposer from "@/components/PostComposer";
 import PhotoGallery from "@/components/PhotoGallery";
+import UiIcon from "@/components/UiIcon";
+import { getGenderLabel, getRelationshipStatusLabel } from "@/lib/profile-utils";
 
 export default async function ProfilePage({ searchParams }) {
   const session = await getSession();
@@ -33,6 +35,8 @@ export default async function ProfilePage({ searchParams }) {
       bio: users.bio,
       image: users.image,
       coverImage: users.coverImage,
+      gender: users.gender,
+      relationshipStatus: users.relationshipStatus,
       createdAt: users.createdAt,
     })
     .from(users)
@@ -302,6 +306,8 @@ export default async function ProfilePage({ searchParams }) {
                   <InfoBlock label="Username" value={safeUsername} />
                   <InfoBlock label="Email" value={safeEmail || "No email"} />
                   <InfoBlock label="Faculty" value={safeFaculty} />
+                  <InfoBlock label="Gender" value={currentUser.gender ? getGenderLabel(currentUser.gender) : "Не указано"} />
+                  <InfoBlock label="Relationship Status" value={currentUser.relationshipStatus ? getRelationshipStatusLabel(currentUser.relationshipStatus) : "Не указано"} />
                   <InfoBlock label="Joined" value={joinedAt} />
                 </div>
 

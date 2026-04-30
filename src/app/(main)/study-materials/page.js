@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import MaterialUploader from "@/components/MaterialUploader";
 import { deleteMaterial } from "@/app/actions/material";
+import UiIcon from "@/components/UiIcon";
 
 function isImage(url) {
   if (!url) return false;

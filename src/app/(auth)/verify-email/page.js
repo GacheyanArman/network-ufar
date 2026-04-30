@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { verifyEmailCode } from "@/app/actions/auth";
 
-export default function VerifyEmailPage() {
+function VerifyEmailForm() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
   const [state, formAction, isPending] = useActionState(verifyEmailCode, null);
@@ -143,5 +144,13 @@ export default function VerifyEmailPage() {
         </form>
       </section>
     </main>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyEmailForm />
+    </Suspense>
   );
 }

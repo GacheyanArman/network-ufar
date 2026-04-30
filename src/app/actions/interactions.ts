@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { comments, postLikes, posts, users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { createNotification } from "@/lib/notifications";
+import { checkRateLimit, getRateLimitError } from "@/lib/rate-limit";
 
 type ActionResult<T = unknown> = {
   ok: boolean;
@@ -61,6 +62,13 @@ export async function toggleLike(
   formData: FormData
 ): Promise<ActionResult<{ liked: boolean; likesCountDelta: number }>> {
   const userId = await requireUserId();
+
+  // Check rate limit
+  const rateLimitResult = checkRateLimit(userId, "toggleLike");
+  if (!rateLimitResult.allowed) {
+    throw new Error(getRateLimitError(rateLimitResult.resetTime!));
+  }
+
   const postId = String(formData.get("postId") || "").trim();
 
   if (!postId) {
@@ -145,6 +153,13 @@ export async function addComment(
   }>
 > {
   const userId = await requireUserId();
+
+  // Check rate limit
+  const rateLimitResult = checkRateLimit(userId, "createComment");
+  if (!rateLimitResult.allowed) {
+    throw new Error(getRateLimitError(rateLimitResult.resetTime!));
+  }
+
   const postId = String(formData.get("postId") || "").trim();
   const content = cleanText(formData.get("content"));
 

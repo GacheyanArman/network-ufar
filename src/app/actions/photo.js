@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { photoAlbums, photos } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { saveUploadFile } from "@/lib/upload";
+import { checkRateLimit, getRateLimitError } from "@/lib/rate-limit";
 
 async function requireUserId() {
   const session = await getSession();
@@ -15,6 +16,13 @@ async function requireUserId() {
 
 export async function uploadPhoto(formData) {
   const userId = await requireUserId();
+
+  // Check rate limit
+  const rateLimitResult = checkRateLimit(userId, "uploadPhoto");
+  if (!rateLimitResult.allowed) {
+    throw new Error(getRateLimitError(rateLimitResult.resetTime));
+  }
+
   const image = formData.get("image");
   const caption = String(formData.get("caption") || "").trim();
   const isPrivate = formData.get("isPrivate") === "true";

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Fragment, useOptimistic, useState, useTransition } from "react";
 import MediaViewer from "@/components/MediaViewer";
+import CommentSection from "@/components/CommentSection";
 import { deletePost } from "@/app/actions/post";
 import { toggleLike } from "@/app/actions/interactions";
 
@@ -14,6 +15,15 @@ type CurrentUser = {
   faculty?: string | null;
   image?: string | null;
   avatarUrl?: string | null;
+};
+
+type Comment = {
+  id: string;
+  content: string;
+  createdAt?: Date | string | null;
+  authorId: string;
+  authorName?: string | null;
+  authorImage?: string | null;
 };
 
 type PostCardPost = {
@@ -32,6 +42,7 @@ type PostCardPost = {
   likedByMe?: boolean | null;
   isOptimistic?: boolean;
   communityName?: string | null;
+  comments?: Comment[];
 };
 
 type PostCardProps = {
@@ -59,6 +70,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [showComments, setShowComments] = useState(false);
 
   const [state, updateOptimistic] = useOptimistic(
     {
@@ -150,6 +162,10 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
     startTransition(() => {
       updateOptimistic({ type: "save" });
     });
+  }
+
+  function handleToggleComments() {
+    setShowComments((prev) => !prev);
   }
 
   async function handleShare() {
@@ -317,6 +333,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
               label="Comments"
               icon="reply"
               value={Number(post.commentsCount || 0)}
+              onClick={handleToggleComments}
             />
 
             <ActionButton
@@ -362,6 +379,16 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
               hideValue
             />
           </footer>
+
+          {showComments && (
+            <CommentSection
+              postId={post.id}
+              initialComments={post.comments || []}
+              currentUserId={currentUser?.id}
+              currentUserName={currentUser?.fullName}
+              currentUserImage={currentUser?.image || undefined}
+            />
+          )}
         </div>
 
         {copied ? <div className="uf-post-toast">Link copied</div> : null}

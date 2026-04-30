@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { posts } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { saveUploadFile } from "@/lib/upload";
+import { checkRateLimit, getRateLimitError } from "@/lib/rate-limit";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 80 * 1024 * 1024;
@@ -104,6 +105,15 @@ export async function createPost(
   formData: FormData
 ): Promise<CreatePostState> {
   const userId = await requireUserId();
+
+  // Check rate limit
+  const rateLimitResult = checkRateLimit(userId, "createPost");
+  if (!rateLimitResult.allowed) {
+    return {
+      ok: false,
+      error: getRateLimitError(rateLimitResult.resetTime!),
+    };
+  }
 
   const imageEntry = formData.get("image");
   const image = isFile(imageEntry) ? imageEntry : null;

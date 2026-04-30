@@ -4,6 +4,7 @@ import { photoAlbums, photos, users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import PhotoUploader from "@/components/PhotoUploader";
+import PhotosGrid from "@/components/PhotosGrid";
 import { deletePhoto, deletePhotoAlbum } from "@/app/actions/photo"; 
 
 export default async function PhotosPage() {
@@ -130,12 +131,12 @@ export default async function PhotosPage() {
                     <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>All Photos</h3>
                 </div>
                 {realPhotos.length === 0 ? (
-                  <div style={{ 
-                      padding: '60px 20px', 
-                      textAlign: 'center', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center' 
+                  <div style={{
+                      padding: '60px 20px',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center'
                   }}>
                     <span style={{ fontSize: '3.5rem', opacity: 0.3, display: 'block', marginBottom: '16px' }}>🖼️</span>
                     <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Your Photo Library is Empty</h3>
@@ -144,24 +145,7 @@ export default async function PhotosPage() {
                     </p>
                   </div>
                 ) : (
-                  <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                    {realPhotos.map((photo) => (
-                      <div key={photo.id} style={{ position: 'relative' }}>
-                        {photo.ownerId === session.userId && (
-                          <form action={deletePhoto} style={{ position: 'absolute', top: '5px', right: '5px', zIndex: 10 }}>
-                            <input type="hidden" name="photoId" value={photo.id} />
-                            <button type="submit" style={{ background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer' }}>×</button>
-                          </form>
-                        )}
-                        {photo.isPrivate && (
-                          <span style={{ position: 'absolute', top: '5px', left: '5px', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>🔒</span>
-                        )}
-                        <img src={photo.imageUrl} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '10px', border: '1px solid var(--border-color-light)' }} />
-                        <strong style={{ display: 'block', marginTop: '8px', fontSize: '0.9rem' }}>{photo.caption || "Untitled"}</strong>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>by {photo.ownerName}</p>
-                      </div>
-                    ))}
-                  </div>
+                  <PhotosGrid photos={realPhotos} currentUserId={session.userId} />
                 )}
               </div>
           </main>

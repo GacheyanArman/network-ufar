@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { friendships, users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { createNotification } from "@/lib/notifications";
+import { checkRateLimit, getRateLimitError } from "@/lib/rate-limit";
 
 async function requireUserId() {
   const session = await getSession();
@@ -34,6 +35,13 @@ async function getExistingFriendship(userId, targetId) {
 
 export async function sendFriendRequest(formData) {
   const userId = await requireUserId();
+
+  // Check rate limit
+  const rateLimitResult = checkRateLimit(userId, "friendRequest");
+  if (!rateLimitResult.allowed) {
+    throw new Error(getRateLimitError(rateLimitResult.resetTime));
+  }
+
   const targetId = getFormValue(formData, "targetId");
 
   if (!targetId || targetId === userId) throw new Error("Invalid user");

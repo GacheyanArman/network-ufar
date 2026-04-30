@@ -1,23 +1,51 @@
 import Link from "next/link";
-import { ilike, or, sql } from "drizzle-orm";
+import { and, ilike, notInArray, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { communities, posts, studyMaterials, users } from "@/lib/schema";
+import { blockedUsers, communities, posts, studyMaterials, users } from "@/lib/schema";
+import { getSession } from "@/lib/session";
 
 import { followUser, unfollowUser } from "@/app/actions/follow";
 import { getFollowingIdSet } from "@/lib/social";
-
-  const followingIds = session?.userId
-    ? await getFollowingIdSet(session.userId)
-    : new Set();
+import SearchAutocomplete from "@/components/SearchAutocomplete";
 
 function safeQuery(value) {
   return String(value || "").trim().slice(0, 80);
 }
 
 export default async function SearchPage({ searchParams }) {
+  const session = await getSession();
   const params = await searchParams;
   const q = safeQuery(params?.q);
   const pattern = `%${q}%`;
+
+  const followingIds = session?.userId
+    ? await getFollowingIdSet(session.userId)
+    : new Set();
+
+  // Get blocked user IDs (both directions)
+  const blockedUserIds = new Set();
+  if (session?.userId) {
+    const blockedRows = await db
+      .select({
+        blockedId: blockedUsers.blockedId,
+        blockerId: blockedUsers.blockerId,
+      })
+      .from(blockedUsers)
+      .where(
+        or(
+          sql`${blockedUsers.blockerId} = ${session.userId}`,
+          sql`${blockedUsers.blockedId} = ${session.userId}`
+        )
+      );
+
+    for (const row of blockedRows) {
+      if (row.blockerId === session.userId) {
+        blockedUserIds.add(row.blockedId);
+      } else {
+        blockedUserIds.add(row.blockerId);
+      }
+    }
+  }
 
   const userSearchCondition = q
     ? or(
@@ -62,7 +90,14 @@ export default async function SearchPage({ searchParams }) {
             image: users.image,
           })
           .from(users)
-          .where(userSearchCondition)
+          .where(
+            blockedUserIds.size > 0
+              ? and(
+                  userSearchCondition,
+                  notInArray(users.id, Array.from(blockedUserIds))
+                )
+              : userSearchCondition
+          )
           .limit(20),
         db
           .select({
@@ -107,10 +142,7 @@ export default async function SearchPage({ searchParams }) {
     <section className="card old-page">
       <h1>Search</h1>
 
-      <form className="search-page-form">
-        <input name="q" defaultValue={q} placeholder="Search users, posts, groups, materials..." />
-        <button className="btn-primary-old">Search</button>
-      </form>
+      <SearchAutocomplete />
 
       {!q && (
         <div className="old-empty">
@@ -125,7 +157,7 @@ export default async function SearchPage({ searchParams }) {
           <div className="old-feed-title"><h2>Users</h2><span>{foundUsers.length}</span></div>
           <div className="old-list">
             {foundUsers.map((user) => (
-                <div style={{ display: "flex", gap: "6px" }}>
+                <div key={user.id} style={{ display: "flex", gap: "6px" }}>
                   {followingIds.has(user.id) ? (
                     <form action={unfollowUser}>
                       <input type="hidden" name="targetId" value={user.id} />

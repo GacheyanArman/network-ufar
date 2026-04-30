@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { and, count, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { notifications, users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { logoutUser } from "@/app/actions/auth";
 import { followUser } from "@/app/actions/follow";
@@ -9,7 +7,11 @@ import {
   getFollowingSummary,
   getPeopleYouMayKnow,
 } from "@/lib/social";
+import { getTodayBirthdays } from "@/lib/birthdays";
+import { getCachedUserBasicInfo, getCachedUnreadNotifications } from "@/lib/cache";
 import UiIcon from "@/components/UiIcon";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import NavigationMenu from "@/components/NavigationMenu";
 
 export default async function MainLayout({ children }) {
   const session = await getSession();
@@ -18,34 +20,17 @@ export default async function MainLayout({ children }) {
   let unreadNotifications = 0;
   let followingSummary = { count: 0, users: [] };
   let peopleYouMayKnow = [];
+  let todayBirthdays = [];
 
   if (session?.userId) {
-    const result = await db
-      .select({
-        fullName: users.fullName,
-        image: users.image,
-      })
-      .from(users)
-      .where(eq(users.id, session.userId))
-      .limit(1);
-
-    currentUser = result[0] || null;
-
-    const [unreadRow] = await db
-      .select({ value: count() })
-      .from(notifications)
-      .where(
-        and(
-          eq(notifications.userId, session.userId),
-          eq(notifications.isRead, false)
-        )
-      );
-
-    unreadNotifications = Number(unreadRow?.value || 0);
-
-    [followingSummary, peopleYouMayKnow] = await Promise.all([
+    // Объединяем все запросы в один Promise.all для параллельного выполнения
+    // Используем кэшированные функции для часто запрашиваемых данных
+    [currentUser, unreadNotifications, followingSummary, peopleYouMayKnow, todayBirthdays] = await Promise.all([
+      getCachedUserBasicInfo(session.userId),
+      getCachedUnreadNotifications(session.userId),
       getFollowingSummary(session.userId, 5),
       getPeopleYouMayKnow(session.userId, 5),
+      getTodayBirthdays(session.userId, 5),
     ]);
   }
 
@@ -65,6 +50,8 @@ export default async function MainLayout({ children }) {
           </div>
 
           <div className="clean-topbar-profile">
+            <LanguageSwitcher />
+
             <Link href="/profile" className="topbar-avatar-link">
               {avatarImage ? (
                 <img
@@ -89,106 +76,7 @@ export default async function MainLayout({ children }) {
 
       <div className="app-container">
         <aside className="sidebar-left">
-          <nav className="student-nav card">
-            <div className="nav-section">
-              <Link href="/" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="news" />
-                </span>
-                <span className="nav-label">My News</span>
-              </Link>
-
-              <Link href="/search" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="search" />
-                </span>
-                <span className="nav-label">Search</span>
-              </Link>
-
-              <Link href="/notifications" className="nav-item nav-item-notifications">
-                <span className="nav-icon">
-                  <UiIcon name="bell" />
-                </span>
-
-                <span className="nav-label">Notifications</span>
-
-                {unreadNotifications > 0 && (
-                  <span className="nav-notification-badge">
-                    {unreadNotifications > 99 ? "99+" : unreadNotifications}
-                  </span>
-                )}
-              </Link>
-
-              <Link href="/messages" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="message" />
-                </span>
-                <span className="nav-label">Messages</span>
-              </Link>
-
-              <Link href="/friends" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="users" />
-                </span>
-                <span className="nav-label">Friends</span>
-              </Link>
-
-              <Link href="/profile" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="user" />
-                </span>
-                <span className="nav-label">My Profile</span>
-              </Link>
-
-              <Link href="/communities" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="group" />
-                </span>
-                <span className="nav-label">Communities</span>
-              </Link>
-
-              <Link href="/photos" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="image" />
-                </span>
-                <span className="nav-label">Photos</span>
-              </Link>
-
-              <Link href="/library" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="book" />
-                </span>
-                <span className="nav-label">UFAR Library</span>
-              </Link>
-
-              <Link href="/study-materials" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="folder" />
-                </span>
-                <span className="nav-label">Materials</span>
-              </Link>
-            </div>
-
-            <div className="divider"></div>
-
-            <div className="nav-section">
-              <h4 className="nav-section-title">University Help</h4>
-
-              <Link href="/library" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="book" />
-                </span>
-                <span className="nav-label">UFAR Library</span>
-              </Link>
-
-              <Link href="/study-materials" className="nav-item">
-                <span className="nav-icon">
-                  <UiIcon name="folder" />
-                </span>
-                <span className="nav-label">Materials</span>
-              </Link>
-            </div>
-          </nav>
+          <NavigationMenu unreadNotifications={unreadNotifications} />
         </aside>
 
         <main className="main-content">{children}</main>
@@ -317,13 +205,38 @@ export default async function MainLayout({ children }) {
               </div>
             </div>
 
-            <div className="uf-birthday-empty">
-              <div className="uf-birthday-empty-icon">
-                <UiIcon name="calendar" size={20} />
-              </div>
+            {todayBirthdays.length === 0 ? (
+              <div className="uf-birthday-empty">
+                <div className="uf-birthday-empty-icon">
+                  <UiIcon name="calendar" size={20} />
+                </div>
 
-              <p>No birthdays today.</p>
-            </div>
+                <p>No birthdays today.</p>
+              </div>
+            ) : (
+              <div className="uf-birthday-list">
+                {todayBirthdays.map((user) => (
+                  <Link
+                    key={user.id}
+                    href={`/profile/${user.id}`}
+                    className="uf-birthday-item"
+                  >
+                    <div className="uf-birthday-avatar">
+                      {user.image ? (
+                        <img src={user.image} alt={user.fullName} />
+                      ) : (
+                        user.fullName?.[0] || "U"
+                      )}
+                    </div>
+
+                    <div className="uf-birthday-info">
+                      <strong>{user.fullName}</strong>
+                      <span>🎂 Happy Birthday!</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </aside>
       </div>

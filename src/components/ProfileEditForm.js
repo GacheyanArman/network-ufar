@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { updateProfile } from "@/app/actions/profile";
+import { GENDER_OPTIONS, RELATIONSHIP_STATUS_OPTIONS } from "@/lib/profile-utils";
 
 export default function ProfileEditForm({ user, error }) {
   const avatarInputRef = useRef(null);
@@ -168,8 +169,51 @@ export default function ProfileEditForm({ user, error }) {
           </label>
 
           <label>
+            <span>Gender</span>
+            <select name="gender" defaultValue={user.gender || ""}>
+              <option value="">Не указано</option>
+              {GENDER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>Relationship Status</span>
+            <select name="relationshipStatus" defaultValue={user.relationshipStatus || ""}>
+              <option value="">Не указано</option>
+              {RELATIONSHIP_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>Birth Date</span>
+            <input
+              type="date"
+              name="birthDate"
+              defaultValue={user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : ""}
+              max={new Date().toISOString().split('T')[0]}
+            />
+          </label>
+
+          <label>
             <span>Email</span>
             <input value={user.email || ""} disabled />
+          </label>
+
+          <label>
+            <span>Privacy Level</span>
+            <select name="privacyLevel" defaultValue={user.privacyLevel || "public"}>
+              <option value="public">Public - Everyone can see my posts</option>
+              <option value="friends">Friends Only - Only friends can see my posts</option>
+              <option value="private">Private - Only I can see my posts</option>
+            </select>
           </label>
         </div>
 

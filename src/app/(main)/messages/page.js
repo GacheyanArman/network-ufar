@@ -1,10 +1,11 @@
-import { asc, desc, eq, inArray, or, and, ilike } from "drizzle-orm";
+import { asc, desc, eq, inArray, or, and, ilike, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { messages, users } from "@/lib/schema";
+import { messages, users, groupChats, groupChatMembers } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { sendMessage } from "@/app/actions/messages";
-import Message from "@/components/Message";
+import { sendGroupMessage } from "@/app/actions/groupChats";
+import MessagesClient from "@/components/MessagesClient";
 
 export default async function MessagesPage({ searchParams }) {
   const session = await getSession();
@@ -12,8 +13,27 @@ export default async function MessagesPage({ searchParams }) {
 
   const params = await searchParams;
   const activeUserId = params?.user?.toString() || "";
+  const activeGroupId = params?.group?.toString() || "";
   const q = params?.q?.toString().trim() || "";
 
+  // Get user's group chats
+  const userGroupChats = await db
+    .select({
+      id: groupChats.id,
+      name: groupChats.name,
+      description: groupChats.description,
+      avatar: groupChats.avatar,
+      faculty: groupChats.faculty,
+      course: groupChats.course,
+      creatorId: groupChats.creatorId,
+      createdAt: groupChats.createdAt,
+    })
+    .from(groupChats)
+    .innerJoin(groupChatMembers, eq(groupChats.id, groupChatMembers.groupChatId))
+    .where(eq(groupChatMembers.userId, session.userId))
+    .orderBy(desc(groupChats.updatedAt));
+
+  // Get recent direct messages
   const recentMessages = await db
     .select({
       id: messages.id,
@@ -24,9 +44,12 @@ export default async function MessagesPage({ searchParams }) {
     })
     .from(messages)
     .where(
-      or(
-        eq(messages.senderId, session.userId),
-        eq(messages.receiverId, session.userId)
+      and(
+        or(
+          eq(messages.senderId, session.userId),
+          eq(messages.receiverId, session.userId)
+        ),
+        isNull(messages.groupChatId)
       )
     )
     .orderBy(desc(messages.createdAt))
@@ -83,6 +106,7 @@ export default async function MessagesPage({ searchParams }) {
     : [];
 
   const selectedUserId = activeUserId || conversations[0]?.user?.id || "";
+  const selectedGroupId = activeGroupId || "";
 
   const [activeUser] = selectedUserId
     ? await db
@@ -94,6 +118,21 @@ export default async function MessagesPage({ searchParams }) {
         })
         .from(users)
         .where(eq(users.id, selectedUserId))
+        .limit(1)
+    : [];
+
+  const [activeGroup] = selectedGroupId
+    ? await db
+        .select({
+          id: groupChats.id,
+          name: groupChats.name,
+          description: groupChats.description,
+          avatar: groupChats.avatar,
+          faculty: groupChats.faculty,
+          course: groupChats.course,
+        })
+        .from(groupChats)
+        .where(eq(groupChats.id, selectedGroupId))
         .limit(1)
     : [];
 
@@ -109,17 +148,33 @@ export default async function MessagesPage({ searchParams }) {
           })
           .from(messages)
           .where(
-            or(
-              and(
-                eq(messages.senderId, session.userId),
-                eq(messages.receiverId, selectedUserId)
+            and(
+              or(
+                and(
+                  eq(messages.senderId, session.userId),
+                  eq(messages.receiverId, selectedUserId)
+                ),
+                and(
+                  eq(messages.senderId, selectedUserId),
+                  eq(messages.receiverId, session.userId)
+                )
               ),
-              and(
-                eq(messages.senderId, selectedUserId),
-                eq(messages.receiverId, session.userId)
-              )
+              isNull(messages.groupChatId)
             )
           )
+          .orderBy(asc(messages.createdAt))
+          .limit(100)
+      : selectedGroupId && activeGroup
+      ? await db
+          .select({
+            id: messages.id,
+            senderId: messages.senderId,
+            receiverId: messages.receiverId,
+            content: messages.content,
+            createdAt: messages.createdAt,
+          })
+          .from(messages)
+          .where(eq(messages.groupChatId, selectedGroupId))
           .orderBy(asc(messages.createdAt))
           .limit(100)
       : [];
@@ -138,6 +193,67 @@ export default async function MessagesPage({ searchParams }) {
         </form>
 
         <div className="chat-list-container">
+          {/* Group Chats Section */}
+          {userGroupChats.length > 0 && (
+            <div style={{ marginBottom: "16px" }}>
+              <div
+                style={{
+                  padding: "8px 14px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "var(--text-secondary)",
+                  textTransform: "uppercase",
+                }}
+              >
+                Group Chats
+              </div>
+              {userGroupChats.map((group) => (
+                <a
+                  key={group.id}
+                  href={`/messages?group=${group.id}`}
+                  style={{
+                    display: "block",
+                    padding: "14px",
+                    textDecoration: "none",
+                    color: "var(--text-primary)",
+                    background:
+                      group.id === selectedGroupId
+                        ? "var(--bg-main)"
+                        : "transparent",
+                    borderBottom: "1px solid var(--border-color-light)",
+                  }}
+                >
+                  <strong>👥 {group.name}</strong>
+                  {group.faculty && (
+                    <p
+                      style={{
+                        margin: "4px 0 0",
+                        color: "var(--text-secondary)",
+                        fontSize: "0.84rem",
+                      }}
+                    >
+                      {group.faculty}
+                      {group.course && ` • ${group.course}`}
+                    </p>
+                  )}
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* Direct Messages Section */}
+          <div
+            style={{
+              padding: "8px 14px",
+              fontSize: "12px",
+              fontWeight: 700,
+              color: "var(--text-secondary)",
+              textTransform: "uppercase",
+            }}
+          >
+            Direct Messages
+          </div>
+
           {q && searchUsers.length > 0 && (
             <div
               style={{
@@ -241,12 +357,16 @@ export default async function MessagesPage({ searchParams }) {
       <main className="messenger-chat-area">
         <div className="chat-window-header">
           <span style={{ fontWeight: "600", color: "var(--text-primary)" }}>
-            {activeUser ? activeUser.fullName : "New Message"}
+            {activeUser
+              ? activeUser.fullName
+              : activeGroup
+              ? `👥 ${activeGroup.name}`
+              : "New Message"}
           </span>
         </div>
 
         <div className="chat-messages-history">
-          {!activeUser ? (
+          {!activeUser && !activeGroup ? (
             <div className="empty-state-mini">
               <span
                 style={{
@@ -279,41 +399,47 @@ export default async function MessagesPage({ searchParams }) {
               </p>
             </div>
           ) : (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                padding: "16px",
-              }}
-            >
-              {history.map((message) => (
-                <Message 
-                  key={message.id} 
-                  message={message} 
-                  isOwnMessage={message.senderId === session.userId} 
-                />
-              ))}
-            </div>
+            <MessagesClient
+              initialHistory={history}
+              currentUserId={session.userId}
+              selectedUserId={selectedUserId}
+              selectedGroupId={selectedGroupId}
+            />
           )}
         </div>
 
-        <form action={sendMessage} className="chat-input-area">
+        <form
+          action={activeGroup ? sendGroupMessage : sendMessage}
+          className="chat-input-area"
+        >
           <button type="button" className="btn-attach" disabled>
             📎
           </button>
 
-          <input type="hidden" name="receiverId" value={selectedUserId} />
+          {activeUser && (
+            <input type="hidden" name="receiverId" value={selectedUserId} />
+          )}
+          {activeGroup && (
+            <input type="hidden" name="groupChatId" value={selectedGroupId} />
+          )}
 
           <input
             type="text"
             name="content"
             className="chat-message-input"
-            placeholder={activeUser ? "Write a message..." : "Select a student first"}
-            disabled={!activeUser}
+            placeholder={
+              activeUser || activeGroup
+                ? "Write a message..."
+                : "Select a chat first"
+            }
+            disabled={!activeUser && !activeGroup}
             maxLength={2000}
           />
 
-          <button className="btn btn-send" disabled={!activeUser}>
+          <button
+            className="btn btn-send"
+            disabled={!activeUser && !activeGroup}
+          >
             Send
           </button>
         </form>

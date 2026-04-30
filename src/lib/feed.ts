@@ -1,6 +1,7 @@
-import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { and, desc, eq, inArray, notInArray, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+  blockedUsers,
   comments,
   communities,
   communityMembers,
@@ -15,9 +16,10 @@ type FeedComment = {
   id: string;
   postId: string;
   content: string;
-  createdAt: Date;
+  createdAt: Date | string | null;
   authorId: string;
-  authorName: string;
+  authorName: string | null;
+  authorImage: string | null;
 };
 
 type FeedPost = {
@@ -213,7 +215,7 @@ export async function getRankedFeedPosts(
     };
   }
 
-  const [friendRows, followRows, communityRows] = await Promise.all([
+  const [friendRows, followRows, communityRows, blockedRows] = await Promise.all([
     db
       .select({
         requesterId: friendships.requesterId,
@@ -243,6 +245,19 @@ export async function getRankedFeedPosts(
       })
       .from(communityMembers)
       .where(eq(communityMembers.userId, userId)),
+
+    db
+      .select({
+        blockedId: blockedUsers.blockedId,
+        blockerId: blockedUsers.blockerId,
+      })
+      .from(blockedUsers)
+      .where(
+        or(
+          eq(blockedUsers.blockerId, userId),
+          eq(blockedUsers.blockedId, userId)
+        )
+      ),
   ]);
 
   const friendIds = new Set(
@@ -251,6 +266,16 @@ export async function getRankedFeedPosts(
 
   const followingIds = new Set(followRows.map((row) => row.followingId));
   const communityIds = new Set(communityRows.map((row) => row.communityId));
+
+  // Collect all blocked user IDs (both directions)
+  const blockedUserIds = new Set<string>();
+  for (const row of blockedRows) {
+    if (row.blockerId === userId) {
+      blockedUserIds.add(row.blockedId);
+    } else {
+      blockedUserIds.add(row.blockerId);
+    }
+  }
 
   const candidatePosts = await db
     .select({
@@ -265,15 +290,42 @@ export async function getRankedFeedPosts(
       authorName: users.fullName,
       authorFaculty: users.faculty,
       authorImage: users.image,
+      authorPrivacyLevel: users.privacyLevel,
       communityName: communities.name,
     })
     .from(posts)
     .innerJoin(users, eq(posts.authorId, users.id))
     .leftJoin(communities, eq(posts.communityId, communities.id))
+    .where(
+      blockedUserIds.size > 0
+        ? notInArray(posts.authorId, Array.from(blockedUserIds))
+        : undefined
+    )
     .orderBy(desc(posts.createdAt))
     .limit(400);
 
   const rankedPosts = candidatePosts
+    .filter((post) => {
+      const privacyLevel = post.authorPrivacyLevel || "public";
+
+      // Own posts are always visible
+      if (post.authorId === userId) {
+        return true;
+      }
+
+      // Private posts only visible to author
+      if (privacyLevel === "private") {
+        return false;
+      }
+
+      // Friends-only posts only visible to friends
+      if (privacyLevel === "friends") {
+        return friendIds.has(post.authorId);
+      }
+
+      // Public posts visible to everyone
+      return true;
+    })
     .map((post) => {
       const result = scorePost({
         post,
@@ -318,11 +370,12 @@ export async function getRankedFeedPosts(
         createdAt: comments.createdAt,
         authorId: comments.authorId,
         authorName: users.fullName,
+        authorImage: users.image,
       })
       .from(comments)
       .innerJoin(users, eq(comments.authorId, users.id))
       .where(inArray(comments.postId, postIds))
-      .orderBy(comments.createdAt),
+      .orderBy(desc(comments.createdAt)),
   ]);
 
   const likedPostIds = new Set(likedRows.map((row) => row.postId));

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { and, count, desc, eq, or } from "drizzle-orm";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import {
@@ -8,14 +8,15 @@ import {
   friendships,
   photos,
   posts,
-  userFollows,
   users,
+  blockedUsers,
 } from "@/lib/schema";
 import { getSession } from "@/lib/session";
-import { followUser, unfollowUser } from "@/app/actions/follow";
-import { sendFriendRequest } from "@/app/actions/friends";
 import PhotoGallery from "@/components/PhotoGallery";
 import PostCard from "@/components/PostCard";
+import PostComposer from "@/components/PostComposer";
+import UiIcon from "@/components/UiIcon";
+import BlockButton from "@/components/BlockButton";
 
 export default async function PublicProfilePage({ params, searchParams }) {
   const session = await getSession();
@@ -154,6 +155,27 @@ export default async function PublicProfilePage({ params, searchParams }) {
     )
     .limit(1);
 
+  // Check if user is blocked
+  const [blockStatus] = await db
+    .select()
+    .from(blockedUsers)
+    .where(
+      or(
+        and(
+          eq(blockedUsers.blockerId, session.userId),
+          eq(blockedUsers.blockedId, profileId)
+        ),
+        and(
+          eq(blockedUsers.blockerId, profileId),
+          eq(blockedUsers.blockedId, session.userId)
+        )
+      )
+    )
+    .limit(1);
+
+  const isBlocked = blockStatus?.blockerId === session.userId;
+  const isBlockedByThem = blockStatus?.blockerId === profileId;
+
   const safeName = profileUser.fullName || "Student";
   const safeInitial = safeName.charAt(0).toUpperCase() || "U";
   const safeEmail = profileUser.email || "No email provided";
@@ -240,47 +262,61 @@ export default async function PublicProfilePage({ params, searchParams }) {
             </div>
 
             <div className="public-profile-actions">
-              {isFollowing ? (
-                <form action={unfollowUser}>
-                  <input type="hidden" name="targetId" value={profileId} />
-                  <button className="public-btn public-btn-secondary" type="submit">
-                    Following
-                  </button>
-                </form>
+              {isBlockedByThem ? (
+                <div style={{ padding: "12px", textAlign: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
+                  This user has blocked you
+                </div>
               ) : (
-                <form action={followUser}>
-                  <input type="hidden" name="targetId" value={profileId} />
-                  <button className="public-btn public-btn-primary" type="submit">
-                    Follow
-                  </button>
-                </form>
-              )}
+                <>
+                  {isFollowing ? (
+                    <form action={unfollowUser}>
+                      <input type="hidden" name="targetId" value={profileId} />
+                      <button className="public-btn public-btn-secondary" type="submit">
+                        Following
+                      </button>
+                    </form>
+                  ) : (
+                    <form action={followUser}>
+                      <input type="hidden" name="targetId" value={profileId} />
+                      <button className="public-btn public-btn-primary" type="submit">
+                        Follow
+                      </button>
+                    </form>
+                  )}
 
-              <Link
-                href={`/messages?user=${profileId}`}
-                className="public-btn public-btn-light"
-              >
-                Message
-              </Link>
+                  <Link
+                    href={`/messages?user=${profileId}`}
+                    className="public-btn public-btn-light"
+                  >
+                    Message
+                  </Link>
 
-              {isFriend ? (
-                <span className="public-status-pill">Friends</span>
-              ) : isIncomingRequest ? (
-                <form action={sendFriendRequest}>
-                  <input type="hidden" name="targetId" value={profileId} />
-                  <button className="public-btn public-btn-light" type="submit">
-                    Accept request
-                  </button>
-                </form>
-              ) : isPendingRequest ? (
-                <span className="public-status-pill">Request sent</span>
-              ) : (
-                <form action={sendFriendRequest}>
-                  <input type="hidden" name="targetId" value={profileId} />
-                  <button className="public-btn public-btn-light" type="submit">
-                    Add friend
-                  </button>
-                </form>
+                  {isFriend ? (
+                    <span className="public-status-pill">Friends</span>
+                  ) : isIncomingRequest ? (
+                    <form action={sendFriendRequest}>
+                      <input type="hidden" name="targetId" value={profileId} />
+                      <button className="public-btn public-btn-light" type="submit">
+                        Accept request
+                      </button>
+                    </form>
+                  ) : isPendingRequest ? (
+                    <span className="public-status-pill">Request sent</span>
+                  ) : (
+                    <form action={sendFriendRequest}>
+                      <input type="hidden" name="targetId" value={profileId} />
+                      <button className="public-btn public-btn-light" type="submit">
+                        Add friend
+                      </button>
+                    </form>
+                  )}
+
+                  <BlockButton
+                    userId={profileId}
+                    userName={safeName}
+                    isBlocked={isBlocked}
+                  />
+                </>
               )}
             </div>
           </section>

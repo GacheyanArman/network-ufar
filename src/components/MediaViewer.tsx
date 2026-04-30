@@ -4,12 +4,22 @@ import { useEffect } from "react";
 
 type MediaType = "image" | "video";
 
+type MediaItem = {
+  id: string;
+  imageUrl: string;
+  caption?: string | null;
+  mediaType?: MediaType | null;
+};
+
 type MediaViewerProps = {
   src: string;
   type: MediaType;
   alt?: string;
   title?: string;
   onClose: () => void;
+  items?: MediaItem[];
+  currentIndex?: number;
+  onNavigate?: (index: number) => void;
 };
 
 export default function MediaViewer({
@@ -18,11 +28,26 @@ export default function MediaViewer({
   alt = "Media",
   title,
   onClose,
+  items,
+  currentIndex,
+  onNavigate,
 }: MediaViewerProps) {
+  const hasNavigation = items && items.length > 1 && currentIndex !== undefined && onNavigate;
+  const canGoPrev = hasNavigation && currentIndex > 0;
+  const canGoNext = hasNavigation && currentIndex < items.length - 1;
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
+      }
+
+      if (hasNavigation && event.key === "ArrowLeft" && canGoPrev) {
+        onNavigate(currentIndex - 1);
+      }
+
+      if (hasNavigation && event.key === "ArrowRight" && canGoNext) {
+        onNavigate(currentIndex + 1);
       }
     }
 
@@ -35,7 +60,7 @@ export default function MediaViewer({
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, hasNavigation, canGoPrev, canGoNext, currentIndex, onNavigate]);
 
   return (
     <div
@@ -74,10 +99,97 @@ export default function MediaViewer({
           lineHeight: "38px",
           cursor: "pointer",
           boxShadow: "0 14px 40px rgba(0,0,0,0.35)",
+          transition: "all 0.2s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(15,23,42,0.9)";
+          e.currentTarget.style.transform = "scale(1.05)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "rgba(15,23,42,0.72)";
+          e.currentTarget.style.transform = "scale(1)";
         }}
       >
         ×
       </button>
+
+      {canGoPrev && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate!(currentIndex - 1);
+          }}
+          aria-label="Previous media"
+          style={{
+            position: "fixed",
+            left: "18px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 10001,
+            width: "48px",
+            height: "48px",
+            borderRadius: "999px",
+            border: "1px solid rgba(255,255,255,0.22)",
+            background: "rgba(15,23,42,0.72)",
+            color: "white",
+            fontSize: "28px",
+            lineHeight: "44px",
+            cursor: "pointer",
+            boxShadow: "0 14px 40px rgba(0,0,0,0.35)",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(15,23,42,0.9)";
+            e.currentTarget.style.transform = "translateY(-50%) scale(1.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(15,23,42,0.72)";
+            e.currentTarget.style.transform = "translateY(-50%) scale(1)";
+          }}
+        >
+          ‹
+        </button>
+      )}
+
+      {canGoNext && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate!(currentIndex + 1);
+          }}
+          aria-label="Next media"
+          style={{
+            position: "fixed",
+            right: "18px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 10001,
+            width: "48px",
+            height: "48px",
+            borderRadius: "999px",
+            border: "1px solid rgba(255,255,255,0.22)",
+            background: "rgba(15,23,42,0.72)",
+            color: "white",
+            fontSize: "28px",
+            lineHeight: "44px",
+            cursor: "pointer",
+            boxShadow: "0 14px 40px rgba(0,0,0,0.35)",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(15,23,42,0.9)";
+            e.currentTarget.style.transform = "translateY(-50%) scale(1.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(15,23,42,0.72)";
+            e.currentTarget.style.transform = "translateY(-50%) scale(1)";
+          }}
+        >
+          ›
+        </button>
+      )}
 
       <div
         onClick={(event) => event.stopPropagation()}
@@ -105,6 +217,19 @@ export default function MediaViewer({
             }}
           >
             {title}
+          </div>
+        )}
+
+        {hasNavigation && (
+          <div
+            style={{
+              alignSelf: "flex-start",
+              color: "rgba(255,255,255,0.7)",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+            }}
+          >
+            {currentIndex + 1} / {items.length}
           </div>
         )}
 

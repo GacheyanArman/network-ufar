@@ -4,12 +4,12 @@ import { cookies } from "next/headers";
 import { SignJWT } from "jose";
 import { and, eq, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
+import { profileSchema } from "@/lib/validations";
+import { saveUploadFile } from "@/lib/upload";
 
 function getJwtSecretKey() {
   const secret = process.env.JWT_SECRET;
@@ -29,39 +29,24 @@ function fail(message) {
   redirect(`/profile/edit?error=${encodeURIComponent(message)}`);
 }
 
-function isImageFile(file) {
-  return file && file.size > 0 && file.type?.startsWith("image/");
-}
-
 async function saveProfileImage(file, type) {
   if (!file || file.size === 0) {
     return null;
   }
 
-  if (!isImageFile(file)) {
-    fail("Only image files are allowed.");
+  try {
+    const imageUrl = await saveUploadFile(file, {
+      subdir: "profile",
+      prefix: type,
+      maxSize: 5 * 1024 * 1024,
+      allowedMimePrefix: "image/",
+      access: "public",
+    });
+
+    return imageUrl;
+  } catch (error) {
+    fail(error.message || "Failed to upload image.");
   }
-
-  if (file.size > 5 * 1024 * 1024) {
-    fail("Image is too large. Max size is 5MB.");
-  }
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  const originalName = file.name || "profile-image";
-  const safeName = originalName
-    .replaceAll(" ", "_")
-    .replace(/[^a-zA-Z0-9._-]/g, "");
-
-  const filename = `${type}-${Date.now()}-${safeName}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "profile");
-
-  await mkdir(uploadDir, { recursive: true });
-
-  const filepath = path.join(uploadDir, filename);
-  await writeFile(filepath, buffer);
-
-  return `/uploads/profile/${filename}`;
 }
 
 export async function updateProfile(formData) {
@@ -88,34 +73,42 @@ export async function updateProfile(formData) {
 
   const fullName = clean(formData.get("fullName"));
   const usernameRaw = clean(formData.get("username")).replace(/^@/, "");
-  const username = usernameRaw ? usernameRaw.toLowerCase() : null;
-  const faculty = clean(formData.get("faculty")) || null;
-  const bio = clean(formData.get("bio")) || null;
+  const username = usernameRaw ? usernameRaw.toLowerCase() : "";
+  const faculty = clean(formData.get("faculty")) || "";
+  const bio = clean(formData.get("bio")) || "";
+  const gender = clean(formData.get("gender")) || "";
+  const relationshipStatus = clean(formData.get("relationshipStatus")) || "";
+  const birthDateRaw = clean(formData.get("birthDate"));
+  const privacyLevel = clean(formData.get("privacyLevel")) || "public";
 
   const avatarFile = formData.get("avatarFile");
   const coverFile = formData.get("coverFile");
 
-  if (!fullName) {
-    fail("Full name is required.");
+  // Validate with Zod
+  const validatedFields = profileSchema.safeParse({
+    fullName,
+    username,
+    faculty,
+    bio,
+    gender,
+    relationshipStatus,
+    birthDate: birthDateRaw,
+    privacyLevel,
+  });
+
+  if (!validatedFields.success) {
+    const errorMessage = validatedFields.error.issues[0]?.message || "Invalid data";
+    fail(errorMessage);
   }
 
-  if (fullName.length < 2 || fullName.length > 80) {
-    fail("Full name must be between 2 and 80 characters.");
-  }
+  const validatedData = validatedFields.data;
+  const birthDate = validatedData.birthDate ? new Date(validatedData.birthDate) : null;
 
-  if (username && !/^[a-z0-9_]{3,24}$/.test(username)) {
-    fail("Username must be 3-24 characters: letters, numbers or underscore only.");
-  }
-
-  if (bio && bio.length > 300) {
-    fail("Bio must be 300 characters or less.");
-  }
-
-  if (username) {
+  if (validatedData.username) {
     const existingUsername = await db
       .select({ id: users.id })
       .from(users)
-      .where(and(eq(users.username, username), ne(users.id, session.userId)))
+      .where(and(eq(users.username, validatedData.username), ne(users.id, session.userId)))
       .limit(1);
 
     if (existingUsername.length > 0) {
@@ -132,20 +125,27 @@ export async function updateProfile(formData) {
   await db
     .update(users)
     .set({
-      fullName,
-      username,
-      faculty,
-      bio,
+      fullName: validatedData.fullName,
+      username: validatedData.username || null,
+      faculty: validatedData.faculty || null,
+      bio: validatedData.bio || null,
+      gender: validatedData.gender || null,
+      relationshipStatus: validatedData.relationshipStatus || null,
+      birthDate: birthDate || null,
+      privacyLevel: validatedData.privacyLevel || "public",
       image: nextImage,
       coverImage: nextCoverImage,
       updatedAt: new Date(),
     })
     .where(eq(users.id, session.userId));
 
+  // Инвалидируем кэш пользователя
+  revalidateTag("user");
+
   const token = await new SignJWT({
     userId: session.userId,
     email: session.email,
-    fullName,
+    fullName: validatedData.fullName,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()

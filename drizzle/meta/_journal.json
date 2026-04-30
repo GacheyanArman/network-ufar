@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1777156575735,
+      "tag": "0000_opposite_whirlwind",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777238730141,
+      "tag": "0001_stiff_exiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777279795371,
+      "tag": "0002_yellow_absorbing_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777396283388,
+      "tag": "0003_daffy_baron_zemo",
+      "breakpoints": true
+    }
+  ]
+}

@@ -212,6 +212,8 @@ export const communityMembers = pgTable("community_member", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   uniqueIdx: uniqueIndex("community_member_unique_idx").on(table.communityId, table.userId),
+  communityIdx: index("community_member_community_idx").on(table.communityId),
+  userIdx: index("community_member_user_idx").on(table.userId),
 }));
 
 export const communityJoinRequestStatusEnum = pgEnum("community_join_request_status", [
@@ -346,7 +348,10 @@ export const posts = pgTable("post", {
   commentsCount: integer("comments_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  communityTypeIdx: index("post_community_type_idx").on(table.communityId, table.postType),
+  communityPinnedIdx: index("post_community_pinned_idx").on(table.communityId, table.isPinned),
+}));
 
 export const postLikes = pgTable("post_like", {
   id: text("id").$defaultFn(() => createId()).primaryKey(),

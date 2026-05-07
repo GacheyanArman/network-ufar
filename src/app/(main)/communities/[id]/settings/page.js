@@ -1,12 +1,29 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect, notFound } from "next/navigation";
+import { db } from "@/lib/db";
+import { communities } from "@/lib/schema";
+import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/session";
-import { createCommunity } from "@/app/actions/community";
+import { getCommunityContext } from "@/lib/community";
+import { updateCommunity, deleteCommunity } from "@/app/actions/community";
 import UiIcon from "@/components/UiIcon";
 
-export default async function CreateCommunityPage() {
+export default async function CommunitySettingsPage({ params }) {
   const session = await getSession();
   if (!session?.userId) redirect("/login");
+
+  const { id } = await params;
+
+  const [community] = await db
+    .select()
+    .from(communities)
+    .where(eq(communities.id, id))
+    .limit(1);
+
+  if (!community) notFound();
+
+  const ctx = await getCommunityContext(id, session.userId);
+  if (!ctx.isOwner) redirect(`/communities/${id}`);
 
   return (
     <div
@@ -18,66 +35,64 @@ export default async function CreateCommunityPage() {
         gap: 20,
       }}
     >
-      <Link href="/communities" className="uf-community-back">
+      <Link href={`/communities/${id}`} className="uf-community-back">
         <UiIcon name="arrow-left" size={18} />
-        Back to Communities
+        Back to community
       </Link>
 
       <div className="card" style={{ padding: 28 }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1
-            style={{
-              margin: "0 0 6px 0",
-              color: "var(--text-primary)",
-              fontSize: 26,
-              fontWeight: 950,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Create Community
-          </h1>
-          <p
-            style={{
-              margin: 0,
-              color: "var(--text-secondary)",
-              fontSize: 15,
-            }}
-          >
-            Start a space for discussions, questions, study groups, materials
-            and events.
-          </p>
-        </div>
+        <h1
+          style={{
+            margin: "0 0 4px 0",
+            fontSize: 24,
+            fontWeight: 950,
+            letterSpacing: "-0.02em",
+            color: "var(--text-primary)",
+          }}
+        >
+          Community settings
+        </h1>
+        <p
+          style={{
+            margin: "0 0 20px 0",
+            color: "var(--text-secondary)",
+            fontSize: 15,
+          }}
+        >
+          Update your community details, rules, and privacy.
+        </p>
 
         <form
-          action={createCommunity}
+          action={updateCommunity}
           style={{ display: "flex", flexDirection: "column", gap: 18 }}
         >
+          <input type="hidden" name="communityId" value={id} />
+
           <Field
             label="Community name"
             name="name"
+            defaultValue={community.name}
             required
             maxLength={80}
-            placeholder="e.g. Finance · 2nd Year"
-            hint="Choose a clear, descriptive name that students can easily find."
           />
 
           <Field
             label="Description"
             name="description"
+            defaultValue={community.description || ""}
             textarea
             rows={3}
             maxLength={500}
-            placeholder="What is this community about?"
           />
 
           <Field
             label="Rules — one rule per line"
             name="rules"
+            defaultValue={community.rules || ""}
             textarea
-            rows={5}
+            rows={6}
             maxLength={2000}
-            placeholder={`Be respectful\nNo spam\nStay on topic`}
-            hint="Numbering will be added automatically on the sidebar."
+            hint="These rules will be shown in the sidebar. Numbering is added automatically."
           />
 
           <div
@@ -90,12 +105,13 @@ export default async function CreateCommunityPage() {
             <Field
               label="Faculty tag"
               name="facultyTag"
+              defaultValue={community.facultyTag || ""}
               maxLength={80}
-              placeholder="Law, Finance, Marketing..."
             />
             <Field
               label="Year tag"
               name="yearTag"
+              defaultValue={community.yearTag || ""}
               maxLength={20}
               placeholder="e.g. 2nd Year"
             />
@@ -104,9 +120,9 @@ export default async function CreateCommunityPage() {
           <Field
             label="Interests (comma-separated)"
             name="interests"
+            defaultValue={community.interests || ""}
             maxLength={240}
-            placeholder="finance, startups, crypto"
-            hint="Used to recommend this community to relevant students."
+            placeholder="finance, marketing, crypto"
           />
 
           <label
@@ -124,6 +140,7 @@ export default async function CreateCommunityPage() {
             <input
               type="checkbox"
               name="isPrivate"
+              defaultChecked={community.isPrivate}
               value="true"
               style={{ width: 18, height: 18 }}
             />
@@ -135,7 +152,7 @@ export default async function CreateCommunityPage() {
                   color: "var(--text-primary)",
                 }}
               >
-                Make community private
+                Private community
               </div>
               <div
                 style={{
@@ -144,107 +161,69 @@ export default async function CreateCommunityPage() {
                   marginTop: 2,
                 }}
               >
-                Students will need approval to join and view posts.
+                Only approved members can see posts and participate.
               </div>
             </div>
           </label>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label
-              htmlFor="avatar"
-              style={{
-                fontWeight: 800,
-                fontSize: 14,
-                color: "var(--text-primary)",
-              }}
-            >
-              Avatar
-            </label>
-            <label
-              htmlFor="avatar"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "12px 16px",
-                border: "1px dashed var(--border-color)",
-                borderRadius: 12,
-                background: "#ffffff",
-                color: "var(--text-secondary)",
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              <UiIcon name="image" size={18} />
-              <span>Choose file…</span>
-              <input
-                type="file"
-                id="avatar"
-                name="avatar"
-                accept="image/*"
-                style={{ display: "none" }}
-              />
-            </label>
-            <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-              Optional. PNG or JPG, max 5 MB.
-            </span>
-          </div>
-
           <div
             style={{
               display: "flex",
-              gap: 10,
               justifyContent: "flex-end",
-              paddingTop: 4,
+              gap: 10,
             }}
           >
-            <Link href="/communities" className="btn btn-secondary">
+            <Link href={`/communities/${id}`} className="btn btn-secondary">
               Cancel
             </Link>
             <button type="submit" className="btn btn-primary">
-              Create Community
+              Save changes
             </button>
           </div>
         </form>
       </div>
 
-      <div className="card uf-sidebar-card" style={{ padding: 22 }}>
-        <h3 className="uf-sidebar-title">Tips for a great community</h3>
-        <ul
+      <div
+        className="card"
+        style={{
+          padding: 22,
+          border: "1px solid #fca5a5",
+          background: "#fff7f7",
+        }}
+      >
+        <h3
           style={{
-            margin: 0,
-            padding: 0,
-            listStyle: "none",
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
+            margin: "0 0 8px 0",
+            color: "#991b1b",
+            fontSize: 16,
+            fontWeight: 900,
           }}
         >
-          {[
-            "Use clear names (e.g. “Finance · 2nd Year” instead of just “Finance”).",
-            "Add rules so everyone knows what's on-topic.",
-            "Tag your faculty and year — students will see it in recommendations.",
-            "Add interests keywords to reach the right audience.",
-          ].map((line) => (
-            <li
-              key={line}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "flex-start",
-                color: "var(--text-secondary)",
-                fontSize: 14,
-                lineHeight: 1.5,
-              }}
-            >
-              <span style={{ color: "var(--success)", flexShrink: 0 }}>
-                <UiIcon name="check" size={18} />
-              </span>
-              <span>{line}</span>
-            </li>
-          ))}
-        </ul>
+          Danger zone
+        </h3>
+        <p
+          style={{
+            margin: "0 0 14px 0",
+            color: "#7f1d1d",
+            fontSize: 14,
+          }}
+        >
+          Deleting the community is irreversible. All posts, members and
+          requests will be removed.
+        </p>
+        <form action={deleteCommunity}>
+          <input type="hidden" name="communityId" value={id} />
+          <button
+            type="submit"
+            className="btn btn-secondary"
+            style={{
+              borderColor: "#fecaca",
+              color: "#991b1b",
+            }}
+          >
+            Delete community
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { posts } from "@/lib/schema";
+import { posts, photos } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { saveUploadFile } from "@/lib/upload";
 import { checkRateLimit, getRateLimitError } from "@/lib/rate-limit";
@@ -153,6 +153,16 @@ imageUrl = await saveUploadFile(validatedImage, {
         authorId: userId,
       })
       .returning();
+
+    // If post has an image (not video), also add it to photos table
+    if (imageUrl && validatedImage && !isVideoFile(validatedImage)) {
+      await db.insert(photos).values({
+        imageUrl,
+        caption: content || null,
+        isPrivate: false,
+        ownerId: userId,
+      });
+    }
 
     revalidatePath("/");
     revalidatePath("/profile");

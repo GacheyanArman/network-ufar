@@ -1,36 +1,29 @@
 "use client";
 
-export default function Message({ message, isOwnMessage }) {
+function highlightText(text, query) {
+  if (!query || !query.trim()) return text;
+
+  const parts = text.split(new RegExp(`(${query})`, 'gi'));
+
+  return parts.map((part, index) => {
+    if (part.toLowerCase() === query.toLowerCase()) {
+      return <mark key={index} className="tg-highlight">{part}</mark>;
+    }
+    return part;
+  });
+}
+
+export default function Message({ message, isOwnMessage, searchQuery = "" }) {
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: isOwnMessage ? 'flex-end' : 'flex-start',
-      marginBottom: '12px',
-      width: '100%'
-    }}>
-      <div style={{
-        maxWidth: '75%',
-        padding: '10px 14px',
-        borderRadius: isOwnMessage ? '18px 18px 2px 18px' : '18px 18px 18px 2px',
-        background: isOwnMessage ? '#0b3aa8' : '#f1f5f9',
-        color: isOwnMessage ? '#ffffff' : '#0f172a',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-        fontSize: '0.95rem',
-        lineHeight: '1.4'
-      }}>
-        {message.content}
+    <div className={`tg-message ${isOwnMessage ? 'tg-message-own' : 'tg-message-other'}`}>
+      <div className="tg-message-bubble">
+        <p className="tg-message-text">
+          {highlightText(message.content, searchQuery)}
+        </p>
+        <span className="tg-message-time">
+          {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
       </div>
-      
-      <span style={{
-        fontSize: '0.75rem',
-        color: '#94a3b8',
-        marginTop: '4px',
-        marginRight: isOwnMessage ? '4px' : '0',
-        marginLeft: isOwnMessage ? '0' : '4px'
-      }}>
-        {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-      </span>
     </div>
   );
 }

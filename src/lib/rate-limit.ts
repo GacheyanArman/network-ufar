@@ -51,6 +51,18 @@ export const rateLimitConfigs = {
 
   // Photo uploads: 20 per hour
   uploadPhoto: { windowMs: 60 * 60 * 1000, maxRequests: 20 },
+
+  // Library suggestions: 10 per hour
+  suggestLibraryResource: { windowMs: 60 * 60 * 1000, maxRequests: 10 },
+
+  // Library book requests: 10 per hour
+  requestLibraryBook: { windowMs: 60 * 60 * 1000, maxRequests: 10 },
+
+  // Study materials uploads: 20 per hour
+  uploadStudyMaterial: { windowMs: 60 * 60 * 1000, maxRequests: 20 },
+
+  // Study material requests: 10 per hour
+  requestStudyMaterial: { windowMs: 60 * 60 * 1000, maxRequests: 10 },
 };
 
 export function checkRateLimit(

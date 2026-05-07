@@ -119,6 +119,8 @@ export async function createCommunityPost(formData) {
   const userId = await requireUserId();
   const communityId = formData.get("communityId")?.toString().trim();
   const content = clean(formData.get("content"), 3000);
+  const tags = clean(formData.get("tags"), 200);
+  const postType = formData.get("postType")?.toString().trim() || "post";
   const image = formData.get("image");
 
   if (!communityId) throw new Error("Invalid community");
@@ -141,6 +143,8 @@ export async function createCommunityPost(formData) {
   await db.insert(posts).values({
     content,
     imageUrl,
+    tags: tags || null,
+    postType,
     communityId,
     authorId: userId,
   });
@@ -151,5 +155,6 @@ export async function createCommunityPost(formData) {
     .where(eq(communities.id, communityId));
 
   revalidatePath("/communities");
+  revalidatePath(`/communities/${communityId}`);
   return { ok: true };
 }

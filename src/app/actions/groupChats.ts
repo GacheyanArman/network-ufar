@@ -2,10 +2,42 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { groupChats, groupChatMembers, messages } from "@/lib/schema";
+import { groupChats, groupChatMembers, messages, users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
-import { eq, and, or, inArray } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { checkRateLimit, getRateLimitError } from "@/lib/rate-limit";
+import { saveUploadFile } from "@/lib/upload";
+
+async function requireUserId(): Promise<string> {
+  const session = await getSession();
+  if (!session?.userId) throw new Error("Unauthorized");
+  return session.userId as string;
+}
+
+async function requireGroupAdmin(userId: string, groupChatId: string) {
+  const [member] = await db
+    .select({ role: groupChatMembers.role })
+    .from(groupChatMembers)
+    .where(
+      and(
+        eq(groupChatMembers.groupChatId, groupChatId),
+        eq(groupChatMembers.userId, userId)
+      )
+    )
+    .limit(1);
+
+  if (member?.role === "admin") return;
+
+  // Allow global staff to perform admin actions too.
+  const [u] = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (u?.role === "admin" || u?.role === "moderator") return;
+
+  throw new Error("Only group admins can perform this action");
+}
 
 /**
  * Create a new group chat
@@ -239,4 +271,203 @@ export async function deleteGroupChat(formData: FormData) {
     console.error("Error deleting group chat:", error);
     return { error: "Failed to delete group chat" };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Member management
+// ---------------------------------------------------------------------------
+
+/**
+ * Add a user as a member of a group. Caller must be a group admin (or global staff).
+ */
+export async function addGroupMember(formData: FormData) {
+  const callerId = await requireUserId();
+  const groupChatId = String(formData.get("groupChatId") || "").trim();
+  const targetUserId = String(formData.get("userId") || "").trim();
+  if (!groupChatId || !targetUserId) {
+    return { error: "Missing groupChatId or userId" };
+  }
+
+  await requireGroupAdmin(callerId, groupChatId);
+
+  // Idempotent — uses unique index.
+  const [existing] = await db
+    .select({ id: groupChatMembers.id })
+    .from(groupChatMembers)
+    .where(
+      and(
+        eq(groupChatMembers.groupChatId, groupChatId),
+        eq(groupChatMembers.userId, targetUserId)
+      )
+    )
+    .limit(1);
+  if (existing) return { success: true, alreadyMember: true };
+
+  await db.insert(groupChatMembers).values({
+    groupChatId,
+    userId: targetUserId,
+    role: "member",
+  });
+
+  revalidatePath("/messages");
+  return { success: true };
+}
+
+/**
+ * Remove a member from the group. Admin-only.
+ * Admins cannot remove the group creator.
+ */
+export async function removeGroupMember(formData: FormData) {
+  const callerId = await requireUserId();
+  const groupChatId = String(formData.get("groupChatId") || "").trim();
+  const targetUserId = String(formData.get("userId") || "").trim();
+  if (!groupChatId || !targetUserId) {
+    return { error: "Missing data" };
+  }
+
+  await requireGroupAdmin(callerId, groupChatId);
+
+  const [group] = await db
+    .select({ creatorId: groupChats.creatorId })
+    .from(groupChats)
+    .where(eq(groupChats.id, groupChatId))
+    .limit(1);
+  if (!group) return { error: "Group not found" };
+  if (group.creatorId === targetUserId) {
+    return { error: "Cannot remove the group creator" };
+  }
+
+  await db
+    .delete(groupChatMembers)
+    .where(
+      and(
+        eq(groupChatMembers.groupChatId, groupChatId),
+        eq(groupChatMembers.userId, targetUserId)
+      )
+    );
+
+  revalidatePath("/messages");
+  return { success: true };
+}
+
+/**
+ * Promote / demote a member. Admin-only.
+ * role ∈ "admin" | "moderator" | "member"
+ */
+export async function setGroupMemberRole(formData: FormData) {
+  const callerId = await requireUserId();
+  const groupChatId = String(formData.get("groupChatId") || "").trim();
+  const targetUserId = String(formData.get("userId") || "").trim();
+  const role = String(formData.get("role") || "member").trim();
+
+  if (!groupChatId || !targetUserId) {
+    return { error: "Missing data" };
+  }
+  if (!["admin", "moderator", "member"].includes(role)) {
+    return { error: "Invalid role" };
+  }
+
+  await requireGroupAdmin(callerId, groupChatId);
+
+  await db
+    .update(groupChatMembers)
+    .set({ role })
+    .where(
+      and(
+        eq(groupChatMembers.groupChatId, groupChatId),
+        eq(groupChatMembers.userId, targetUserId)
+      )
+    );
+
+  revalidatePath("/messages");
+  return { success: true };
+}
+
+/**
+ * Update group metadata + optional avatar upload.
+ */
+export async function updateGroupChat(formData: FormData) {
+  const callerId = await requireUserId();
+  const groupChatId = String(formData.get("groupChatId") || "").trim();
+  if (!groupChatId) return { error: "Missing groupChatId" };
+
+  await requireGroupAdmin(callerId, groupChatId);
+
+  const update: Record<string, unknown> = {
+    updatedAt: new Date(),
+  };
+
+  const name = String(formData.get("name") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+  const faculty = String(formData.get("faculty") || "").trim();
+  const course = String(formData.get("course") || "").trim();
+  const avatar = formData.get("avatar");
+
+  if (name) update.name = name.slice(0, 120);
+  if (description !== undefined) update.description = description.slice(0, 400) || null;
+  if (faculty !== undefined) update.faculty = faculty || null;
+  if (course !== undefined) update.course = course || null;
+
+  if (avatar && typeof avatar === "object" && "size" in avatar && (avatar as File).size > 0) {
+    const file = avatar as File;
+    const url = await saveUploadFile(file, {
+      subdir: "messages",
+      prefix: "group",
+      maxSize: 5 * 1024 * 1024,
+      allowedMimePrefix: "image/",
+    });
+    update.avatar = url;
+  }
+
+  await db.update(groupChats).set(update).where(eq(groupChats.id, groupChatId));
+
+  revalidatePath("/messages");
+  return { success: true };
+}
+
+/**
+ * List members of a group. Members-only.
+ */
+export async function listGroupMembers(groupChatId: string) {
+  const callerId = await requireUserId();
+
+  // Membership check.
+  const [m] = await db
+    .select({ id: groupChatMembers.id })
+    .from(groupChatMembers)
+    .where(
+      and(
+        eq(groupChatMembers.groupChatId, groupChatId),
+        eq(groupChatMembers.userId, callerId)
+      )
+    )
+    .limit(1);
+  if (!m) {
+    // Allow global staff inspection.
+    const [u] = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, callerId))
+      .limit(1);
+    if (u?.role !== "admin" && u?.role !== "moderator") {
+      throw new Error("Forbidden");
+    }
+  }
+
+  const rows = await db
+    .select({
+      id: users.id,
+      fullName: users.fullName,
+      faculty: users.faculty,
+      image: users.image,
+      lastSeenAt: users.lastSeenAt,
+      role: groupChatMembers.role,
+      joinedAt: groupChatMembers.joinedAt,
+    })
+    .from(groupChatMembers)
+    .innerJoin(users, eq(groupChatMembers.userId, users.id))
+    .where(eq(groupChatMembers.groupChatId, groupChatId))
+    .orderBy(groupChatMembers.joinedAt);
+
+  return rows;
 }

@@ -12,6 +12,7 @@ import { getCachedUserBasicInfo, getCachedUnreadNotifications } from "@/lib/cach
 import UiIcon from "@/components/UiIcon";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import NavigationMenu from "@/components/NavigationMenu";
+import SearchBar from "@/components/SearchBar";
 
 export default async function MainLayout({ children }) {
   const session = await getSession();
@@ -83,14 +84,7 @@ export default async function MainLayout({ children }) {
 
         <aside className="sidebar-right">
           <div className="card contextual-search-card">
-            <form action="/search">
-              <input
-                name="q"
-                type="text"
-                className="right-search-input"
-                placeholder="Search..."
-              />
-            </form>
+            <SearchBar />
           </div>
 
           <div className="card">

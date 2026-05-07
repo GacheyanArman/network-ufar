@@ -1,93 +1,99 @@
-export default function LibraryPage() {
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { 
+  libraryResources, 
+  libraryReadingLists, 
+  libraryReadingListItems,
+  librarySavedResources,
+  users 
+} from "@/lib/schema";
+import { getSession } from "@/lib/session";
+import { eq, desc } from "drizzle-orm";
+import LibraryPageClient from "@/components/LibraryPageClient";
+
+export const metadata = {
+  title: "UFAR Library | Network",
+  description: "Find books, reading lists, academic resources and useful library information.",
+};
+
+export default async function LibraryPage() {
+  const session = await getSession();
+
+  if (!session?.userId) {
+    redirect("/login");
+  }
+
+  // Fetch approved resources
+  const resources = await db
+    .select({
+      id: libraryResources.id,
+      title: libraryResources.title,
+      author: libraryResources.author,
+      type: libraryResources.type,
+      faculty: libraryResources.faculty,
+      subject: libraryResources.subject,
+      description: libraryResources.description,
+      availability: libraryResources.availability,
+      locationOrLink: libraryResources.locationOrLink,
+      isFeatured: libraryResources.isFeatured,
+      createdAt: libraryResources.createdAt,
+    })
+    .from(libraryResources)
+    .where(eq(libraryResources.status, "approved"))
+    .orderBy(desc(libraryResources.createdAt));
+
+  // Fetch reading lists
+  const readingLists = await db
+    .select({
+      id: libraryReadingLists.id,
+      title: libraryReadingLists.title,
+      description: libraryReadingLists.description,
+      faculty: libraryReadingLists.faculty,
+      subject: libraryReadingLists.subject,
+      professorOrCourse: libraryReadingLists.professorOrCourse,
+      createdAt: libraryReadingLists.createdAt,
+    })
+    .from(libraryReadingLists)
+    .orderBy(desc(libraryReadingLists.createdAt));
+
+  // Fetch reading list items to attach to reading lists
+  const listItems = await db
+    .select({
+      id: libraryReadingListItems.id,
+      listId: libraryReadingListItems.listId,
+      resourceId: libraryReadingListItems.resourceId,
+      priority: libraryReadingListItems.priority,
+    })
+    .from(libraryReadingListItems);
+
+  // Attach items to reading lists
+  const readingListsWithItems = readingLists.map(list => {
+    const items = listItems.filter(item => item.listId === list.id);
+    return {
+      ...list,
+      items,
+    };
+  });
+
+  // Fetch user's saved resources
+  const savedItems = await db
+    .select({
+      resourceId: librarySavedResources.resourceId,
+      listId: librarySavedResources.listId,
+    })
+    .from(librarySavedResources)
+    .where(eq(librarySavedResources.userId, session.userId));
+
+  const savedResourceIds = savedItems.filter(i => i.resourceId).map(i => i.resourceId);
+  const savedListIds = savedItems.filter(i => i.listId).map(i => i.listId);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      
-      {/* 1. HEADER & ACTIONS */}
-      <div className="card" style={{ 
-          padding: '16px', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center' 
-      }}>
-        <h2 style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>UFAR Library</h2>
-        <div style={{ display: 'flex', gap: '12px' }}>
-            <button style={{ 
-                backgroundColor: '#E2DCCF', 
-                color: '#050505', 
-                padding: '8px 16px', 
-                borderRadius: 'var(--radius-btn)', 
-                border: '1px solid #ced0d4', 
-                fontWeight: '600', 
-                cursor: 'pointer' 
-            }}>
-                🔖 My List
-            </button>
-            <button className="btn btn-primary" style={{ padding: '8px 16px' }}>
-                + Request Book
-            </button>
-        </div>
-      </div>
-
-      {/* 2. SEARCH & FILTERS */}
-      <div className="card" style={{ padding: '16px' }}>
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-              <input 
-                type="text" 
-                placeholder="Search past exams, syllabus, lecture notes..." 
-                style={{ 
-                    flex: 1, 
-                    padding: '12px 16px', 
-                    borderRadius: 'var(--radius-btn)', 
-                    border: '1px solid var(--border-color)', 
-                    outline: 'none',
-                    fontSize: '0.95rem',
-                    fontFamily: 'inherit'
-                }} 
-              />
-              <button className="btn btn-primary" style={{ padding: '0 24px' }}>Search</button>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '12px' }}>
-              <select style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--border-color-light)', outline: 'none', backgroundColor: 'var(--bg-main)', color: 'var(--text-secondary)' }}>
-                  <option>All Faculties</option>
-                  <option>Computer Science</option>
-                  <option>Law</option>
-                  <option>Management</option>
-              </select>
-              <select style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--border-color-light)', outline: 'none', backgroundColor: 'var(--bg-main)', color: 'var(--text-secondary)' }}>
-                  <option>All Types</option>
-                  <option>Past Exams</option>
-                  <option>Textbooks</option>
-                  <option>Lecture Notes</option>
-              </select>
-          </div>
-      </div>
-
-      {/* 3. TABS */}
-      <div className="card" style={{ display: 'flex', gap: '24px', padding: '0 20px', borderBottom: '1px solid var(--border-color-light)' }}>
-          <div style={{ padding: '16px 0', borderBottom: '3px solid var(--ufar-blue)', color: 'var(--ufar-blue)', fontWeight: '600', cursor: 'pointer' }}>
-            Recent Uploads
-          </div>
-          <div style={{ padding: '16px 0', color: 'var(--text-secondary)', fontWeight: '500', cursor: 'pointer', borderBottom: '3px solid transparent' }}>
-            My Uploads
-          </div>
-      </div>
-
-      {/* 4. EMPTY STATE (Нет загруженных материалов) */}
-      <div className="card" style={{ 
-          padding: '60px 20px', 
-          textAlign: 'center', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center' 
-      }}>
-        <span style={{ fontSize: '3.5rem', opacity: 0.3, display: 'block', marginBottom: '16px' }}>📚</span>
-        <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>The library is empty</h3>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', maxWidth: '400px', lineHeight: '1.5' }}>
-          No study materials match your criteria. Be the first to help your classmates by uploading notes or past exams.
-        </p>
-      </div>
-
-    </div>
+    <LibraryPageClient
+      resources={resources}
+      readingLists={readingListsWithItems}
+      savedResourceIds={savedResourceIds}
+      savedListIds={savedListIds}
+      currentUserId={session.userId}
+    />
   );
 }

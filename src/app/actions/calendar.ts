@@ -7,96 +7,73 @@ import { getSession } from "@/lib/session";
 import { eq } from "drizzle-orm";
 import { checkRateLimit, getRateLimitError } from "@/lib/rate-limit";
 
-/**
- * Create a new academic calendar entry
- */
 export async function createCalendarEntry(formData: FormData) {
   const session = await getSession();
-  if (!session?.userId) {
-    return { error: "Unauthorized" };
-  }
+  if (!session?.userId) return { error: "Unauthorized" };
 
   const userId = session.userId as string;
+  const rl = checkRateLimit(userId, "createCalendarEntry");
+  if (!rl.allowed) return { error: getRateLimitError(rl.resetTime!) };
 
-  // Check rate limit
-  const rateLimitResult = checkRateLimit(userId, "createCalendarEntry");
-  if (!rateLimitResult.allowed) {
-    return { error: getRateLimitError(rateLimitResult.resetTime!) };
-  }
-
-  const title = formData.get("title") as string;
-  const description = formData.get("description") as string;
-  const eventType = formData.get("eventType") as string;
-  const course = formData.get("course") as string;
-  const dueDate = formData.get("dueDate") as string;
+  const title = String(formData.get("title") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+  const eventType = String(formData.get("eventType") || "other").trim();
+  const course = String(formData.get("course") || "").trim();
+  const dueDateRaw = String(formData.get("dueDate") || "").trim();
   const isPublic = formData.get("isPublic") === "true";
 
-  if (!title || !eventType || !dueDate) {
-    return { error: "Title, type, and due date are required" };
-  }
+  if (!title || !dueDateRaw) return { error: "Title and date are required" };
 
-  const validEventTypes = ["exam", "assignment", "lecture", "holiday", "deadline", "other"];
-  if (!validEventTypes.includes(eventType)) {
-    return { error: "Invalid event type" };
-  }
+  const valid = ["exam","assignment","lecture","holiday","deadline","reminder","study_group","club","erasmus","event","other"];
+  const type = valid.includes(eventType) ? eventType : "other";
+
+  // Map extended types to schema enum
+  const enumMap: Record<string,string> = {
+    reminder: "other",
+    study_group: "other",
+    club: "other",
+    erasmus: "other",
+    event: "other",
+  };
+  const schemaType = enumMap[type] || type;
 
   try {
     await db.insert(academicCalendar).values({
-      title,
-      description: description || null,
-      eventType: eventType as any,
-      course: course || null,
-      dueDate: new Date(dueDate),
+      title: title.slice(0, 200),
+      description: description ? description.slice(0, 1000) : null,
+      eventType: schemaType as any,
+      course: course ? course.slice(0, 100) : null,
+      dueDate: new Date(dueDateRaw),
       createdBy: userId,
       isPublic,
     });
 
     revalidatePath("/calendar");
     return { success: true };
-  } catch (error) {
-    console.error("Error creating calendar entry:", error);
-    return { error: "Failed to create calendar entry" };
+  } catch (err) {
+    console.error("createCalendarEntry error:", err);
+    return { error: "Failed to save" };
   }
 }
 
-/**
- * Delete a calendar entry
- */
 export async function deleteCalendarEntry(formData: FormData) {
   const session = await getSession();
-  if (!session?.userId) {
-    return { error: "Unauthorized" };
-  }
+  if (!session?.userId) return { error: "Unauthorized" };
 
   const userId = session.userId as string;
-  const entryId = formData.get("entryId") as string;
-
-  if (!entryId) {
-    return { error: "Entry ID is required" };
-  }
+  const entryId = String(formData.get("entryId") || "");
+  if (!entryId) return { error: "Missing entryId" };
 
   try {
-    // Check if user created this entry
-    const [entry] = await db
-      .select()
-      .from(academicCalendar)
-      .where(eq(academicCalendar.id, entryId))
-      .limit(1);
-
-    if (!entry) {
-      return { error: "Entry not found" };
-    }
-
-    if (entry.createdBy !== userId) {
-      return { error: "Only the creator can delete this entry" };
-    }
+    const [entry] = await db.select().from(academicCalendar).where(eq(academicCalendar.id, entryId)).limit(1);
+    if (!entry) return { error: "Not found" };
+    if (entry.createdBy !== userId) return { error: "Forbidden" };
 
     await db.delete(academicCalendar).where(eq(academicCalendar.id, entryId));
-
     revalidatePath("/calendar");
     return { success: true };
-  } catch (error) {
-    console.error("Error deleting calendar entry:", error);
-    return { error: "Failed to delete entry" };
+  } catch (err) {
+    console.error("deleteCalendarEntry error:", err);
+    return { error: "Failed to delete" };
   }
 }

@@ -313,19 +313,54 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
             </div>
           ) : null}
 
-          {post.imageUrl ? (
-            <button
-              type="button"
-              className="uf-post-media"
-              onClick={() => setIsViewerOpen(true)}
-            >
-              {mediaType === "video" ? (
-                <video src={post.imageUrl} controls preload="metadata" />
-              ) : (
-                <img src={post.imageUrl} alt="Post media" loading="lazy" />
+          {post.imageUrl && (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsViewerOpen(true)}
+                style={{
+                  width: "100%",
+                  border: "none",
+                  padding: 0,
+                  margin: "12px 0 0",
+                  background: "transparent",
+                  cursor: "zoom-in",
+                  borderRadius: "18px",
+                  overflow: "hidden",
+                }}
+              >
+                <img
+                  src={post.imageUrl}
+                  alt={post.content || "Post image"}
+                  style={{
+                    width: "100%",
+                    maxHeight: "520px",
+                    objectFit: "cover",
+                    display: "block",
+                    borderRadius: "18px",
+                    border: "1px solid var(--border-color)",
+                  }}
+                />
+              </button>
+
+              {isViewerOpen && (
+                <MediaViewer
+                  src={post.imageUrl}
+                  type={post.mediaType || "image"}
+                  alt={post.content || "Post image"}
+                  title={post.content || undefined}
+                  caption={post.content}
+                  authorName={post.authorName}
+                  authorImage={post.authorImage}
+                  likesCount={post.likesCount || 0}
+                  commentsCount={post.commentsCount || 0}
+                  isLiked={Boolean(post.likedByMe)}
+                  communityName={post.communityName || null}
+                  onClose={() => setIsViewerOpen(false)}
+                />
               )}
-            </button>
-          ) : null}
+            </>
+          )}
 
           <footer className="uf-post-actions">
             <ActionButton
@@ -394,15 +429,25 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
         {copied ? <div className="uf-post-toast">Link copied</div> : null}
       </article>
 
-      {isViewerOpen && post.imageUrl ? (
+      {isViewerOpen && post.imageUrl && (
         <MediaViewer
           src={post.imageUrl}
-          type={mediaType}
-          alt="Post media"
-          title={authorName}
+          type={post.mediaType || "image"}
+          alt={post.content || "Post image"}
+          title={post.content || undefined}
+          caption={post.content}
+          authorName={post.authorName}
+          authorImage={post.authorImage}
+          createdAt={post.createdAt}
+          likesCount={post.likesCount ?? 0}
+          commentsCount={post.commentsCount ?? post.comments?.length ?? 0}
+          viewsCount={post.viewsCount ?? 0}
+          isLiked={Boolean(post.likedByMe)}
+          communityName={post.communityName || null}
+          comments={post.comments || []}
           onClose={() => setIsViewerOpen(false)}
         />
-      ) : null}
+      )}
     </>
   );
 }

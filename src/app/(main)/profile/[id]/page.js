@@ -1,22 +1,27 @@
 import Link from "next/link";
 import { and, count, desc, eq, or } from "drizzle-orm";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import {
   communities,
   friendships,
   photos,
+  photoTags,
   posts,
   users,
   blockedUsers,
+  userFollows,
 } from "@/lib/schema";
 import { getSession } from "@/lib/session";
-import PhotoGallery from "@/components/PhotoGallery";
+import { followUser, unfollowUser } from "@/app/actions/follow";
+import { sendFriendRequest } from "@/app/actions/friends";
+import ProfilePhotoTabs from "@/components/ProfilePhotoTabs";
 import PostCard from "@/components/PostCard";
-import PostComposer from "@/components/PostComposer";
 import UiIcon from "@/components/UiIcon";
 import BlockButton from "@/components/BlockButton";
+import ProfileInfo from "@/components/ProfileInfo";
+import ProfileAboutInfo from "@/components/ProfileAboutInfo";
 
 export default async function PublicProfilePage({ params, searchParams }) {
   const session = await getSession();
@@ -52,6 +57,9 @@ export default async function PublicProfilePage({ params, searchParams }) {
       image: users.image,
       avatarUrl: users.avatarUrl,
       coverImage: users.coverImage,
+      gender: users.gender,
+      relationshipStatus: users.relationshipStatus,
+      birthDate: users.birthDate,
       createdAt: users.createdAt,
     })
     .from(users)
@@ -80,18 +88,47 @@ export default async function PublicProfilePage({ params, searchParams }) {
       content: posts.content,
       imageUrl: posts.imageUrl,
       createdAt: posts.createdAt,
-      authorId: posts.authorId,
       likesCount: posts.likesCount,
       commentsCount: posts.commentsCount,
+      authorId: posts.authorId,
     })
     .from(posts)
     .where(eq(posts.authorId, profileId))
     .orderBy(desc(posts.createdAt));
 
   const userPhotos = await db
-    .select()
+    .select({
+      id: photos.id,
+      imageUrl: photos.imageUrl,
+      caption: photos.caption,
+      ownerId: photos.ownerId,
+      createdAt: photos.createdAt,
+    })
     .from(photos)
     .where(and(eq(photos.ownerId, profileId), eq(photos.isPrivate, false)))
+    .orderBy(desc(photos.createdAt));
+
+  // Photos where this profile user is approved-tagged.
+  const taggedPhotos = await db
+    .select({
+      id: photos.id,
+      imageUrl: photos.imageUrl,
+      caption: photos.caption,
+      ownerId: photos.ownerId,
+      ownerName: users.fullName,
+      ownerImage: users.image,
+      createdAt: photos.createdAt,
+    })
+    .from(photoTags)
+    .innerJoin(photos, eq(photoTags.photoId, photos.id))
+    .innerJoin(users, eq(photos.ownerId, users.id))
+    .where(
+      and(
+        eq(photoTags.userId, profileId),
+        eq(photoTags.status, "approved"),
+        eq(photos.isPrivate, false)
+      )
+    )
     .orderBy(desc(photos.createdAt));
 
   const [friendsRow] = await db
@@ -155,7 +192,6 @@ export default async function PublicProfilePage({ params, searchParams }) {
     )
     .limit(1);
 
-  // Check if user is blocked
   const [blockStatus] = await db
     .select()
     .from(blockedUsers)
@@ -184,12 +220,8 @@ export default async function PublicProfilePage({ params, searchParams }) {
   const safeBio = profileUser.bio || "No bio yet.";
   const avatarImage = profileUser.image || profileUser.avatarUrl || "";
 
-  const postsCount = userPosts.length;
-  const photosCount = userPhotos.length;
   const friendsCount = Number(friendsRow?.value || 0);
   const communitiesCount = Number(communitiesRow?.value || 0);
-  const followersCount = Number(followersRow?.value || 0);
-  const followingCount = Number(followingRow?.value || 0);
 
   const isFollowing = Boolean(followRow);
   const isFriend = relationship?.status === "accepted";
@@ -213,212 +245,210 @@ export default async function PublicProfilePage({ params, searchParams }) {
   }));
 
   return (
-    <div className="public-profile-page">
-      <style>{publicProfileStyles}</style>
+    <div className="uf-profile-page">
+      <style>{profileStyles}</style>
+      <style>{`
+        .uf-profile-page ~ .sidebar-right,
+        body:has(.uf-profile-page) .sidebar-right {
+          display: none !important;
+        }
 
-      <div className="public-profile-layout">
-        <aside className="public-profile-sidebar">
-          <section className="public-card public-profile-card">
-            <div className="public-profile-avatar">
-              {avatarImage ? (
-                <img src={avatarImage} alt={safeName} />
-              ) : (
-                <span>{safeInitial}</span>
-              )}
-            </div>
+        body:has(.uf-profile-page) .app-container,
+        body:has(.uf-profile-page) .simple-layout,
+        body:has(.uf-profile-page) .old-social-grid {
+          grid-template-columns: var(--left-col) minmax(0, 1fr) !important;
+        }
+      `}</style>
 
-            <div className="public-profile-title">
-              <h1>{safeName}</h1>
-              <p>{safeUsername}</p>
-            </div>
-
-            <div className="public-profile-badges">
-              <span>🎓 {safeFaculty}</span>
-              <span>🗓️ Joined {joinedAt}</span>
-            </div>
-
-            <p className="public-profile-bio">{safeBio}</p>
-
-            <div className="public-profile-info">
-              <div>
-                <span>✉️</span>
-                <p>{safeEmail}</p>
+      <div className="uf-profile-shell">
+        <div className="uf-profile-layout">
+          <aside className="uf-profile-sidebar">
+            <section className="uf-card uf-profile-card">
+              <div className="uf-profile-avatar">
+                {avatarImage ? (
+                  <img src={avatarImage} alt={safeName} />
+                ) : (
+                  <span>{safeInitial}</span>
+                )}
               </div>
 
-              <div>
-                <span>👥</span>
-                <p>{friendsCount} friends</p>
+              <div className="uf-profile-heading">
+                <h1>{safeName}</h1>
+                <p>{safeUsername}</p>
               </div>
 
-              <div>
-                <span>🤝</span>
-                <p>{communitiesCount} communities</p>
-              </div>
-
-              <div>
-                <span>🖼️</span>
-                <p>{photosCount} public photos</p>
-              </div>
-            </div>
-
-            <div className="public-profile-actions">
-              {isBlockedByThem ? (
-                <div style={{ padding: "12px", textAlign: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
-                  This user has blocked you
+              <div className="uf-profile-badges">
+                <div className="uf-profile-badge">
+                  <span className="uf-inline-icon">
+                    <UiIcon name="graduation" size={15} />
+                  </span>
+                  <strong>{safeFaculty}</strong>
                 </div>
-              ) : (
-                <>
-                  {isFollowing ? (
-                    <form action={unfollowUser}>
-                      <input type="hidden" name="targetId" value={profileId} />
-                      <button className="public-btn public-btn-secondary" type="submit">
-                        Following
-                      </button>
-                    </form>
-                  ) : (
-                    <form action={followUser}>
-                      <input type="hidden" name="targetId" value={profileId} />
-                      <button className="public-btn public-btn-primary" type="submit">
-                        Follow
-                      </button>
-                    </form>
-                  )}
 
-                  <Link
-                    href={`/messages?user=${profileId}`}
-                    className="public-btn public-btn-light"
-                  >
-                    Message
-                  </Link>
+                <div className="uf-profile-badge">
+                  <span className="uf-inline-icon">
+                    <UiIcon name="calendar" size={15} />
+                  </span>
+                  <strong>Joined {joinedAt}</strong>
+                </div>
+              </div>
 
-                  {isFriend ? (
-                    <span className="public-status-pill">Friends</span>
-                  ) : isIncomingRequest ? (
-                    <form action={sendFriendRequest}>
-                      <input type="hidden" name="targetId" value={profileId} />
-                      <button className="public-btn public-btn-light" type="submit">
-                        Accept request
-                      </button>
-                    </form>
-                  ) : isPendingRequest ? (
-                    <span className="public-status-pill">Request sent</span>
-                  ) : (
-                    <form action={sendFriendRequest}>
-                      <input type="hidden" name="targetId" value={profileId} />
-                      <button className="public-btn public-btn-light" type="submit">
-                        Add friend
-                      </button>
-                    </form>
-                  )}
+              {safeBio ? <p className="uf-profile-bio">{safeBio}</p> : null}
 
-                  <BlockButton
-                    userId={profileId}
-                    userName={safeName}
-                    isBlocked={isBlocked}
+              <div className="uf-profile-info">
+                <ProfileInfo
+                  email={safeEmail}
+                  gender={profileUser.gender}
+                  relationshipStatus={profileUser.relationshipStatus}
+                  birthDate={profileUser.birthDate}
+                  friendsCount={friendsCount}
+                  followingCount={Number(followingRow?.value || 0)}
+                />
+              </div>
+
+              <div className="public-profile-actions">
+                {isBlockedByThem ? (
+                  <div style={{ padding: "12px", textAlign: "center", color: "#64748b", fontSize: "14px" }}>
+                    This user has blocked you
+                  </div>
+                ) : (
+                  <>
+                    {isFollowing ? (
+                      <form action={unfollowUser}>
+                        <input type="hidden" name="targetId" value={profileId} />
+                        <button className="public-btn public-btn-secondary" type="submit">
+                          Following
+                        </button>
+                      </form>
+                    ) : (
+                      <form action={followUser}>
+                        <input type="hidden" name="targetId" value={profileId} />
+                        <button className="public-btn public-btn-primary" type="submit">
+                          Follow
+                        </button>
+                      </form>
+                    )}
+
+                    <Link
+                      href={`/messages?user=${profileId}`}
+                      className="public-btn public-btn-light"
+                    >
+                      Message
+                    </Link>
+
+                    {isFriend ? (
+                      <span className="public-status-pill">Friends</span>
+                    ) : isIncomingRequest ? (
+                      <form action={sendFriendRequest}>
+                        <input type="hidden" name="targetId" value={profileId} />
+                        <button className="public-btn public-btn-light" type="submit">
+                          Accept request
+                        </button>
+                      </form>
+                    ) : isPendingRequest ? (
+                      <span className="public-status-pill">Request sent</span>
+                    ) : (
+                      <form action={sendFriendRequest}>
+                        <input type="hidden" name="targetId" value={profileId} />
+                        <button className="public-btn public-btn-light" type="submit">
+                          Add friend
+                        </button>
+                      </form>
+                    )}
+
+                    <BlockButton
+                      userId={profileId}
+                      userName={safeName}
+                      isBlocked={isBlocked}
+                    />
+                  </>
+                )}
+              </div>
+            </section>
+          </aside>
+
+          <main className="uf-profile-main">
+            <nav className="uf-card uf-profile-tabs">
+              <TabLink href={`/profile/${profileId}?tab=posts`} active={currentTab === "posts"}>
+                Posts
+              </TabLink>
+
+              <TabLink href={`/profile/${profileId}?tab=about`} active={currentTab === "about"}>
+                About
+              </TabLink>
+
+              <TabLink href={`/profile/${profileId}?tab=photos`} active={currentTab === "photos"}>
+                Photos
+              </TabLink>
+
+              <TabLink href={`/profile/${profileId}?tab=groups`} active={currentTab === "groups"}>
+                Groups
+              </TabLink>
+            </nav>
+
+            {currentTab === "posts" ? (
+              <section className="uf-profile-feed">
+                {normalizedPosts.length === 0 ? (
+                  <div className="uf-card uf-profile-empty">
+                    <h2>No posts yet</h2>
+                    <p>This student has not posted anything yet.</p>
+                  </div>
+                ) : (
+                  normalizedPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      currentUser={currentUser}
+                    />
+                  ))
+                )}
+              </section>
+            ) : null}
+
+            {currentTab === "about" ? (
+              <section className="uf-about-grid">
+                <div className="uf-card uf-about-card">
+                  <h3>Bio</h3>
+                  <p className="uf-about-bio">{safeBio || "No bio yet."}</p>
+                </div>
+
+                <div className="uf-card uf-about-card">
+                  <h3>Personal info</h3>
+                  <InfoBlock label="Full name" value={safeName} />
+                  <InfoBlock label="Username" value={safeUsername} />
+                  <InfoBlock label="Email" value={safeEmail} />
+                  <InfoBlock label="Faculty" value={safeFaculty} />
+                  <ProfileAboutInfo
+                    gender={profileUser.gender}
+                    relationshipStatus={profileUser.relationshipStatus}
                   />
-                </>
-              )}
-            </div>
-          </section>
-
-          <section className="public-card public-stats-card">
-            <StatRow label="Posts" value={postsCount} href="?tab=posts" />
-            <StatRow label="Friends" value={friendsCount} href="/friends" />
-            <StatRow label="Photos" value={photosCount} href="?tab=photos" />
-            <StatRow label="Groups" value={communitiesCount} href="/communities" />
-            <StatRow label="Followers" value={followersCount} />
-            <StatRow label="Following" value={followingCount} />
-          </section>
-        </aside>
-
-        <main className="public-profile-main">
-          <nav className="public-card public-tabs">
-            <TabLink href="?tab=posts" active={currentTab === "posts"}>
-              Posts
-            </TabLink>
-
-            <TabLink href="?tab=about" active={currentTab === "about"}>
-              About
-            </TabLink>
-
-            <TabLink href="?tab=photos" active={currentTab === "photos"}>
-              Photos
-            </TabLink>
-          </nav>
-
-          {currentTab === "posts" ? (
-            <section className="public-feed-card public-card">
-              {normalizedPosts.length === 0 ? (
-                <div className="public-empty">
-                  <div className="public-empty-icon">📝</div>
-                  <h2>No posts yet</h2>
-                  <p>This student has not posted anything yet.</p>
+                  <InfoBlock label="Joined" value={joinedAt} />
                 </div>
-              ) : (
-                normalizedPosts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    currentUser={currentUser}
-                  />
-                ))
-              )}
-            </section>
-          ) : null}
+              </section>
+            ) : null}
 
-          {currentTab === "about" ? (
-            <section className="public-about-grid">
-              <div className="public-card public-about-card">
-                <h3>Personal info</h3>
-
-                <InfoBlock label="Full name" value={safeName} />
-                <InfoBlock label="Username" value={safeUsername} />
-                <InfoBlock label="Email" value={safeEmail} />
-                <InfoBlock label="Faculty" value={safeFaculty} />
-                <InfoBlock label="Joined" value={joinedAt} />
-              </div>
-
-              <div className="public-card public-about-card">
-                <h3>Bio</h3>
-                <p className="public-about-bio">{safeBio}</p>
-              </div>
-            </section>
-          ) : null}
-
-          {currentTab === "photos" ? (
-            <section className="public-card public-photos-card">
-              {userPhotos.length === 0 ? (
-                <div className="public-empty">
-                  <div className="public-empty-icon">🖼️</div>
-                  <h2>No public photos yet</h2>
-                  <p>This student has not shared public photos yet.</p>
-                </div>
-              ) : (
-                <PhotoGallery photos={userPhotos} />
-              )}
-            </section>
-          ) : null}
-        </main>
+            {currentTab === "photos" ? (
+              <section className="uf-photos-section">
+                <ProfilePhotoTabs
+                  isOwner={false}
+                  photos={userPhotos}
+                  tagged={taggedPhotos}
+                  saved={[]}
+                />
+              </section>
+            ) : null}
+          </main>
+        </div>
       </div>
     </div>
   );
 }
 
-function StatRow({ label, value, href }) {
-  const content = (
-    <>
+function StatRow({ href, label, value }) {
+  return (
+    <Link href={href} scroll={false} className="uf-stat-row">
       <span>{label}</span>
       <strong>{value}</strong>
-    </>
-  );
-
-  if (!href) {
-    return <div className="public-stat-row">{content}</div>;
-  }
-
-  return (
-    <Link href={href} scroll={false} className="public-stat-row">
-      {content}
     </Link>
   );
 }
@@ -428,7 +458,7 @@ function TabLink({ href, active, children }) {
     <Link
       href={href}
       scroll={false}
-      className={active ? "public-tab active" : "public-tab"}
+      className={active ? "uf-tab-link active" : "uf-tab-link"}
     >
       {children}
     </Link>
@@ -437,117 +467,129 @@ function TabLink({ href, active, children }) {
 
 function InfoBlock({ label, value }) {
   return (
-    <div className="public-info-block">
+    <div className="uf-info-block">
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
   );
 }
 
-const publicProfileStyles = `
-.public-profile-page {
+const profileStyles = `
+.uf-profile-page {
   width: 100%;
   min-width: 0;
+  background: transparent;
 }
 
-.public-profile-layout {
+.uf-profile-shell {
   width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 0 36px;
+}
+
+.uf-profile-layout {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
 
-.public-profile-sidebar {
+.uf-profile-sidebar {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-self: start;
+  position: sticky;
+  top: calc(var(--topbar-height) + 24px);
+}
+
+.uf-profile-main {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.public-profile-main {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.public-card {
+.uf-card {
   background: #ffffff;
   border: 1px solid #d9e2ef;
-  border-radius: 18px;
-  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
-.public-profile-card {
-  padding: 26px 22px 22px;
+.uf-profile-card {
+  padding: 28px 22px 24px;
 }
 
-.public-profile-avatar {
-  width: 108px;
-  height: 108px;
-  margin: 0 auto 20px;
+.uf-profile-avatar {
+  width: 106px;
+  height: 106px;
   border-radius: 999px;
   overflow: hidden;
-  background: #0b3aa8;
-  color: #ffffff;
+  margin: 0 auto 22px;
   border: 4px solid #ffffff;
   box-shadow: 0 0 0 1px #d9e2ef, 0 8px 24px rgba(15, 23, 42, 0.08);
+  background: #0b3aa8;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 38px;
+  font-size: 36px;
   font-weight: 900;
 }
 
-.public-profile-avatar img {
+.uf-profile-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
-.public-profile-title {
-  margin-bottom: 16px;
+.uf-profile-heading {
+  margin-bottom: 18px;
 }
 
-.public-profile-title h1 {
+.uf-profile-heading h1 {
   margin: 0;
-  color: #0f172a;
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1.1;
   font-weight: 900;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
+  color: #0f172a;
 }
 
-.public-profile-title p {
+.uf-profile-heading p {
   margin: 6px 0 0;
-  color: #64748b;
   font-size: 14px;
-  font-weight: 700;
+  color: #64748b;
+  font-weight: 600;
 }
 
-.public-profile-badges {
+.uf-profile-badges {
   display: flex;
   flex-direction: column;
-  gap: 9px;
   align-items: flex-start;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
-.public-profile-badges span {
-  min-height: 34px;
+.uf-profile-badge {
+  min-height: 36px;
   padding: 0 12px;
   border-radius: 10px;
   background: #f4f7fb;
-  border: 1px solid #e7edf5;
   color: #0f172a;
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   font-size: 13px;
   font-weight: 800;
+  border: 1px solid #e3ebf5;
 }
 
-.public-profile-bio {
+.uf-profile-bio {
   margin: 0 0 18px;
   color: #334155;
   font-size: 14px;
@@ -555,34 +597,39 @@ const publicProfileStyles = `
   word-break: break-word;
 }
 
-.public-profile-info {
+.uf-profile-info {
   display: flex;
   flex-direction: column;
-  gap: 13px;
-  margin-bottom: 20px;
+  gap: 14px;
+  margin-bottom: 22px;
 }
 
-.public-profile-info div {
+.uf-profile-info-row {
   min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
   color: #475569;
+  text-decoration: none;
   font-size: 14px;
 }
 
-.public-profile-info span {
+.uf-profile-info-row span {
   width: 18px;
   flex: 0 0 18px;
   text-align: center;
 }
 
-.public-profile-info p {
+.uf-profile-info-row p {
   margin: 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.uf-profile-info-row:hover p {
+  color: #0b3aa8;
 }
 
 .public-profile-actions {
@@ -597,17 +644,24 @@ const publicProfileStyles = `
 
 .public-btn {
   width: 100%;
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 42px;
+  padding: 0 18px;
   border-radius: 10px;
-  border: 1px solid #d9e2ef;
+  background: #0b3aa8;
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
   font-size: 14px;
-  font-weight: 850;
+  font-weight: 800;
+  border: 1px solid #0b3aa8;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.public-btn:hover {
+  background: #062fae;
 }
 
 .public-btn-primary {
@@ -626,20 +680,25 @@ const publicProfileStyles = `
   border-color: rgba(11, 58, 168, 0.28);
 }
 
+.public-btn-secondary:hover {
+  background: #eef4ff;
+  color: #0b3aa8;
+}
+
 .public-btn-light {
   background: #f8fafc;
   color: #0f172a;
+  border-color: #d9e2ef;
 }
 
-.public-btn-light:hover,
-.public-btn-secondary:hover {
+.public-btn-light:hover {
   background: #eef4ff;
   color: #0b3aa8;
 }
 
 .public-status-pill {
   width: 100%;
-  min-height: 38px;
+  min-height: 42px;
   border-radius: 10px;
   background: #f4f7fb;
   border: 1px solid #e7edf5;
@@ -647,91 +706,85 @@ const publicProfileStyles = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 850;
+  font-size: 14px;
+  font-weight: 800;
 }
 
-.public-stats-card {
-  padding: 16px 18px;
+.uf-profile-stats-card {
+  padding: 18px 18px 16px;
 }
 
-.public-stat-row {
-  min-height: 38px;
+.uf-stat-row {
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 16px;
   text-decoration: none;
   color: #475569;
-  font-size: 14px;
-  font-weight: 750;
+  border-radius: 10px;
+  padding: 0 2px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
-.public-stat-row + .public-stat-row {
+.uf-stat-row + .uf-stat-row {
   margin-top: 8px;
 }
 
-.public-stat-row strong {
+.uf-stat-row:hover {
+  color: #0b3aa8;
+}
+
+.uf-stat-row strong {
   color: #0b3aa8;
   font-size: 16px;
   font-weight: 900;
 }
 
-.public-tabs {
+.uf-profile-tabs {
   min-height: 64px;
   padding: 0 22px;
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 26px;
 }
 
-.public-tab {
+.uf-tab-link {
   height: 64px;
   display: inline-flex;
   align-items: center;
   color: #536173;
   text-decoration: none;
   font-size: 15px;
-  font-weight: 850;
+  font-weight: 800;
   border-bottom: 3px solid transparent;
 }
 
-.public-tab.active {
+.uf-tab-link.active {
   color: #0b3aa8;
   border-bottom-color: #0b3aa8;
 }
 
-.public-feed-card {
-  overflow: hidden;
+.uf-profile-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.public-empty {
-  padding: 58px 22px;
+.uf-profile-empty {
+  padding: 54px 22px;
   text-align: center;
 }
 
-.public-empty-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 16px;
-  border-radius: 999px;
-  background: #eef4ff;
-  color: #0b3aa8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-}
-
-.public-empty h2 {
+.uf-profile-empty h2 {
   margin: 0 0 8px;
   color: #0f172a;
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 900;
-  letter-spacing: -0.03em;
 }
 
-.public-empty p {
+.uf-profile-empty p {
   margin: 0 auto;
   max-width: 420px;
   color: #64748b;
@@ -739,73 +792,77 @@ const publicProfileStyles = `
   line-height: 1.55;
 }
 
-.public-about-grid {
+.uf-about-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
+  align-items: start;
 }
 
-.public-about-card {
+.uf-about-card {
   padding: 22px;
 }
 
-.public-about-card h3 {
+.uf-about-card h3 {
   margin: 0 0 18px;
   color: #0f172a;
   font-size: 17px;
   font-weight: 900;
 }
 
-.public-info-block {
+.uf-info-block {
   padding: 14px 0;
   border-top: 1px solid #e7edf5;
 }
 
-.public-info-block span {
+.uf-info-block span {
   display: block;
   margin-bottom: 5px;
   color: #64748b;
   font-size: 13px;
-  font-weight: 750;
+  font-weight: 700;
 }
 
-.public-info-block strong {
+.uf-info-block strong {
   color: #0f172a;
   font-size: 15px;
   word-break: break-word;
 }
 
-.public-about-bio {
+.uf-about-bio {
   margin: 0;
   color: #334155;
   line-height: 1.6;
   white-space: pre-wrap;
 }
 
-.public-photos-card {
-  padding: 16px;
-  overflow: hidden;
+.uf-photos-section {
+  min-width: 0;
+}
+
+.uf-profile-sidebar > * {
+  flex: 0 0 auto;
 }
 
 @media (max-width: 980px) {
-  .public-profile-layout {
+  .uf-profile-layout {
     grid-template-columns: 1fr;
   }
 
-  .public-about-grid {
+  .uf-about-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
-  .public-tabs {
-    padding: 0 16px;
-    gap: 22px;
-    overflow-x: auto;
+  .uf-profile-shell {
+    padding: 4px 0 24px;
   }
 
-  .public-profile-card {
-    padding: 22px 18px;
+  .uf-profile-tabs {
+    padding: 0 16px;
+    gap: 20px;
+    overflow-x: auto;
   }
 }
 `;

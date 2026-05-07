@@ -66,7 +66,6 @@ export default function FeedClient({
   const observerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setAllPosts(posts);
     applyFiltersAndSort(posts);
   }, [posts, sortBy, filterBy]);
 
@@ -98,9 +97,9 @@ export default function FeedClient({
     }
     // "ranked" uses the default feedScore order
 
-    setAllPosts(filtered);
     setDisplayedPosts(filtered.slice(0, 10));
     setHasMore(filtered.length > 10);
+    setAllPosts(filtered);
   }
 
   useEffect(() => {

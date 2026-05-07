@@ -1,4 +1,5 @@
 // Утилиты для работы с gender и relationshipStatus
+import { translations } from "./i18n";
 
 export const GENDER_OPTIONS = [
   { value: "male", label: "Мужской" },
@@ -14,12 +15,14 @@ export const RELATIONSHIP_STATUS_OPTIONS = [
   { value: "prefer_not_to_say", label: "Не указано" },
 ];
 
-export function getGenderLabel(gender) {
-  const option = GENDER_OPTIONS.find((opt) => opt.value === gender);
-  return option ? option.label : "Не указано";
+export function getGenderLabel(gender, language = "en") {
+  const lang = translations[language] || translations.en;
+  const genderOptions = lang.profile.genderOptions;
+  return genderOptions[gender] || genderOptions.prefer_not_to_say;
 }
 
-export function getRelationshipStatusLabel(status) {
-  const option = RELATIONSHIP_STATUS_OPTIONS.find((opt) => opt.value === status);
-  return option ? option.label : "Не указано";
+export function getRelationshipStatusLabel(status, language = "en") {
+  const lang = translations[language] || translations.en;
+  const relationshipOptions = lang.profile.relationshipOptions;
+  return relationshipOptions[status] || relationshipOptions.prefer_not_to_say;
 }

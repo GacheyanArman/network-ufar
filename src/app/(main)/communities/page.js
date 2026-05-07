@@ -1,29 +1,15 @@
-import { desc, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import {
-  communities,
-  communityMembers,
-  comments,
-  postLikes,
-  posts,
-  users,
-} from "@/lib/schema";
+import { communities, communityMembers, users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
-import {
-  createCommunity,
-  createCommunityPost,
-  joinCommunity,
-  leaveCommunity,
-} from "@/app/actions/community";
-import PostCard from "@/components/PostCard";
+import { eq, desc, sql } from "drizzle-orm";
+import CommunityCard from "@/components/CommunityCard";
+import UiIcon from "@/components/UiIcon";
+import Link from "next/link";
 
-export default async function CommunitiesPage({ searchParams }) {
+export default async function CommunitiesPage() {
   const session = await getSession();
   if (!session?.userId) redirect("/login");
-
-  const params = await searchParams;
-  const activeCommunityId = params?.community?.toString() || "";
 
   const [currentUser] = await db
     .select({
@@ -36,7 +22,8 @@ export default async function CommunitiesPage({ searchParams }) {
     .where(eq(users.id, session.userId))
     .limit(1);
 
-  const realCommunities = await db
+  // Get all communities with member count
+  const allCommunities = await db
     .select({
       id: communities.id,
       name: communities.name,
@@ -44,12 +31,14 @@ export default async function CommunitiesPage({ searchParams }) {
       avatar: communities.avatar,
       creatorId: communities.creatorId,
       createdAt: communities.createdAt,
-      ownerName: users.fullName,
+      memberCount: sql`count(${communityMembers.id})::int`,
     })
     .from(communities)
-    .innerJoin(users, eq(communities.creatorId, users.id))
+    .leftJoin(communityMembers, eq(communities.id, communityMembers.communityId))
+    .groupBy(communities.id)
     .orderBy(desc(communities.createdAt));
 
+  // Get user's memberships
   const memberships = await db
     .select({
       communityId: communityMembers.communityId,
@@ -58,158 +47,271 @@ export default async function CommunitiesPage({ searchParams }) {
     .from(communityMembers)
     .where(eq(communityMembers.userId, session.userId));
 
-  const joinedIds = new Set(memberships.map((item) => item.communityId));
-  const selectedCommunity =
-    realCommunities.find((item) => item.id === activeCommunityId) || null;
+  const joinedIds = new Set(memberships.map((m) => m.communityId));
 
-  const communityPosts = selectedCommunity
-    ? await db
-        .select({
-          id: posts.id,
-          content: posts.content,
-          imageUrl: posts.imageUrl,
-          createdAt: posts.createdAt,
-          authorId: posts.authorId,
-          likesCount: posts.likesCount,
-          commentsCount: posts.commentsCount,
-          authorName: users.fullName,
-          authorFaculty: users.faculty,
-          authorImage: users.image,
-          communityName: communities.name,
-        })
-        .from(posts)
-        .innerJoin(users, eq(posts.authorId, users.id))
-        .innerJoin(communities, eq(posts.communityId, communities.id))
-        .where(eq(posts.communityId, selectedCommunity.id))
-        .orderBy(desc(posts.createdAt))
-    : [];
+  // My Communities
+  const myCommunities = allCommunities.filter((c) => joinedIds.has(c.id));
 
-  const postIds = communityPosts.map((post) => post.id);
-
-  const likedRows =
-    postIds.length > 0
-      ? await db
-          .select({ postId: postLikes.postId, userId: postLikes.userId })
-          .from(postLikes)
-          .where(inArray(postLikes.postId, postIds))
-      : [];
-
-  const likedPostIds = new Set(
-    likedRows
-      .filter((row) => row.userId === session.userId)
-      .map((row) => row.postId)
+  // Recommended (based on faculty)
+  const recommended = allCommunities.filter(
+    (c) =>
+      !joinedIds.has(c.id) &&
+      currentUser.faculty &&
+      c.name.toLowerCase().includes(currentUser.faculty.toLowerCase())
   );
 
-  const postComments =
-    postIds.length > 0
-      ? await db
-          .select({
-            id: comments.id,
-            postId: comments.postId,
-            content: comments.content,
-            createdAt: comments.createdAt,
-            authorId: comments.authorId,
-            authorName: users.fullName,
-          })
-          .from(comments)
-          .innerJoin(users, eq(comments.authorId, users.id))
-          .where(inArray(comments.postId, postIds))
-          .orderBy(comments.createdAt)
-      : [];
+  // Categories
+  const facultyCommunities = allCommunities.filter((c) =>
+    ["Law", "Finance", "Marketing", "Management", "Informatics"].some((f) =>
+      c.name.includes(f)
+    )
+  );
 
-  const commentsByPost = new Map();
-  for (const comment of postComments) {
-    const list = commentsByPost.get(comment.postId) || [];
-    list.push(comment);
-    commentsByPost.set(comment.postId, list);
-  }
+  const yearCommunities = allCommunities.filter((c) =>
+    ["1st Year", "2nd Year", "3rd Year", "4th Year"].some((y) =>
+      c.name.includes(y)
+    )
+  );
 
-  const normalizedPosts = communityPosts.map((post) => ({
-    ...post,
-    likedByMe: likedPostIds.has(post.id),
-    comments: commentsByPost.get(post.id) || [],
-  }));
+  const clubs = allCommunities.filter((c) =>
+    c.name.toLowerCase().includes("club")
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <div className="card">
-        <div style={{ padding: "16px", borderBottom: "1px solid var(--border-color-light)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-          <h2 style={{ fontSize: "1.2rem", color: "var(--text-primary)" }}>Communities</h2>
-          <form action={createCommunity} style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <input name="name" placeholder="Community name" required style={{ padding: "8px", borderRadius: "4px", border: "1px solid var(--border-color)" }} />
-            <input name="description" placeholder="Description" style={{ padding: "8px", borderRadius: "4px", border: "1px solid var(--border-color)" }} />
-            <button type="submit" className="btn btn-primary" style={{ padding: "8px 16px" }}>Create</button>
-          </form>
+      {/* Header */}
+      <div className="card" style={{ padding: "24px" }}>
+        <h1 style={{ margin: "0 0 8px 0", fontSize: "28px", fontWeight: "900", color: "var(--text-primary)" }}>
+          Communities
+        </h1>
+        <p style={{ margin: "0 0 20px 0", color: "var(--text-secondary)", fontSize: "15px" }}>
+          Find your faculty, year, clubs, study groups and student discussions
+        </p>
+
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ flex: "1", minWidth: "300px", position: "relative" }}>
+            <input
+              type="text"
+              placeholder="Search communities, posts, clubs..."
+              style={{
+                width: "100%",
+                height: "44px",
+                padding: "0 16px",
+                border: "1px solid var(--border-color)",
+                borderRadius: "12px",
+                fontSize: "15px"
+              }}
+            />
+          </div>
+          <Link href="/communities/create" className="btn btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <UiIcon name="plus" size={18} />
+            Create Community
+          </Link>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: selectedCommunity ? "320px 1fr" : "1fr", gap: "16px", alignItems: "start" }}>
-        <div style={{ display: "grid", gridTemplateColumns: selectedCommunity ? "1fr" : "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
-          {realCommunities.length === 0 ? (
-            <div className="card" style={{ padding: "60px 20px", textAlign: "center" }}>
-              <span style={{ fontSize: "3.5rem", opacity: 0.3, display: "block", marginBottom: "16px" }}>🤝</span>
-              <h3>No communities found</h3>
-              <p style={{ color: "var(--text-secondary)" }}>Create the first university group.</p>
-            </div>
-          ) : (
-            realCommunities.map((community) => {
-              const isJoined = joinedIds.has(community.id);
-              return (
-                <div className="card" key={community.id} style={{ padding: "16px", display: "flex", gap: "16px", alignItems: "center" }}>
-                  <a href={`/communities?community=${community.id}`} style={{ width: "60px", height: "60px", borderRadius: "12px", backgroundColor: "var(--ufar-blue)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", fontWeight: "bold", flexShrink: 0, overflow: "hidden", textDecoration: "none" }}>
-                    {community.avatar ? <img src={community.avatar} alt={community.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : community.name[0]}
-                  </a>
-                  <div style={{ flex: 1 }}>
-                    <a href={`/communities?community=${community.id}`} style={{ textDecoration: "none", color: "var(--text-primary)" }}>
-                      <h4 style={{ margin: 0 }}>{community.name}</h4>
-                    </a>
-                    <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                      {community.description || "No description"}
-                    </p>
-                    <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "8px" }}>
-                      by {community.ownerName}
-                    </div>
-                  </div>
-                  <form action={isJoined ? leaveCommunity : joinCommunity}>
-                    <input type="hidden" name="communityId" value={community.id} />
-                    <button className="btn btn-secondary" disabled={community.creatorId === session.userId && isJoined}>
-                      {isJoined ? "Leave" : "Join"}
-                    </button>
-                  </form>
-                </div>
-              );
-            })
-          )}
+      {/* My Communities */}
+      {myCommunities.length > 0 && (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "900", color: "var(--text-primary)" }}>
+              My Communities
+            </h2>
+            <span style={{
+              minWidth: "28px",
+              height: "28px",
+              padding: "0 8px",
+              borderRadius: "999px",
+              background: "var(--french-blue-soft)",
+              color: "var(--french-blue)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "13px",
+              fontWeight: "900"
+            }}>
+              {myCommunities.length}
+            </span>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
+            {myCommunities.map((community) => (
+              <CommunityCard
+                key={community.id}
+                community={community}
+                isJoined={true}
+                currentUserId={session.userId}
+                isCreator={community.creatorId === session.userId}
+              />
+            ))}
+          </div>
         </div>
+      )}
 
-        {selectedCommunity && (
-          <section style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div className="card" style={{ padding: "16px" }}>
-              <h3 style={{ marginTop: 0 }}>{selectedCommunity.name}</h3>
-              <p style={{ color: "var(--text-secondary)" }}>{selectedCommunity.description || "Community feed"}</p>
+      {/* Recommended */}
+      {recommended.length > 0 && (
+        <div>
+          <div style={{ marginBottom: "16px" }}>
+            <h2 style={{ margin: "0 0 4px 0", fontSize: "20px", fontWeight: "900", color: "var(--text-primary)" }}>
+              Recommended for You
+            </h2>
+            <p style={{ margin: 0, fontSize: "14px", color: "var(--text-secondary)" }}>
+              Based on your profile
+            </p>
+          </div>
 
-              {joinedIds.has(selectedCommunity.id) ? (
-                <form action={createCommunityPost} style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "16px" }}>
-                  <input type="hidden" name="communityId" value={selectedCommunity.id} />
-                  <textarea name="content" placeholder="Post in this community..." maxLength={3000} style={{ minHeight: "80px", border: "1px solid var(--border-color-light)", borderRadius: "12px", padding: "12px", fontFamily: "inherit", resize: "vertical" }} />
-                  <input type="file" name="image" accept="image/*" />
-                  <button className="btn btn-primary" style={{ alignSelf: "flex-end" }}>Post</button>
-                </form>
-              ) : (
-                <p style={{ color: "var(--text-secondary)" }}>Join the community to post.</p>
-              )}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
+            {recommended.slice(0, 6).map((community) => (
+              <CommunityCard
+                key={community.id}
+                community={community}
+                isJoined={false}
+                currentUserId={session.userId}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Browse Communities */}
+      <div>
+        <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "900", color: "var(--text-primary)" }}>
+          Browse Communities
+        </h2>
+
+        {/* Faculty Communities */}
+        {facultyCommunities.length > 0 && (
+          <div style={{ marginBottom: "16px" }}>
+            <div style={{
+              padding: "16px 20px",
+              background: "linear-gradient(135deg, var(--french-blue) 0%, var(--french-navy) 100%)",
+              borderRadius: "16px 16px 0 0",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px"
+            }}>
+              <UiIcon name="book" size={20} style={{ color: "#ffffff" }} />
+              <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "900", color: "#ffffff" }}>
+                Faculty Communities
+              </h3>
             </div>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: "16px",
+              padding: "20px",
+              background: "#ffffff",
+              border: "1px solid var(--border-color)",
+              borderTop: "none",
+              borderRadius: "0 0 16px 16px"
+            }}>
+              {facultyCommunities.slice(0, 4).map((community) => (
+                <CommunityCard
+                  key={community.id}
+                  community={community}
+                  isJoined={joinedIds.has(community.id)}
+                  currentUserId={session.userId}
+                  isCreator={community.creatorId === session.userId}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
-            {normalizedPosts.length === 0 ? (
-              <div className="card" style={{ padding: "40px", textAlign: "center", color: "var(--text-secondary)" }}>
-                No posts in this community yet.
-              </div>
-            ) : (
-              normalizedPosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUser={currentUser} />
-              ))
-            )}
-          </section>
+        {/* Year Communities */}
+        {yearCommunities.length > 0 && (
+          <div style={{ marginBottom: "16px" }}>
+            <div style={{
+              padding: "16px 20px",
+              background: "linear-gradient(135deg, var(--french-blue) 0%, var(--french-navy) 100%)",
+              borderRadius: "16px 16px 0 0",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px"
+            }}>
+              <UiIcon name="users" size={20} style={{ color: "#ffffff" }} />
+              <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "900", color: "#ffffff" }}>
+                Year Communities
+              </h3>
+            </div>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: "16px",
+              padding: "20px",
+              background: "#ffffff",
+              border: "1px solid var(--border-color)",
+              borderTop: "none",
+              borderRadius: "0 0 16px 16px"
+            }}>
+              {yearCommunities.slice(0, 4).map((community) => (
+                <CommunityCard
+                  key={community.id}
+                  community={community}
+                  isJoined={joinedIds.has(community.id)}
+                  currentUserId={session.userId}
+                  isCreator={community.creatorId === session.userId}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Clubs */}
+        {clubs.length > 0 && (
+          <div style={{ marginBottom: "16px" }}>
+            <div style={{
+              padding: "16px 20px",
+              background: "linear-gradient(135deg, var(--french-blue) 0%, var(--french-navy) 100%)",
+              borderRadius: "16px 16px 0 0",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px"
+            }}>
+              <UiIcon name="group" size={20} style={{ color: "#ffffff" }} />
+              <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "900", color: "#ffffff" }}>
+                Clubs
+              </h3>
+            </div>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: "16px",
+              padding: "20px",
+              background: "#ffffff",
+              border: "1px solid var(--border-color)",
+              borderTop: "none",
+              borderRadius: "0 0 16px 16px"
+            }}>
+              {clubs.slice(0, 4).map((community) => (
+                <CommunityCard
+                  key={community.id}
+                  community={community}
+                  isJoined={joinedIds.has(community.id)}
+                  currentUserId={session.userId}
+                  isCreator={community.creatorId === session.userId}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {allCommunities.length === 0 && (
+          <div className="card" style={{ padding: "60px 24px", textAlign: "center" }}>
+            <div style={{ width: "64px", height: "64px", margin: "0 auto 16px", borderRadius: "16px", background: "var(--bg-soft)", color: "var(--french-blue)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <UiIcon name="group" size={32} />
+            </div>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "900", color: "var(--text-primary)" }}>
+              No communities yet
+            </h3>
+            <p style={{ margin: "0 0 20px 0", color: "var(--text-secondary)", fontSize: "15px" }}>
+              Be the first to create a community for UFAR students
+            </p>
+            <Link href="/communities/create" className="btn btn-primary">
+              Create Community
+            </Link>
+          </div>
         )}
       </div>
     </div>

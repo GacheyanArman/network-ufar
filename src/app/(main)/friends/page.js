@@ -23,14 +23,16 @@ function avatar(user) {
         width: "80px",
         height: "80px",
         borderRadius: "50%",
-        backgroundColor: "var(--ufar-blue)",
+        background: "linear-gradient(135deg, #0b3aa8 0%, #062fae 100%)",
         color: "white",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         fontSize: "2rem",
+        fontWeight: "900",
         marginBottom: "12px",
         overflow: "hidden",
+        boxShadow: "0 4px 12px rgba(11, 58, 168, 0.16)",
       }}
     >
       {user.image || user.avatarUrl ? (

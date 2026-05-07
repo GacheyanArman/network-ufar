@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, or, count } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { users, posts, photos, friendships, communities } from "@/lib/schema";
+import { users, posts, photos, photoTags, photoSaves, friendships, communities, userFollows } from "@/lib/schema";
 import { deletePost } from "@/app/actions/post";
 import PostComposer from "@/components/PostComposer";
-import PhotoGallery from "@/components/PhotoGallery";
+import ProfilePostsClient from "@/components/ProfilePostsClient";
+import ProfilePhotoTabs from "@/components/ProfilePhotoTabs";
 import UiIcon from "@/components/UiIcon";
-import { getGenderLabel, getRelationshipStatusLabel } from "@/lib/profile-utils";
+import ProfileInfo from "@/components/ProfileInfo";
+import ProfileAboutInfo from "@/components/ProfileAboutInfo";
 
 export default async function ProfilePage({ searchParams }) {
   const session = await getSession();
@@ -37,6 +39,7 @@ export default async function ProfilePage({ searchParams }) {
       coverImage: users.coverImage,
       gender: users.gender,
       relationshipStatus: users.relationshipStatus,
+      birthDate: users.birthDate,
       createdAt: users.createdAt,
     })
     .from(users)
@@ -55,19 +58,87 @@ export default async function ProfilePage({ searchParams }) {
       createdAt: posts.createdAt,
       likesCount: posts.likesCount,
       commentsCount: posts.commentsCount,
+      authorId: posts.authorId,
     })
     .from(posts)
     .where(eq(posts.authorId, session.userId))
     .orderBy(desc(posts.createdAt));
 
+  // Serialize posts for client component
+  const serializedPosts = userPosts.map((post) => {
+    const imageUrl = post.imageUrl || null;
+
+    const mediaType = imageUrl
+      ? /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(imageUrl)
+        ? "video"
+        : "image"
+      : null;
+
+    return {
+      id: post.id,
+      content: post.content || "",
+      imageUrl,
+      mediaType,
+      createdAt: post.createdAt
+        ? post.createdAt.toISOString()
+        : new Date().toISOString(),
+      authorId: post.authorId,
+      likesCount: post.likesCount || 0,
+      commentsCount: post.commentsCount || 0,
+    };
+  });
+
   const userPhotos = await db
-    .select()
+    .select({
+      id: photos.id,
+      imageUrl: photos.imageUrl,
+      caption: photos.caption,
+      ownerId: photos.ownerId,
+      createdAt: photos.createdAt,
+    })
     .from(photos)
     .where(eq(photos.ownerId, session.userId))
     .orderBy(desc(photos.createdAt));
 
-  const userFriends = await db
-    .select({ id: friendships.id })
+  const taggedPhotos = await db
+    .select({
+      id: photos.id,
+      imageUrl: photos.imageUrl,
+      caption: photos.caption,
+      ownerId: photos.ownerId,
+      ownerName: users.fullName,
+      ownerImage: users.image,
+      createdAt: photos.createdAt,
+    })
+    .from(photoTags)
+    .innerJoin(photos, eq(photoTags.photoId, photos.id))
+    .innerJoin(users, eq(photos.ownerId, users.id))
+    .where(
+      and(
+        eq(photoTags.userId, session.userId),
+        eq(photoTags.status, "approved")
+      )
+    )
+    .orderBy(desc(photos.createdAt));
+
+  const savedPhotos = await db
+    .select({
+      id: photos.id,
+      imageUrl: photos.imageUrl,
+      caption: photos.caption,
+      ownerId: photos.ownerId,
+      ownerName: users.fullName,
+      ownerImage: users.image,
+      createdAt: photos.createdAt,
+    })
+    .from(photoSaves)
+    .innerJoin(photos, eq(photoSaves.photoId, photos.id))
+    .innerJoin(users, eq(photos.ownerId, users.id))
+    .where(eq(photoSaves.userId, session.userId))
+    .orderBy(desc(photoSaves.createdAt));
+
+  const [friendsRow] = await db
+    .select({ value: count() })
     .from(friendships)
     .where(
       and(
@@ -79,12 +150,15 @@ export default async function ProfilePage({ searchParams }) {
       )
     );
 
-  const userCommunities = await db
-    .select({
-      id: communities.id,
-    })
+  const [communitiesRow] = await db
+    .select({ value: count() })
     .from(communities)
     .where(eq(communities.creatorId, session.userId));
+
+  const [followingRow] = await db
+    .select({ value: count() })
+    .from(userFollows)
+    .where(eq(userFollows.followerId, session.userId));
 
   const safeName = currentUser.fullName || "Student";
   const safeInitial = safeName.charAt(0).toUpperCase() || "U";
@@ -96,10 +170,11 @@ export default async function ProfilePage({ searchParams }) {
   const safeBio = currentUser.bio || "";
   const avatarImage = currentUser.image || "";
 
-  const postsCount = userPosts.length;
+  const postsCount = serializedPosts.length;
   const photosCount = userPhotos.length;
-  const friendsCount = userFriends.length;
-  const communitiesCount = userCommunities.length;
+  const friendsCount = Number(friendsRow?.value || 0);
+  const communitiesCount = Number(communitiesRow?.value || 0);
+  const followingCount = Number(followingRow?.value || 0);
 
   const joinedAt = currentUser.createdAt
     ? new Date(currentUser.createdAt).toLocaleDateString("en-US", {
@@ -111,6 +186,20 @@ export default async function ProfilePage({ searchParams }) {
   return (
     <div className="uf-profile-page">
       <style>{profileStyles}</style>
+      <style>{`
+        /* Hide right sidebar only on profile page */
+        .uf-profile-page ~ .sidebar-right,
+        body:has(.uf-profile-page) .sidebar-right {
+          display: none !important;
+        }
+
+        /* Adjust grid layout when on profile page */
+        body:has(.uf-profile-page) .app-container,
+        body:has(.uf-profile-page) .simple-layout,
+        body:has(.uf-profile-page) .old-social-grid {
+          grid-template-columns: var(--left-col) minmax(0, 1fr) !important;
+        }
+      `}</style>
 
       <div className="uf-profile-shell">
         <div className="uf-profile-layout">
@@ -148,57 +237,19 @@ export default async function ProfilePage({ searchParams }) {
               {safeBio ? <p className="uf-profile-bio">{safeBio}</p> : null}
 
               <div className="uf-profile-info">
-                {safeEmail ? (
-                  <div className="uf-profile-info-row">
-                    <span className="uf-inline-icon">
-                      <UiIcon name="mail" size={15} />
-                    </span>
-                    <p>{safeEmail}</p>
-                  </div>
-                ) : null}
-
-                <Link href="/friends" className="uf-profile-info-row">
-                  <span className="uf-inline-icon">
-                    <UiIcon name="users" size={15} />
-                  </span>
-                  <p>
-                    {friendsCount} friend{friendsCount === 1 ? "" : "s"}
-                  </p>
-                </Link>
-
-                <Link href="/communities" className="uf-profile-info-row">
-                  <span>💛</span>
-                  <p>
-                    {communitiesCount} communit
-                    {communitiesCount === 1 ? "y" : "ies"}
-                  </p>
-                </Link>
-
-                <Link
-                  href="/profile?tab=photos"
-                  scroll={false}
-                  className="uf-profile-info-row"
-                >
-                  <span className="uf-inline-icon">
-                    <UiIcon name="photo" size={15} />
-                  </span>
-                  <p>
-                    {photosCount} photo{photosCount === 1 ? "" : "s"}
-                  </p>
-                </Link>
+                <ProfileInfo
+                  email={safeEmail}
+                  gender={currentUser.gender}
+                  relationshipStatus={currentUser.relationshipStatus}
+                  birthDate={currentUser.birthDate}
+                  friendsCount={friendsCount}
+                  followingCount={followingCount}
+                />
               </div>
 
               <Link href="/profile/edit" className="uf-profile-edit-btn">
                 Edit profile
               </Link>
-            </section>
-
-            <section className="uf-card uf-profile-stats-card">
-              <StatRow href="/profile?tab=posts" label="Posts" value={postsCount} />
-              <StatRow href="/profile?tab=photos" label="Photos" value={photosCount} />
-              <StatRow href="/friends" label="Friends" value={friendsCount} />
-              <StatRow href="/communities" label="Groups" value={communitiesCount} />
-              <StatRow href="/profile?tab=about" label="About" value="Info" />
             </section>
           </aside>
 
@@ -215,6 +266,10 @@ export default async function ProfilePage({ searchParams }) {
               <TabLink href="/profile?tab=photos" active={currentTab === "photos"}>
                 Photos
               </TabLink>
+
+              <TabLink href="/profile?tab=groups" active={currentTab === "groups"}>
+                Groups
+              </TabLink>
             </nav>
 
             {saved ? (
@@ -229,7 +284,7 @@ export default async function ProfilePage({ searchParams }) {
                   <PostComposer currentUser={currentUser} />
                 </div>
 
-                {userPosts.length === 0 ? (
+                {serializedPosts.length === 0 ? (
                   <div className="uf-card uf-profile-empty">
                     <h2>No posts yet</h2>
                     <p>
@@ -238,62 +293,7 @@ export default async function ProfilePage({ searchParams }) {
                     </p>
                   </div>
                 ) : (
-                  userPosts.map((post) => (
-                    <article key={post.id} className="uf-card uf-post-card">
-                      <div className="uf-post-header">
-                        <div className="uf-post-author">
-                          <div className="uf-post-avatar">
-                            {avatarImage ? (
-                              <img src={avatarImage} alt={safeName} />
-                            ) : (
-                              <span>{safeInitial}</span>
-                            )}
-                          </div>
-
-                          <div className="uf-post-author-meta">
-                            <div className="uf-post-name-row">
-                              <strong>{safeName}</strong>
-                              <span>{safeUsername}</span>
-                            </div>
-
-                            <time>{formatPostDate(post.createdAt)}</time>
-                          </div>
-                        </div>
-
-                        <form action={deletePost}>
-                          <input type="hidden" name="postId" value={post.id} />
-                          <button
-                            type="submit"
-                            className="uf-post-delete-btn"
-                            title="Delete post"
-                          >
-                            ×
-                          </button>
-                        </form>
-                      </div>
-
-                      {post.content ? (
-                        <p className="uf-post-text">{post.content}</p>
-                      ) : null}
-
-                      {post.imageUrl ? (
-                        <img
-                          src={post.imageUrl}
-                          alt="Post attachment"
-                          className="uf-post-image"
-                        />
-                      ) : null}
-
-                      <div className="uf-post-actions">
-                        <ActionItem icon="💬" value={post.commentsCount || 0} />
-                        <ActionItem icon="🔁" value={0} />
-                        <ActionItem icon="♡" value={post.likesCount || 0} />
-                        <ActionItem icon="📊" value={0} />
-                        <ActionItem icon="🔖" value={0} />
-                        <ActionItem icon="↗" value="" />
-                      </div>
-                    </article>
-                  ))
+                  <ProfilePostsClient posts={serializedPosts} currentUser={currentUser} />
                 )}
               </section>
             ) : null}
@@ -301,33 +301,33 @@ export default async function ProfilePage({ searchParams }) {
             {currentTab === "about" ? (
               <section className="uf-about-grid">
                 <div className="uf-card uf-about-card">
+                  <h3>Bio</h3>
+                  <p className="uf-about-bio">{safeBio || "No bio yet."}</p>
+                </div>
+
+                <div className="uf-card uf-about-card">
                   <h3>Personal info</h3>
                   <InfoBlock label="Full name" value={safeName} />
                   <InfoBlock label="Username" value={safeUsername} />
                   <InfoBlock label="Email" value={safeEmail || "No email"} />
                   <InfoBlock label="Faculty" value={safeFaculty} />
-                  <InfoBlock label="Gender" value={currentUser.gender ? getGenderLabel(currentUser.gender) : "Не указано"} />
-                  <InfoBlock label="Relationship Status" value={currentUser.relationshipStatus ? getRelationshipStatusLabel(currentUser.relationshipStatus) : "Не указано"} />
+                  <ProfileAboutInfo
+                    gender={currentUser.gender}
+                    relationshipStatus={currentUser.relationshipStatus}
+                  />
                   <InfoBlock label="Joined" value={joinedAt} />
-                </div>
-
-                <div className="uf-card uf-about-card">
-                  <h3>Bio</h3>
-                  <p className="uf-about-bio">{safeBio || "No bio yet."}</p>
                 </div>
               </section>
             ) : null}
 
             {currentTab === "photos" ? (
               <section className="uf-photos-section">
-                {userPhotos.length === 0 ? (
-                  <div className="uf-card uf-profile-empty">
-                    <h2>No photos yet</h2>
-                    <p>Upload your first photo to fill this section.</p>
-                  </div>
-                ) : (
-                  <PhotoGallery photos={userPhotos} />
-                )}
+                <ProfilePhotoTabs
+                  isOwner={true}
+                  photos={userPhotos}
+                  tagged={taggedPhotos}
+                  saved={savedPhotos}
+                />
               </section>
             ) : null}
           </main>
@@ -358,15 +358,6 @@ function TabLink({ href, active, children }) {
   );
 }
 
-function ActionItem({ icon, value }) {
-  return (
-    <span className="uf-action-item">
-      <span className="uf-action-icon">{icon}</span>
-      {value !== "" ? <span>{value}</span> : null}
-    </span>
-  );
-}
-
 function InfoBlock({ label, value }) {
   return (
     <div className="uf-info-block">
@@ -374,17 +365,6 @@ function InfoBlock({ label, value }) {
       <strong>{value}</strong>
     </div>
   );
-}
-
-function formatPostDate(value) {
-  if (!value) return "";
-
-  return new Date(value).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 const profileStyles = `
@@ -414,6 +394,8 @@ const profileStyles = `
   flex-direction: column;
   gap: 16px;
   align-self: start;
+  position: sticky;
+  top: calc(var(--topbar-height) + 24px);
 }
 
 .uf-profile-main {
@@ -796,6 +778,7 @@ const profileStyles = `
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
+  align-items: start;
 }
 
 .uf-about-card {

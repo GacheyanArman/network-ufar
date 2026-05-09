@@ -9,6 +9,8 @@ import {
   removeMember,
   setMemberRole,
 } from "@/app/actions/community";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getFacultyLabel } from "@/lib/profile-utils";
 
 export type Member = {
   userId: string;
@@ -55,6 +57,7 @@ export default function CommunityMembersPanel({
   const [tab, setTab] = useState<"members" | "requests">(initialTab);
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
+  const { language } = useLanguage();
 
   useEffect(() => {
     if (!open) return;
@@ -122,8 +125,8 @@ export default function CommunityMembersPanel({
       ) : null}
 
       {open ? (
-        <div className="uf-members-overlay" role="dialog" aria-modal="true">
-          <div className="uf-members-panel">
+        <div className="uf-members-overlay" role="dialog" aria-modal="true" onClick={() => setOpen(false)}>
+          <div className="uf-members-panel" onClick={(e) => e.stopPropagation()}>
             <div className="uf-members-panel-header">
               <h3 className="uf-members-panel-title">Community members</h3>
               <button
@@ -300,7 +303,7 @@ export default function CommunityMembersPanel({
                               {r.fullName || "Student"}
                             </div>
                             <div className="uf-member-meta">
-                              {r.faculty || ""}
+                              {r.faculty ? getFacultyLabel(r.faculty, language) : ""}
                             </div>
                           </div>
                         </Link>

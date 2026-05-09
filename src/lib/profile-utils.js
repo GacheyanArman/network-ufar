@@ -1,6 +1,19 @@
 // Утилиты для работы с gender и relationshipStatus
 import { translations } from "./i18n";
 
+export const FACULTY_OPTIONS = [
+  "management", "marketing", "finance", "computerScience",
+  "law", "internationalRelations", "languages", "economics", "other",
+];
+
+export function getFacultyLabel(faculty, language = "en") {
+  if (!faculty) return "";
+  const lang = translations[language] || translations.en;
+  const facultyLabels = lang.onboarding?.faculty;
+  if (facultyLabels && facultyLabels[faculty]) return facultyLabels[faculty];
+  return faculty;
+}
+
 export const GENDER_OPTIONS = [
   { value: "male", label: "Мужской" },
   { value: "female", label: "Женский" },

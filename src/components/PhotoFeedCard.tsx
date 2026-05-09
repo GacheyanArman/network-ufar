@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import Avatar from "./Avatar";
 import UiIcon from "./UiIcon";
+import MediaViewer from "./MediaViewer";
 import PhotoCommentsPanel, { PhotoCommentItem } from "./PhotoCommentsPanel";
 import { likePhoto, savePhoto, deletePhoto } from "@/app/actions/photo";
 import { tokenizeCaption } from "@/lib/hashtags";
@@ -44,6 +45,7 @@ export default function PhotoFeedCard({
   const [comments, setComments] = useState(photo.commentsCount);
   const [, startTransition] = useTransition();
   const [removed, setRemoved] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const ownsPhoto = photo.ownerId === currentUserId;
   const canDelete = ownsPhoto || canModerate;
@@ -187,7 +189,7 @@ export default function PhotoFeedCard({
           alt={photo.caption || "Campus moment"}
           loading="lazy"
           decoding="async"
-          onDoubleClick={handleLike}
+          onClick={() => setViewerOpen(true)}
           style={{
             display: "block",
             width: "100%",
@@ -346,6 +348,24 @@ export default function PhotoFeedCard({
           year: "numeric",
         })}
       </div>
+
+      {viewerOpen && (
+        <MediaViewer
+          src={photo.imageUrl}
+          alt={photo.caption || "Campus moment"}
+          caption={photo.caption}
+          authorName={photo.ownerName}
+          authorImage={photo.ownerAvatar}
+          createdAt={photo.createdAt}
+          likesCount={likes}
+          commentsCount={comments}
+          isLiked={liked}
+          isSaved={saved}
+          photoId={photo.id}
+          currentUserId={currentUserId}
+          onClose={() => setViewerOpen(false)}
+        />
+      )}
     </article>
   );
 }

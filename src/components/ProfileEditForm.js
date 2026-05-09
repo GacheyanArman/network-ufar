@@ -10,9 +10,6 @@ const editProfileText = {
     title: "Edit profile",
     subtitle: "Update your profile details and upload real photos from your device.",
     backToProfile: "← Back to profile",
-    uploadCoverPhoto: "Upload cover photo",
-    uploadHint: "Click to choose image (max 5MB)",
-    changeCover: "Change cover",
     changeAvatar: "Change avatar",
     personalInformation: "Personal Information",
     fullName: "Full name *",
@@ -254,99 +251,14 @@ const editProfileStyles = `
 
 .uf-edit-preview-card {
   position: relative;
-  padding: 0;
-  overflow: hidden;
-}
-
-.uf-edit-cover-zone {
-  width: 100%;
-  height: 220px;
-  background: linear-gradient(135deg, #f0f4fb 0%, #e3ebf5 100%);
-  cursor: pointer;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.uf-edit-cover-zone:hover {
-  background: linear-gradient(135deg, #e3ebf5 0%, #d4e3ff 100%);
-}
-
-.uf-edit-cover-zone img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.uf-edit-cover-placeholder {
+  padding: 32px 32px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  text-align: center;
-  padding: 24px;
-}
-
-.uf-edit-upload-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background: #ffffff;
-  color: #0b3aa8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  margin-bottom: 8px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-}
-
-.uf-edit-cover-placeholder strong {
-  font-size: 16px;
-  font-weight: 900;
-  color: #0f172a;
-}
-
-.uf-edit-cover-placeholder span {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 600;
-}
-
-.uf-edit-cover-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  min-height: 38px;
-  padding: 0 16px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #0f172a;
-  border: 1px solid rgba(217, 226, 239, 0.8);
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
-  transition: all 0.2s ease;
-}
-
-.uf-edit-cover-btn:hover {
-  background: #ffffff;
-  border-color: #0b3aa8;
-  color: #0b3aa8;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
+  gap: 16px;
 }
 
 .uf-edit-avatar-zone {
-  position: absolute;
-  bottom: -60px;
-  left: 32px;
   width: 140px;
   height: 140px;
   border-radius: 999px;
@@ -360,7 +272,8 @@ const editProfileStyles = `
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  z-index: 10;
+  position: relative;
+  z-index: 50;
 }
 
 .uf-edit-avatar-zone:hover {
@@ -381,9 +294,6 @@ const editProfileStyles = `
 }
 
 .uf-edit-avatar-btn {
-  position: absolute;
-  bottom: -50px;
-  left: 150px;
   min-height: 38px;
   padding: 0 16px;
   border-radius: 10px;
@@ -395,7 +305,7 @@ const editProfileStyles = `
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
   transition: all 0.2s ease;
-  z-index: 10;
+  z-index: 50;
 }
 
 .uf-edit-avatar-btn:hover {
@@ -407,7 +317,7 @@ const editProfileStyles = `
 }
 
 .uf-edit-fields-card {
-  padding: 80px 32px 32px;
+  padding: 32px;
 }
 
 .uf-edit-section-title {
@@ -473,7 +383,7 @@ const editProfileStyles = `
 }
 
 .uf-edit-textarea {
-  resize: vertical;
+  resize: none;
   min-height: 100px;
   line-height: 1.6;
 }
@@ -590,23 +500,16 @@ const editProfileStyles = `
   }
 
   .uf-edit-fields-card {
-    padding: 80px 20px 24px;
+    padding: 24px 20px;
   }
 
   .uf-edit-avatar-zone {
     width: 120px;
     height: 120px;
-    left: 20px;
-    bottom: -50px;
   }
 
   .uf-edit-avatar-initial {
     font-size: 44px;
-  }
-
-  .uf-edit-avatar-btn {
-    bottom: -40px;
-    left: 130px;
   }
 
   .uf-edit-actions {
@@ -621,15 +524,9 @@ const editProfileStyles = `
 }
 
 @media (max-width: 480px) {
-  .uf-edit-cover-zone {
-    height: 180px;
-  }
-
   .uf-edit-avatar-zone {
     width: 100px;
     height: 100px;
-    left: 16px;
-    bottom: -40px;
     border-width: 4px;
   }
 
@@ -638,21 +535,13 @@ const editProfileStyles = `
   }
 
   .uf-edit-avatar-btn {
-    bottom: -30px;
-    left: 110px;
-    min-height: 34px;
-    padding: 0 12px;
-    font-size: 12px;
-  }
-
-  .uf-edit-cover-btn {
     min-height: 34px;
     padding: 0 12px;
     font-size: 12px;
   }
 
   .uf-edit-fields-card {
-    padding: 60px 16px 20px;
+    padding: 20px 16px;
   }
 }
 `;
@@ -662,10 +551,8 @@ export default function ProfileEditForm({ user, error }) {
   const text = editProfileText[language] || editProfileText.en;
 
   const avatarInputRef = useRef(null);
-  const coverInputRef = useRef(null);
 
   const [avatarPreview, setAvatarPreview] = useState(user.image || "");
-  const [coverPreview, setCoverPreview] = useState(user.coverImage || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const safeName = user.fullName || "Student";
@@ -689,26 +576,6 @@ export default function ProfileEditForm({ user, error }) {
     }
 
     setAvatarPreview(URL.createObjectURL(file));
-  }
-
-  function handleCoverChange(event) {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      alert("Only image files are allowed.");
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image is too large. Max size is 5MB.");
-      event.target.value = "";
-      return;
-    }
-
-    setCoverPreview(URL.createObjectURL(file));
   }
 
    return (
@@ -743,29 +610,6 @@ export default function ProfileEditForm({ user, error }) {
           >
             <div className="uf-card uf-edit-preview-card">
               <div
-                className="uf-edit-cover-zone"
-                onClick={() => coverInputRef.current?.click()}
-              >
-                {coverPreview ? (
-                  <img src={coverPreview} alt={text.uploadCoverPhoto} />
-                ) : (
-                  <div className="uf-edit-cover-placeholder">
-                    <div className="uf-edit-upload-icon">📷</div>
-                    <strong>{text.uploadCoverPhoto}</strong>
-                    <span>{text.uploadHint}</span>
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="button"
-                className="uf-edit-cover-btn"
-                onClick={() => coverInputRef.current?.click()}
-              >
-                {text.changeCover}
-              </button>
-
-              <div
                 className="uf-edit-avatar-zone"
                 onClick={() => avatarInputRef.current?.click()}
               >
@@ -783,15 +627,6 @@ export default function ProfileEditForm({ user, error }) {
               >
                 {text.changeAvatar}
               </button>
-
-              <input
-                ref={coverInputRef}
-                type="file"
-                name="coverFile"
-                accept="image/*"
-                onChange={handleCoverChange}
-                hidden
-              />
 
               <input
                 ref={avatarInputRef}

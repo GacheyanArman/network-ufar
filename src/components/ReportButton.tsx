@@ -123,7 +123,7 @@ export default function ReportButton({
                     padding: "8px 12px",
                     borderRadius: "8px",
                     border: "1px solid var(--border-color)",
-                    resize: "vertical",
+                    resize: "none",
                   }}
                 />
               </label>

@@ -2,18 +2,18 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import {
-  events,
-  eventRsvps,
-  photoAlbums,
-  photos,
-  users,
-} from "@/lib/schema";
+import { photoAlbums, photos } from "@/lib/schema";
 import { getSession } from "@/lib/session";
 import { fetchPhotoFeed } from "@/lib/photo-feed";
 import { getUserRole, isStaff } from "@/lib/roles";
+import {
+  getEventDetail,
+  getEventAttendees,
+  getEventComments,
+} from "@/app/actions/events";
 import UiIcon from "@/components/UiIcon";
 import PhotoFeedCard from "@/components/PhotoFeedCard";
+import EventDetailClient from "@/components/EventDetailClient";
 
 export const dynamic = "force-dynamic";
 
@@ -27,34 +27,13 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   if (!session?.userId) redirect("/login");
   const userId = session.userId as string;
 
-  const [event] = await db
-    .select({
-      id: events.id,
-      title: events.title,
-      description: events.description,
-      eventType: events.eventType,
-      location: events.location,
-      startTime: events.startTime,
-      endTime: events.endTime,
-      imageUrl: events.imageUrl,
-      organizerId: events.organizerId,
-      organizerName: users.fullName,
-      organizerImage: users.image,
-    })
-    .from(events)
-    .innerJoin(users, eq(events.organizerId, users.id))
-    .where(eq(events.id, id))
-    .limit(1);
+  const detail = await getEventDetail(id);
+  if (!detail) notFound();
 
-  if (!event) notFound();
-
-  const [rsvpStats] = await db
-    .select({
-      going: sql<number>`COUNT(*) FILTER (WHERE ${eventRsvps.status} = 'going')::int`,
-      interested: sql<number>`COUNT(*) FILTER (WHERE ${eventRsvps.status} = 'interested')::int`,
-    })
-    .from(eventRsvps)
-    .where(eq(eventRsvps.eventId, id));
+  const [attendees, comments] = await Promise.all([
+    getEventAttendees(id),
+    getEventComments(id),
+  ]);
 
   // Albums explicitly attached to this event.
   const albums = await db
@@ -69,10 +48,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     })
     .from(photoAlbums)
     .where(
-      and(
-        eq(photoAlbums.eventId, id),
-        eq(photoAlbums.isPrivate, false)
-      )
+      and(eq(photoAlbums.eventId, id), eq(photoAlbums.isPrivate, false))
     )
     .orderBy(desc(photoAlbums.createdAt));
 
@@ -86,6 +62,25 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   });
 
   const role = await getUserRole(userId);
+
+  // Serialise dates to strings for the client component.
+  const serialisedComments = comments.map((c) => ({
+    ...c,
+    createdAt: c.createdAt.toISOString(),
+  }));
+  const serialisedAttendees = {
+    going: attendees.going.map((a) => ({ ...a })),
+    interested: attendees.interested.map((a) => ({ ...a })),
+    waitlisted: attendees.waitlisted.map((a) => ({ ...a })),
+  };
+
+  // Server component: rendered once per request, so calling Date.now() at the
+  // top of the function is fine. The lint rule is meant for client renders.
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
+  const isPast = detail.event.startTime
+    ? new Date(detail.event.startTime).getTime() < nowMs
+    : false;
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "16px 12px 48px" }}>
@@ -109,67 +104,25 @@ export default async function EventDetailPage({ params }: EventPageProps) {
         <UiIcon name="news" size={12} /> Back to events
       </Link>
 
-      <header
-        style={{
-          background: "#fff",
-          borderRadius: 16,
-          overflow: "hidden",
-          border: "1px solid var(--border-color-light)",
-          marginBottom: 20,
-        }}
-      >
-        {event.imageUrl && (
-          <img
-            src={event.imageUrl}
-            alt=""
-            style={{ width: "100%", maxHeight: 320, objectFit: "cover", display: "block" }}
-          />
-        )}
-        <div style={{ padding: 20 }}>
-          <div
-            style={{
-              display: "inline-block",
-              padding: "4px 10px",
-              borderRadius: 999,
-              background: "var(--french-blue-soft, #e8eef9)",
-              color: "var(--french-blue, #2c5aa0)",
-              fontSize: 11,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: 0.6,
-            }}
-          >
-            {event.eventType}
-          </div>
-          <h1
-            style={{
-              margin: "10px 0 6px",
-              fontSize: "clamp(22px, 4vw, 28px)",
-              fontWeight: 900,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {event.title}
-          </h1>
-          <div style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-            {new Date(event.startTime).toLocaleString()}
-            {event.location ? ` · ${event.location}` : ""}
-          </div>
-          {event.description && (
-            <p style={{ marginTop: 12, lineHeight: 1.6, color: "var(--text-primary)" }}>
-              {event.description}
-            </p>
-          )}
-          <div style={{ display: "flex", gap: 18, marginTop: 14, fontSize: 13, color: "var(--text-secondary)" }}>
-            <span><strong>{rsvpStats?.going ?? 0}</strong> going</span>
-            <span><strong>{rsvpStats?.interested ?? 0}</strong> interested</span>
-          </div>
-        </div>
-      </header>
+      <EventDetailClient
+        event={detail.event}
+        coOrganizers={detail.coOrganizers}
+        rsvpCounts={detail.rsvpCounts}
+        myRsvpStatus={detail.myRsvpStatus}
+        myWaitlistPosition={detail.myWaitlistPosition}
+        canManage={detail.canManage}
+        isCheckedIn={detail.isCheckedIn}
+        checkInCount={detail.checkInCount}
+        isFull={detail.isFull}
+        isPast={isPast}
+        attendees={serialisedAttendees}
+        comments={serialisedComments}
+        currentUserId={userId}
+      />
 
       {/* Albums for this event */}
       {albums.length > 0 && (
-        <section style={{ marginBottom: 28 }}>
+        <section style={{ margin: "28px 0" }}>
           <h2 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 900 }}>
             Albums
           </h2>
@@ -199,7 +152,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                   <img
                     src={a.coverPhotoUrl}
                     alt=""
-                    style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      opacity: 0.85,
+                    }}
                   />
                 )}
                 <div
@@ -210,7 +168,8 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "flex-end",
-                    background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
                   }}
                 >
                   <div style={{ fontWeight: 900, fontSize: 14 }}>{a.title}</div>
@@ -224,8 +183,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
         </section>
       )}
 
-      {/* Direct event moments */}
-      <section>
+      {/* Direct event moments — also functions as the "Event photos after
+          the event" archive for past events. */}
+      <section style={{ marginTop: 28 }}>
         <div
           style={{
             display: "flex",
@@ -235,7 +195,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
           }}
         >
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>
-            Campus Moments from this event
+            {isPast
+              ? "Photos from this event"
+              : "Campus moments from this event"}
           </h2>
         </div>
 
@@ -250,13 +212,16 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               color: "var(--text-secondary)",
             }}
           >
-            No moments yet from this event. Be the first to share one!
+            {isPast
+              ? "No photos shared yet from this event. If you attended, upload your favourites!"
+              : "No moments yet from this event. Be the first to share one!"}
           </div>
         ) : (
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))",
+              gridTemplateColumns:
+                "repeat(auto-fill, minmax(min(320px, 100%), 1fr))",
               gap: 16,
               alignItems: "start",
             }}

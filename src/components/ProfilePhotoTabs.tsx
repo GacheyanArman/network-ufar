@@ -18,6 +18,7 @@ type Tab = "photos" | "tagged" | "saved";
 
 interface ProfilePhotoTabsProps {
   isOwner: boolean;
+  currentUserId?: string | null;
   photos: ProfilePhotoTile[];
   tagged: ProfilePhotoTile[];
   saved: ProfilePhotoTile[];
@@ -25,6 +26,7 @@ interface ProfilePhotoTabsProps {
 
 export default function ProfilePhotoTabs({
   isOwner,
+  currentUserId,
   photos,
   tagged,
   saved,
@@ -119,6 +121,8 @@ export default function ProfilePhotoTabs({
           authorImage={list[openIdx].ownerImage ?? null}
           createdAt={list[openIdx].createdAt ?? null}
           caption={list[openIdx].caption ?? null}
+          photoId={list[openIdx].id}
+          currentUserId={currentUserId}
           onClose={() => setOpenIdx(null)}
           items={list.map((p) => ({
             id: p.id,

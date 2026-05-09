@@ -1239,7 +1239,7 @@ const messagesStyles = `
   padding: 6px 8px;
   font-size: 14px;
   font-family: inherit;
-  resize: vertical;
+  resize: none;
 }
 .tg-message-other .tg-msg-edit textarea {
   border-color: #cbd5e1;

@@ -340,6 +340,72 @@ export default function UiIcon({ name, size = 18, className = "" }) {
         <polyline points="12 6 12 12 16 14" />
       </svg>
     ),
+
+    star: (
+      <svg {...common}>
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </svg>
+    ),
+
+    "star-filled": (
+      <svg {...common} fill="currentColor">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </svg>
+    ),
+
+    "check-circle": (
+      <svg {...common}>
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    ),
+
+    building: (
+      <svg {...common}>
+        <rect x="4" y="2" width="16" height="20" rx="2" />
+        <path d="M9 22v-4h6v4" />
+        <path d="M8 6h.01" />
+        <path d="M16 6h.01" />
+        <path d="M12 6h.01" />
+        <path d="M12 10h.01" />
+        <path d="M12 14h.01" />
+        <path d="M16 10h.01" />
+        <path d="M16 14h.01" />
+        <path d="M8 10h.01" />
+        <path d="M8 14h.01" />
+      </svg>
+    ),
+
+    "chevron-down": (
+      <svg {...common}>
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    ),
+
+    "chevron-up": (
+      <svg {...common}>
+        <polyline points="18 15 12 9 6 15" />
+      </svg>
+    ),
+
+    "trending-up": (
+      <svg {...common}>
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+        <polyline points="17 6 23 6 23 12" />
+      </svg>
+    ),
+
+    flame: (
+      <svg {...common}>
+        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+      </svg>
+    ),
+
+    "thumbs-up": (
+      <svg {...common}>
+        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+      </svg>
+    ),
   };
 
   return icons[name] || icons.message;

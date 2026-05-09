@@ -191,6 +191,24 @@ export async function deletePhotoAlbum(formData) {
   return { ok: true };
 }
 
+export async function getPhotoComments(photoId) {
+  if (!photoId) return [];
+  const rows = await db
+    .select({
+      id: photoComments.id,
+      content: photoComments.content,
+      createdAt: photoComments.createdAt,
+      userId: photoComments.userId,
+      authorName: users.fullName,
+      authorImage: users.image,
+    })
+    .from(photoComments)
+    .innerJoin(users, eq(photoComments.userId, users.id))
+    .where(eq(photoComments.photoId, photoId))
+    .orderBy(photoComments.createdAt);
+  return rows;
+}
+
 export async function deletePhoto(formData) {
   const userId = await requireUserId();
   const photoId = formData.get("photoId")?.toString().trim();

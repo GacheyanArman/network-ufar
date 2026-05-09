@@ -15,6 +15,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "like",
   "comment",
   "friend_request",
+  "reminder",
 ]);
 export const genderEnum = pgEnum("gender", [
   "male",
@@ -48,6 +49,8 @@ export const reportStatusEnum = pgEnum("report_status", [
   "resolved",
   "dismissed",
 ]);
+// Event categories. Legacy values (`party`, `cultural`) are kept so old rows
+// keep working; the UI maps them to the new "social" bucket.
 export const eventTypeEnum = pgEnum("event_type", [
   "party",
   "academic",
@@ -55,19 +58,44 @@ export const eventTypeEnum = pgEnum("event_type", [
   "cultural",
   "workshop",
   "other",
+  // New categories
+  "club",
+  "career",
+  "social",
+  "exam",
 ]);
+// RSVP states. `waitlisted` is set automatically when an event is full and the
+// user tries to RSVP "going".
 export const rsvpStatusEnum = pgEnum("rsvp_status", [
   "going",
   "interested",
   "not_going",
+  "waitlisted",
 ]);
+// `calendar_event_type` is the *category* — controls colour/icon/filtering in
+// the calendar UI. `assignment` is kept as an alias of `homework` for backward
+// compatibility with rows already in the DB.
 export const calendarEventTypeEnum = pgEnum("calendar_event_type", [
   "exam",
-  "assignment",
+  "homework",
+  "assignment", // legacy alias for homework
+  "project",
+  "event",
+  "personal",
+  "community",
   "lecture",
   "holiday",
   "deadline",
   "other",
+]);
+
+// Repeat rule for recurring entries. We store the rule on the master row and
+// "expand" virtual occurrences at read-time (no row explosion in the DB).
+export const calendarRecurrenceEnum = pgEnum("calendar_recurrence", [
+  "none",
+  "daily",
+  "weekly",
+  "monthly",
 ]);
 export const libraryResourceTypeEnum = pgEnum("library_resource_type", [
   "book",
@@ -157,6 +185,12 @@ export const users = pgTable("user", {
 
   username: text("username").unique(),
   faculty: text("faculty"),
+  year: text("study_year"),
+  studyGroup: text("study_group"),
+  interests: text("interests"),
+  languages: text("languages"),
+  lookingFor: text("looking_for"),
+  onboardingComplete: boolean("onboarding_complete").default(false).notNull(),
   bio: text("bio"),
   image: text("image"),
   coverImage: text("cover_image"),
@@ -542,6 +576,9 @@ export const studyMaterials = pgTable("study_material", {
   fileUrl: text("file_url"),
   type: materialTypeEnum("type").default("other").notNull(),
   faculty: text("faculty"),
+  // `course` is kept distinct from `year` so we can filter by both
+  // (e.g. "2nd Year" plus a specific course code like "FIN-201").
+  course: text("course"),
   year: text("year"),
   subject: text("subject"),
   professorCourse: text("professor_course"),
@@ -549,14 +586,23 @@ export const studyMaterials = pgTable("study_material", {
   visibility: materialVisibilityEnum("visibility").default("all").notNull(),
   status: materialStatusEnum("status").default("pending").notNull(),
   isVerified: boolean("is_verified").default(false).notNull(),
+  // Counters denormalised onto the row for cheap sorting/listing.
+  // They are kept in sync via server actions in increments of 1.
+  viewsCount: integer("views_count").default(0).notNull(),
   downloadsCount: integer("downloads_count").default(0).notNull(),
   helpfulCount: integer("helpful_count").default(0).notNull(),
+  // Aggregated rating cache. ratingSum / ratingCount = average.
+  // We use integer sum (not float average) to avoid drift on updates.
+  ratingSum: integer("rating_sum").default(0).notNull(),
+  ratingCount: integer("rating_count").default(0).notNull(),
   ownerId: text("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   facultyIdx: index("study_material_faculty_idx").on(table.faculty),
   subjectIdx: index("study_material_subject_idx").on(table.subject),
+  courseIdx: index("study_material_course_idx").on(table.course),
+  statusIdx: index("study_material_status_idx").on(table.status),
 }));
 
 export const studyMaterialSaves = pgTable("study_material_save", {
@@ -574,7 +620,23 @@ export const studyMaterialComments = pgTable("study_material_comment", {
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  materialIdx: index("study_material_comment_material_idx").on(table.materialId),
+}));
+
+// 1..5 star ratings. The unique index guarantees one rating per (user, material).
+// To "change" a rating the user simply re-rates which we implement as upsert.
+export const studyMaterialRatings = pgTable("study_material_rating", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  materialId: text("material_id").notNull().references(() => studyMaterials.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), // 1..5, validated server-side
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserMaterialIdx: uniqueIndex("study_material_rating_unique_idx").on(table.materialId, table.userId),
+  materialIdx: index("study_material_rating_material_idx").on(table.materialId),
+}));
 
 export const studyMaterialRequests = pgTable("study_material_request", {
   id: text("id").$defaultFn(() => createId()).primaryKey(),
@@ -589,8 +651,23 @@ export const studyMaterialRequests = pgTable("study_material_request", {
   description: text("description"),
   urgency: materialUrgencyEnum("urgency").default("medium").notNull(),
   status: materialStatusEnum("status").default("pending").notNull(),
+  // How many other students supported this request ("I need this material too").
+  // Kept here as a counter; supporters table below has the granular records.
+  supportersCount: integer("supporters_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Each row = one student saying "I need this material too" for a given request.
+// Unique on (request, user) so a single user can't inflate the counter.
+export const studyMaterialRequestSupporters = pgTable("study_material_request_supporter", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  requestId: text("request_id").notNull().references(() => studyMaterialRequests.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueIdx: uniqueIndex("study_material_request_supporter_unique_idx").on(table.requestId, table.userId),
+  requestIdx: index("study_material_request_supporter_request_idx").on(table.requestId),
+}));
 
 
 export const reports = pgTable("report", {
@@ -619,15 +696,28 @@ export const events = pgTable("event", {
   location: text("location"),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time"),
+  // `imageUrl` is kept (legacy callers rely on it). `coverImageUrl` is a new
+  // alias used by the rewritten UI; both are populated on create/update.
   imageUrl: text("image_url"),
+  coverImageUrl: text("cover_image_url"),
   organizerId: text("organizer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   communityId: text("community_id").references(() => communities.id, { onDelete: "cascade" }),
   maxAttendees: integer("max_attendees"),
+  // Enables an automatic waitlist when `going` is full.
+  enableWaitlist: boolean("enable_waitlist").default(true).notNull(),
+  // Reminder offsets in minutes (CSV) — same convention as academicCalendar.
+  reminderOffsets: text("reminder_offsets"),
+  lastReminderSentMinutes: integer("last_reminder_sent_minutes"),
+  // Random opaque token used for QR-code check-in URLs. Created lazily on
+  // first request so legacy events stay un-mutated.
+  qrToken: text("qr_token").unique(),
+  isCancelled: boolean("is_cancelled").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   startTimeIdx: index("event_start_time_idx").on(table.startTime),
   organizerIdx: index("event_organizer_idx").on(table.organizerId),
+  communityIdx: index("event_community_idx").on(table.communityId),
 }));
 
 export const eventRsvps = pgTable("event_rsvp", {
@@ -635,19 +725,81 @@ export const eventRsvps = pgTable("event_rsvp", {
   eventId: text("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   status: rsvpStatusEnum("status").notNull(),
+  // Position in the waitlist queue (1-based) when status = waitlisted.
+  // null otherwise.
+  waitlistPosition: integer("waitlist_position"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   uniqueRsvpIdx: uniqueIndex("event_rsvp_unique_idx").on(table.eventId, table.userId),
+  eventStatusIdx: index("event_rsvp_event_status_idx").on(table.eventId, table.status),
 }));
 
+// Co-organizers can edit / delete the event and trigger check-ins, just like
+// the primary organizer.
+export const eventCoOrganizers = pgTable("event_co_organizer", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  eventId: text("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueIdx: uniqueIndex("event_co_organizer_unique_idx").on(table.eventId, table.userId),
+  eventIdx: index("event_co_organizer_event_idx").on(table.eventId),
+}));
+
+// One-line public discussion under each event.
+export const eventComments = pgTable("event_comment", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  eventId: text("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  eventIdx: index("event_comment_event_idx").on(table.eventId),
+}));
+
+// Each row marks a successful QR check-in for an attendee. Unique per
+// (event, user) — re-scanning is a no-op.
+export const eventCheckIns = pgTable("event_check_in", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  eventId: text("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  checkedInAt: timestamp("checked_in_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueIdx: uniqueIndex("event_check_in_unique_idx").on(table.eventId, table.userId),
+  eventIdx: index("event_check_in_event_idx").on(table.eventId),
+}));
+
+// Calendar entry — covers personal deadlines, public academic events,
+// community events and recurring entries. `isPublic = false` means private to
+// the creator; only the creator (or staff) can edit/delete in that case.
 export const academicCalendar = pgTable("academic_calendar", {
   id: text("id").$defaultFn(() => createId()).primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
   eventType: calendarEventTypeEnum("event_type").notNull(),
+  // Course/subject text (free-form; e.g. "FIN-201", "Microeconomics").
   course: text("course"),
+  // Faculty/community used both for filtering and permissions on public entries.
+  faculty: text("faculty"),
+  communityId: text("community_id").references(() => communities.id, { onDelete: "set null" }),
+  // For multi-hour or all-day events. If null, treat it as an instant deadline.
   dueDate: timestamp("due_date").notNull(),
+  endDate: timestamp("end_date"),
+  isAllDay: boolean("is_all_day").default(false).notNull(),
+  location: text("location"),
+  onlineLink: text("online_link"),
+  // Recurrence — stored on the master row only. Occurrences are expanded
+  // virtually at read time up to `recurrenceUntil` (nullable = "forever",
+  // we cap to ~1 year in code regardless).
+  recurrence: calendarRecurrenceEnum("recurrence").default("none").notNull(),
+  recurrenceUntil: timestamp("recurrence_until"),
+  // Reminder offsets selected by the creator (in minutes before dueDate).
+  // Stored as a CSV (e.g. "1440,180,30") to keep the schema tiny — parsed in
+  // the server action / cron.
+  reminderOffsets: text("reminder_offsets"),
+  // Last reminder offset that was already fired. Prevents duplicate sends.
+  lastReminderSentMinutes: integer("last_reminder_sent_minutes"),
   createdBy: text("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   isPublic: boolean("is_public").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -655,6 +807,9 @@ export const academicCalendar = pgTable("academic_calendar", {
 }, (table) => ({
   dueDateIdx: index("academic_calendar_due_date_idx").on(table.dueDate),
   createdByIdx: index("academic_calendar_created_by_idx").on(table.createdBy),
+  facultyIdx: index("academic_calendar_faculty_idx").on(table.faculty),
+  communityIdx: index("academic_calendar_community_idx").on(table.communityId),
+  eventTypeIdx: index("academic_calendar_event_type_idx").on(table.eventType),
 }));
 
 export const schedule = pgTable("schedule", {

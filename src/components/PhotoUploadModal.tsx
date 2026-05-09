@@ -3,15 +3,21 @@
 import { useState, useRef } from "react";
 import UiIcon from "./UiIcon";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { translations } from "@/lib/i18n";  
+import { translations } from "@/lib/i18n";
 
 interface PhotoUploadModalProps {
   albums: Array<{ id: string; title: string }>;
+  eventId?: string;
   onClose: () => void;
   onUpload: (formData: FormData) => Promise<void>;
 }
 
-export default function PhotoUploadModal({ albums, onClose, onUpload }: PhotoUploadModalProps) {
+export default function PhotoUploadModal({
+  albums,
+  eventId,
+  onClose,
+  onUpload,
+}: PhotoUploadModalProps) {
   const { language } = useLanguage();
   const t = translations[language].photos;
   const [previews, setPreviews] = useState<string[]>([]);
@@ -26,7 +32,7 @@ export default function PhotoUploadModal({ albums, onClose, onUpload }: PhotoUpl
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
 
-    const validFiles = selectedFiles.filter(file => {
+    const validFiles = selectedFiles.filter((file) => {
       if (file.size > 10 * 1024 * 1024) {
         alert(`File ${file.name} is too large (max 10MB)`);
         return false;
@@ -34,7 +40,7 @@ export default function PhotoUploadModal({ albums, onClose, onUpload }: PhotoUpl
       return true;
     });
 
-    const newPreviews = validFiles.map(file => URL.createObjectURL(file));
+    const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
     setPreviews([...previews, ...newPreviews]);
     setFiles([...files, ...validFiles]);
   };
@@ -57,6 +63,7 @@ export default function PhotoUploadModal({ albums, onClose, onUpload }: PhotoUpl
         formData.append("caption", caption);
         formData.append("location", location);
         formData.append("albumId", albumId);
+        if (eventId) formData.append("eventId", eventId);
         formData.append("isPrivate", String(isPrivate));
         await onUpload(formData);
       }
@@ -128,10 +135,24 @@ export default function PhotoUploadModal({ albums, onClose, onUpload }: PhotoUpl
               <UiIcon name="upload" size={20} />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "950", color: "var(--text-primary)" }}>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: "20px",
+                  fontWeight: "950",
+                  color: "var(--text-primary)",
+                }}
+              >
                 {t.uploadModal.title}
               </h2>
-              <p style={{ margin: "2px 0 0", fontSize: "13px", color: "var(--text-secondary)", fontWeight: "600" }}>
+              <p
+                style={{
+                  margin: "2px 0 0",
+                  fontSize: "13px",
+                  color: "var(--text-secondary)",
+                  fontWeight: "600",
+                }}
+              >
                 {t.uploadModal.subtitle}
               </p>
             </div>
@@ -196,10 +217,24 @@ export default function PhotoUploadModal({ albums, onClose, onUpload }: PhotoUpl
               >
                 <UiIcon name="camera" size={32} />
               </div>
-              <p style={{ margin: "0 0 8px", fontSize: "16px", fontWeight: "800", color: "var(--text-primary)" }}>
+              <p
+                style={{
+                  margin: "0 0 8px",
+                  fontSize: "16px",
+                  fontWeight: "800",
+                  color: "var(--text-primary)",
+                }}
+              >
                 Нажмите для выбора фото
               </p>
-              <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)", fontWeight: "600" }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "13px",
+                  color: "var(--text-secondary)",
+                  fontWeight: "600",
+                }}
+              >
                 Поддерживаются JPG, PNG, GIF до 10MB
               </p>
             </div>
@@ -303,10 +338,17 @@ export default function PhotoUploadModal({ albums, onClose, onUpload }: PhotoUpl
                     borderRadius: "12px",
                     border: "1px solid var(--border-color)",
                     fontSize: "14px",
-                    resize: "vertical",
+                    resize: "none",
                   }}
                 />
-                <p style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--text-muted)", textAlign: "right" }}>
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: "12px",
+                    color: "var(--text-muted)",
+                    textAlign: "right",
+                  }}
+                >
                   {caption.length}/2200
                 </p>
               </div>
@@ -396,10 +438,23 @@ export default function PhotoUploadModal({ albums, onClose, onUpload }: PhotoUpl
                   style={{ width: "20px", height: "20px", cursor: "pointer" }}
                 />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "14px", fontWeight: "800", color: "var(--text-primary)", marginBottom: "2px" }}>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "800",
+                      color: "var(--text-primary)",
+                      marginBottom: "2px",
+                    }}
+                  >
                     Приватное фото
                   </div>
-                  <div style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: "600" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--text-secondary)",
+                      fontWeight: "600",
+                    }}
+                  >
                     Только вы сможете видеть это фото
                   </div>
                 </div>
@@ -407,7 +462,12 @@ export default function PhotoUploadModal({ albums, onClose, onUpload }: PhotoUpl
               </label>
 
               {/* Submit */}
-              <button type="submit" className="btn-primary" disabled={isSubmitting} style={{ width: "100%" }}>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={isSubmitting}
+                style={{ width: "100%" }}
+              >
                 {isSubmitting ? (
                   <>
                     <UiIcon name="loader" size={18} />
@@ -416,7 +476,8 @@ export default function PhotoUploadModal({ albums, onClose, onUpload }: PhotoUpl
                 ) : (
                   <>
                     <UiIcon name="upload" size={18} />
-                    Загрузить {files.length > 1 ? `${files.length} фото` : "фото"}
+                    Загрузить{" "}
+                    {files.length > 1 ? `${files.length} фото` : "фото"}
                   </>
                 )}
               </button>

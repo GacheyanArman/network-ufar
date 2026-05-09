@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { createGroupChat, joinGroupChat, leaveGroupChat } from "@/app/actions/groupChats";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getFacultyLabel } from "@/lib/profile-utils";
 
 export default function GroupChatsClient({ allGroupChats, membershipSet, currentUserId }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
+  const { language } = useLanguage();
 
   const handleCreateGroup = async (formData) => {
     await createGroupChat(formData);
@@ -124,7 +127,7 @@ export default function GroupChatsClient({ allGroupChats, membershipSet, current
                           fontWeight: 600,
                         }}
                       >
-                        🏛️ {group.faculty}
+                        🏛️ {getFacultyLabel(group.faculty, language)}
                       </span>
                     )}
                     {group.course && (
@@ -233,7 +236,7 @@ export default function GroupChatsClient({ allGroupChats, membershipSet, current
                     padding: "8px 12px",
                     borderRadius: "8px",
                     border: "1px solid var(--border-color)",
-                    resize: "vertical",
+                    resize: "none",
                   }}
                 />
               </label>

@@ -38,6 +38,7 @@ export default function ExploreClient({
   trendingPhotos,
   trendingTags,
   eventPhotos,
+  currentUserId,
 }: ExploreClientProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -180,6 +181,8 @@ export default function ExploreClient({
           caption={trendingPhotos[openIndex].caption}
           likesCount={trendingPhotos[openIndex].likesCount}
           commentsCount={trendingPhotos[openIndex].commentsCount}
+          photoId={trendingPhotos[openIndex].id}
+          currentUserId={currentUserId}
           onClose={() => setOpenIndex(null)}
           items={trendingPhotos.map((p) => ({
             id: p.id,

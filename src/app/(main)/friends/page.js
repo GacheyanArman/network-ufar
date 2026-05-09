@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { and, eq, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -11,6 +12,7 @@ import {
   unfriend,
 } from "@/app/actions/friends";
 import { followUser, unfollowUser } from "@/app/actions/follow";
+import { getFacultyLabel } from "@/lib/profile-utils";
 import {
   getFollowingSummary,
   getPeopleYouMayKnow,
@@ -74,6 +76,9 @@ function ProfileNameLink({ user }) {
 export default async function FriendsPage() {
   const session = await getSession();
   if (!session?.userId) redirect("/login");
+
+  const cookieStore = await cookies();
+  const lang = cookieStore.get("language")?.value || "en";
 
   const relationships = await db
     .select()
@@ -230,7 +235,7 @@ export default async function FriendsPage() {
                     fontSize: "0.85rem",
                   }}
                 >
-                  {user.faculty || user.email}
+                  {user.faculty ? getFacultyLabel(user.faculty, lang) : user.email}
                 </p>
 
                 <div style={{ display: "flex", gap: "8px" }}>
@@ -332,7 +337,7 @@ export default async function FriendsPage() {
                     fontSize: "0.85rem",
                   }}
                 >
-                  {user.faculty || user.username || "Student"}
+                  {user.faculty ? getFacultyLabel(user.faculty, lang) : user.username || "Student"}
                 </p>
 
                 <form action={unfollowUser} style={{ width: "100%" }}>
@@ -423,7 +428,7 @@ export default async function FriendsPage() {
                     marginBottom: "12px",
                   }}
                 >
-                  {user.faculty || user.username || "Student"}
+                  {user.faculty ? getFacultyLabel(user.faculty, lang) : user.username || "Student"}
                 </span>
 
                 <div style={{ display: "flex", gap: "6px", width: "100%" }}>
@@ -505,7 +510,7 @@ export default async function FriendsPage() {
                     fontSize: "0.85rem",
                   }}
                 >
-                  {friend.faculty || friend.email}
+                  {friend.faculty ? getFacultyLabel(friend.faculty, lang) : friend.email}
                 </p>
 
                 <form action={unfriend} style={{ width: "100%" }}>

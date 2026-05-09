@@ -212,7 +212,7 @@ export default function CommunityPostComposer({
                 fontSize: 15,
                 lineHeight: 1.5,
                 fontFamily: "inherit",
-                resize: "vertical",
+                resize: "none",
               }}
             />
 

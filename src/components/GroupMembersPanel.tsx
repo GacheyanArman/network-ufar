@@ -10,6 +10,8 @@ import {
   setGroupMemberRole,
   updateGroupChat,
 } from "@/app/actions/groupChats";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getFacultyLabel } from "@/lib/profile-utils";
 
 type Member = {
   id: string;
@@ -35,6 +37,7 @@ export default function GroupMembersPanel({
   onClose,
 }: GroupMembersPanelProps) {
   const [members, setMembers] = useState<Member[] | null>(null);
+  const { language } = useLanguage();
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<{ id: string; fullName: string; faculty: string | null; image: string | null }[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -269,7 +272,7 @@ export default function GroupMembersPanel({
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 700 }}>{u.fullName}</div>
                       {u.faculty && (
-                        <div style={{ fontSize: 11, color: "#64748b" }}>{u.faculty}</div>
+                        <div style={{ fontSize: 11, color: "#64748b" }}>{getFacultyLabel(u.faculty, language)}</div>
                       )}
                     </div>
                     <UiIcon name="plus" size={14} />
@@ -325,7 +328,7 @@ export default function GroupMembersPanel({
                   </div>
                   {m.faculty && (
                     <div style={{ fontSize: 11, color: "#64748b" }}>
-                      {m.faculty}
+                      {getFacultyLabel(m.faculty, language)}
                     </div>
                   )}
                 </div>

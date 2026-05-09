@@ -41,6 +41,13 @@ export default function PhotosGrid({ photos, currentUserId }) {
           type="image"
           alt={selectedPhoto.caption || "Photo"}
           title={selectedPhoto.caption || undefined}
+          photoId={selectedPhoto.id}
+          currentUserId={currentUserId}
+          likesCount={selectedPhoto.likesCount}
+          commentsCount={selectedPhoto.commentsCount}
+          isLiked={selectedPhoto.isLiked}
+          isSaved={selectedPhoto.isSaved}
+          authorName={selectedPhoto.ownerName}
           onClose={() => setSelectedIndex(null)}
           items={photos}
           currentIndex={selectedIndex}

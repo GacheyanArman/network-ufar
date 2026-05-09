@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ilike, or, and, ne, sql, notInArray } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -6,6 +7,7 @@ import { getSession } from "@/lib/session";
 import { users, communities, blockedUsers } from "@/lib/schema";
 import UiIcon from "@/components/UiIcon";
 import SearchBar from "@/components/SearchBar";
+import { getFacultyLabel } from "@/lib/profile-utils";
 
 export default async function SearchPage({ searchParams }) {
   const session = await getSession();
@@ -13,6 +15,9 @@ export default async function SearchPage({ searchParams }) {
   if (!session?.userId) {
     redirect("/login");
   }
+
+  const cookieStore = await cookies();
+  const lang = cookieStore.get("language")?.value || "en";
 
   const params = await searchParams;
   const query = params?.q?.trim() || "";
@@ -174,7 +179,7 @@ export default async function SearchPage({ searchParams }) {
                     <div className="uf-search-user-info">
                       <strong>{user.fullName}</strong>
                       <span>
-                        {user.username ? `@${user.username}` : user.faculty || "Student"}
+                        {user.username ? `@${user.username}` : user.faculty ? getFacultyLabel(user.faculty, lang) : "Student"}
                       </span>
                     </div>
                   </Link>

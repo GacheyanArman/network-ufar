@@ -79,6 +79,18 @@ export default function PostComposer({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const emojiRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showEmojis) return;
+    const handler = (e: MouseEvent) => {
+      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) {
+        setShowEmojis(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showEmojis]);
 
   useEffect(() => {
     if (state?.ok) {
@@ -324,6 +336,7 @@ export default function PostComposer({
 
         {showEmojis && (
           <div
+            ref={emojiRef}
             style={{
               position: "absolute",
               bottom: "48px",

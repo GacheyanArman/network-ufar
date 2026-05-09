@@ -199,7 +199,7 @@ export default function CreateAlbumModal({ onClose, onCreate }: CreateAlbumModal
                 borderRadius: "12px",
                 border: "1px solid var(--border-color)",
                 fontSize: "14px",
-                resize: "vertical",
+                resize: "none",
               }}
             />
             <p style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--text-muted)", textAlign: "right" }}>

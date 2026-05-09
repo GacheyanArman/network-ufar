@@ -292,7 +292,7 @@ function Field({
           maxLength={maxLength}
           placeholder={placeholder}
           rows={rows || 4}
-          style={{ ...inputStyle, resize: "vertical", minHeight: 100 }}
+          style={{ ...inputStyle, resize: "none", minHeight: 100 }}
         />
       ) : (
         <input

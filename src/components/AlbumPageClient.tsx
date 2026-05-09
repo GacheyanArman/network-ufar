@@ -394,7 +394,8 @@ export default function AlbumPageClient({ album, photos, currentUserId }: AlbumP
           viewsCount={sortedPhotos[selectedPhotoIndex].viewCount ?? 0}
           isLiked={sortedPhotos[selectedPhotoIndex].isLiked}
           isSaved={sortedPhotos[selectedPhotoIndex].isSaved}
-          comments={[]}
+          photoId={sortedPhotos[selectedPhotoIndex].id}
+          currentUserId={currentUserId}
           onClose={() => setSelectedPhotoIndex(null)}
           items={sortedPhotos}
           currentIndex={selectedPhotoIndex}

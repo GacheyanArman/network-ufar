@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import UiIcon from "./UiIcon";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getFacultyLabel } from "@/lib/profile-utils";
 
 export default function SearchBar() {
   const [query, setQuery] = useState("");
@@ -15,6 +17,7 @@ export default function SearchBar() {
   const inputRef = useRef(null);
   const router = useRouter();
   const abortControllerRef = useRef(null);
+  const { language } = useLanguage();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -202,7 +205,7 @@ export default function SearchBar() {
                 <strong>{result.name}</strong>
                 <span>
                   {result.type === "user"
-                    ? result.faculty || result.username || "Student"
+                    ? result.faculty ? getFacultyLabel(result.faculty, language) : result.username || "Student"
                     : result.description || "Community"}
                 </span>
               </div>

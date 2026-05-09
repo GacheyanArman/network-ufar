@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import UiIcon from "./UiIcon";
 import ChatHeaderMenu from "./ChatHeaderMenu";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getFacultyLabel } from "@/lib/profile-utils";
 
 export default function MessagesPageClient({
   userGroupChats,
@@ -18,6 +20,7 @@ export default function MessagesPageClient({
   children,
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { language } = useLanguage();
 
   // Live search state. Initial value comes from the server-rendered ?q= so
   // direct links keep working.
@@ -148,7 +151,7 @@ export default function MessagesPageClient({
                         </div>
                         <div className="tg-chat-bottom">
                           <p className="tg-chat-preview">
-                            {user.faculty || "Student"}
+                            {user.faculty ? getFacultyLabel(user.faculty, language) : "Student"}
                           </p>
                         </div>
                       </div>
@@ -183,7 +186,7 @@ export default function MessagesPageClient({
                         </div>
                         <div className="tg-chat-bottom">
                           <p className="tg-chat-preview">
-                            {group.faculty || "Group chat"}
+                            {group.faculty ? getFacultyLabel(group.faculty, language) : "Group chat"}
                             {group.course && ` • ${group.course}`}
                           </p>
                         </div>
@@ -287,9 +290,9 @@ export default function MessagesPageClient({
                     </h2>
                     <span>
                       {activeUser
-                        ? activeUser.faculty || "Student"
+                        ? activeUser.faculty ? getFacultyLabel(activeUser.faculty, language) : "Student"
                         : activeGroup
-                        ? `${activeGroup.faculty || "Group"}${activeGroup.course ? ` • ${activeGroup.course}` : ""}`
+                        ? `${activeGroup.faculty ? getFacultyLabel(activeGroup.faculty, language) : "Group"}${activeGroup.course ? ` • ${activeGroup.course}` : ""}`
                         : ""}
                     </span>
                   </div>

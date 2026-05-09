@@ -204,7 +204,14 @@ export async function loginUser(prevState, formData) {
   const validatedData = validatedFields.data;
 
   try {
-    const [user] = await db.select().from(users).where(eq(users.email, validatedData.email)).limit(1);
+    const [user] = await db.select({
+      id: users.id,
+      email: users.email,
+      password: users.password,
+      emailVerified: users.emailVerified,
+      fullName: users.fullName,
+      onboardingComplete: users.onboardingComplete,
+    }).from(users).where(eq(users.email, validatedData.email)).limit(1);
 
     if (!user) {
       return { error: "Invalid credentials." };
@@ -238,6 +245,10 @@ export async function loginUser(prevState, formData) {
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
+
+    if (!user.onboardingComplete) {
+      redirect("/onboarding");
+    }
 
   } catch (error) {
     console.error("Authentication Error:", error);

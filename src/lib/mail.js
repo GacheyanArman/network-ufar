@@ -1,7 +1,56 @@
 /**
- * Email utility for sending verification emails
- * This is a placeholder implementation - configure with your email service
+ * Email utility. Uses nodemailer when SMTP env vars are configured, otherwise
+ * falls back to console logging (which is the current dev behaviour).
+ *
+ * Required env vars for real delivery:
+ *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
  */
+
+import nodemailer from "nodemailer";
+
+let _transporter = null;
+function getTransporter() {
+  if (_transporter) return _transporter;
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
+  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+    return null;
+  }
+  _transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT),
+    secure: Number(SMTP_PORT) === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+  return _transporter;
+}
+
+/**
+ * Generic send. Returns boolean — never throws so callers can fan-out without
+ * losing other recipients.
+ *
+ * @param {{ to: string, subject: string, html?: string, text?: string }} args
+ * @returns {Promise<boolean>}
+ */
+export async function sendEmail({ to, subject, html, text } = {}) {
+  const transporter = getTransporter();
+  if (!transporter) {
+    console.log(`[MAIL] (dev) -> ${to}: ${subject}\n${text || html}`);
+    return true;
+  }
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to,
+      subject,
+      html,
+      text,
+    });
+    return true;
+  } catch (err) {
+    console.error("[MAIL] sendEmail failed:", err);
+    return false;
+  }
+}
 
 /**
  * Send verification email with OTP code

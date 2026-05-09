@@ -1,8 +1,13 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { users } from "@/lib/schema";
+import { eq } from "drizzle-orm";
 import { logoutUser } from "@/app/actions/auth";
 import { followUser } from "@/app/actions/follow";
+import { getFacultyLabel } from "@/lib/profile-utils";
 import {
   getFollowingSummary,
   getPeopleYouMayKnow,
@@ -16,6 +21,23 @@ import SearchBar from "@/components/SearchBar";
 
 export default async function MainLayout({ children }) {
   const session = await getSession();
+
+  if (!session?.userId) {
+    redirect("/login");
+  }
+
+  const cookieStore = await cookies();
+  const lang = cookieStore.get("language")?.value || "en";
+
+  const [obRow] = await db
+    .select({ onboardingComplete: users.onboardingComplete })
+    .from(users)
+    .where(eq(users.id, session.userId))
+    .limit(1);
+
+  if (obRow && !obRow.onboardingComplete) {
+    redirect("/onboarding");
+  }
 
   let currentUser = null;
   let unreadNotifications = 0;
@@ -178,7 +200,7 @@ export default async function MainLayout({ children }) {
                     <div className="mini-user-main">
                       <strong>{user.fullName}</strong>
                       <span>
-                        {user.faculty || user.username || "Student"}
+                        {user.faculty ? getFacultyLabel(user.faculty, lang) : user.username || "Student"}
                       </span>
                     </div>
                   </Link>

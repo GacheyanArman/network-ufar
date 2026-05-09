@@ -1,495 +1,1945 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
-import { createCalendarEntry, deleteCalendarEntry } from "@/app/actions/calendar";
+import { useMemo, useState, useRef, useCallback, useEffect } from "react";
+import {
+  createCalendarEntry,
+  updateCalendarEntry,
+  deleteCalendarEntry,
+} from "@/app/actions/calendar";
+
+// ---------------------------------------------------------------------------
+// Types & constants
+// ---------------------------------------------------------------------------
 
 type CalEntry = {
   id: string;
+  masterId: string;
   title: string;
   description: string | null;
   eventType: string;
   category: string;
   course: string | null;
+  faculty: string | null;
+  communityId: string | null;
+  communityName: string | null;
   location: string | null;
   onlineLink: string | null;
   dueDate: string;
   endDate: string | null;
+  isAllDay: boolean;
   isPublic: boolean;
+  recurrence: string;
+  reminderOffsets: number[];
   createdBy: string;
-  creatorName: string;
-  source: "academic" | "event" | "rsvp";
+  creatorName: string | null;
+  source: "academic" | "rsvp";
+  isMaster: boolean;
 };
+
+type Community = { id: string; name: string };
 
 type Props = {
   entries: CalEntry[];
+  myCommunities: Community[];
   currentUserId: string;
 };
 
-type FormAction = (fd: FormData) => void | Promise<void>;
-const createAction = createCalendarEntry as unknown as FormAction;
-const deleteAction = deleteCalendarEntry as unknown as FormAction;
-
-const CATEGORY_META: Record<string, { color: string; bg: string; icon: string; label: string }> = {
+// Category metadata — colour, icon, label. The 6 colours requested by the
+// product team are exam/homework/project/event/personal/community; the rest
+// are kept as fallbacks for legacy rows.
+const CATEGORY_META: Record<
+  string,
+  { color: string; bg: string; icon: string; label: string }
+> = {
   exam:        { color: "#dc2626", bg: "#fef2f2", icon: "📝", label: "Exam" },
-  deadline:    { color: "#ea580c", bg: "#fff7ed", icon: "⏰", label: "Deadline" },
-  assignment:  { color: "#2563eb", bg: "#eff6ff", icon: "📚", label: "Assignment" },
-  lecture:     { color: "#7c3aed", bg: "#f5f3ff", icon: "🎓", label: "Lecture" },
+  homework:    { color: "#2563eb", bg: "#eff6ff", icon: "📚", label: "Homework" },
+  assignment:  { color: "#2563eb", bg: "#eff6ff", icon: "📚", label: "Homework" },
+  project:     { color: "#7c3aed", bg: "#f5f3ff", icon: "💡", label: "Project" },
   event:       { color: "#0891b2", bg: "#ecfeff", icon: "🎪", label: "Event" },
-  study_group: { color: "#059669", bg: "#ecfdf5", icon: "👥", label: "Study Group" },
-  club:        { color: "#d97706", bg: "#fffbeb", icon: "🎭", label: "Club" },
-  erasmus:     { color: "#7c3aed", bg: "#fdf4ff", icon: "✈️", label: "Erasmus" },
-  reminder:    { color: "#64748b", bg: "#f8fafc", icon: "🔔", label: "Reminder" },
+  personal:    { color: "#64748b", bg: "#f8fafc", icon: "🔖", label: "Personal" },
+  community:   { color: "#16a34a", bg: "#ecfdf5", icon: "👥", label: "Community" },
+  lecture:     { color: "#7c3aed", bg: "#f5f3ff", icon: "🎓", label: "Lecture" },
+  deadline:    { color: "#ea580c", bg: "#fff7ed", icon: "⏰", label: "Deadline" },
   holiday:     { color: "#16a34a", bg: "#f0fdf4", icon: "🎉", label: "Holiday" },
   other:       { color: "#64748b", bg: "#f8fafc", icon: "📌", label: "Other" },
 };
 
-const VIEWS = ["This Week", "List", "Month"] as const;
-type View = typeof VIEWS[number];
+const PRIMARY_CATEGORIES = [
+  "exam",
+  "homework",
+  "project",
+  "event",
+  "personal",
+  "community",
+] as const;
 
-function fmt(iso: string) {
-  return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+const VIEWS = ["Week", "Day", "Month", "List"] as const;
+type View = (typeof VIEWS)[number];
+
+const DEADLINE_CATS = new Set([
+  "exam",
+  "homework",
+  "assignment",
+  "project",
+  "deadline",
+]);
+
+const REMINDER_OPTIONS = [
+  { value: 24 * 60, label: "1 day before" },
+  { value: 3 * 60, label: "3 hours before" },
+  { value: 30, label: "30 minutes before" },
+];
+
+// ---------------------------------------------------------------------------
+// Date helpers
+// ---------------------------------------------------------------------------
+
+function fmtTime(iso: string) {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+function fmtFullDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 }
-function fmtDay(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
-function isSameWeek(iso: string) {
+function startOfWeek(d: Date) {
+  const start = new Date(d);
+  start.setHours(0, 0, 0, 0);
+  // Monday-first week (ISO).
+  const dow = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - dow);
+  return start;
+}
+function endOfWeek(d: Date) {
+  const e = startOfWeek(d);
+  e.setDate(e.getDate() + 6);
+  e.setHours(23, 59, 59, 999);
+  return e;
+}
+function inRange(iso: string, from: Date, to: Date) {
   const d = new Date(iso);
-  const now = new Date();
-  const start = new Date(now); start.setDate(now.getDate() - now.getDay() + 1);
-  start.setHours(0,0,0,0);
-  const end = new Date(start); end.setDate(start.getDate() + 6);
-  end.setHours(23,59,59,999);
-  return d >= start && d <= end;
+  return d >= from && d <= to;
 }
-function isSameMonth(iso: string, year: number, month: number) {
+
+// `YYYY-MM-DDTHH:mm` form usable in <input type="datetime-local">.
+function toLocalInputValue(iso: string | undefined | null) {
+  if (!iso) return "";
   const d = new Date(iso);
-  return d.getFullYear() === year && d.getMonth() === month;
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+    d.getDate()
+  )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function toLocalDateValue(iso: string | undefined | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// ---------------------------------------------------------------------------
+// ICS export
+// ---------------------------------------------------------------------------
+
+function escIcs(s: string | null | undefined) {
+  return (s || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\r?\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+function toIcsTime(iso: string) {
+  return (
+    new Date(iso).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
+  );
 }
 
 function downloadIcs(entries: CalEntry[]) {
-  const lines = [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//UFARnet//Calendar//EN",
-    ...entries.map(e => {
-      const dt = new Date(e.dueDate).toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
-      return [
-        "BEGIN:VEVENT",
-        `UID:${e.id}@ufarnet`,
-        `DTSTART:${dt}`,
-        `SUMMARY:${e.title}`,
-        `DESCRIPTION:${e.description || ""}`,
-        `LOCATION:${e.location || ""}`,
-        "END:VEVENT",
-      ].join("\r\n");
-    }),
-    "END:VCALENDAR",
-  ].join("\r\n");
-  const blob = new Blob([lines], { type: "text/calendar" });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "ufarnet-calendar.ics"; a.click();
+  const lines: string[] = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//UFARnet//Calendar//EN",
+    "CALSCALE:GREGORIAN",
+  ];
+  for (const e of entries) {
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:${e.id}@ufarnet`,
+      `DTSTAMP:${toIcsTime(new Date().toISOString())}`,
+      `DTSTART:${toIcsTime(e.dueDate)}`,
+      `DTEND:${toIcsTime(e.endDate || e.dueDate)}`,
+      `SUMMARY:${escIcs(e.title)}`,
+      e.description ? `DESCRIPTION:${escIcs(e.description)}` : "",
+      e.location ? `LOCATION:${escIcs(e.location)}` : "",
+      "END:VEVENT"
+    );
+  }
+  lines.push("END:VCALENDAR");
+  const ics = lines.filter(Boolean).join("\r\n");
+  const blob = new Blob([ics], { type: "text/calendar" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ufarnet-calendar.ics";
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
-export default function CalendarPageClient({ entries, currentUserId }: Props) {
-  const [view, setView] = useState<View>("This Week");
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+type FormAction = (fd: FormData) => void | Promise<void>;
+const deleteAction = deleteCalendarEntry as unknown as FormAction;
+
+export default function CalendarPageClient({
+  entries,
+  myCommunities,
+  currentUserId,
+}: Props) {
+  const [view, setView] = useState<View>("Week");
   const [query, setQuery] = useState("");
-  const [filterCat, setFilterCat] = useState("all");
-  const [showModal, setShowModal] = useState<"reminder" | "deadline" | "study" | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [monthOffset, setMonthOffset] = useState(0);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [filterCat, setFilterCat] = useState<string>("all");
+  const [filterCourse, setFilterCourse] = useState("");
+  const [filterFaculty, setFilterFaculty] = useState("");
+  const [filterCommunity, setFilterCommunity] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const filtersRef = useRef<HTMLDivElement | null>(null);
 
-  const now = new Date();
-  const viewYear = new Date(now.getFullYear(), now.getMonth() + monthOffset).getFullYear();
-  const viewMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset).getMonth();
+  useEffect(() => {
+    if (!showFilters) return;
+    const handler = (e: MouseEvent) => {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showFilters]);
+  const [editing, setEditing] = useState<CalEntry | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [cursor, setCursor] = useState<Date>(() => new Date()); // anchor date
 
+  // Move the anchor cursor by view step.
+  const shiftCursor = useCallback(
+    (delta: number) => {
+      setCursor((prev) => {
+        const next = new Date(prev);
+        if (view === "Day") next.setDate(next.getDate() + delta);
+        else if (view === "Week") next.setDate(next.getDate() + 7 * delta);
+        else if (view === "Month") next.setMonth(next.getMonth() + delta);
+        return next;
+      });
+    },
+    [view]
+  );
+
+  // ------------------- Filtering -------------------
   const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    return entries.filter(e => {
-      const matchQ = !q || e.title.toLowerCase().includes(q) || (e.course || "").toLowerCase().includes(q);
-      const matchC = filterCat === "all" || e.eventType === filterCat || e.category === filterCat;
-      return matchQ && matchC;
+    const q = query.trim().toLowerCase();
+    return entries.filter((e) => {
+      if (q) {
+        const hay = [
+          e.title,
+          e.description || "",
+          e.course || "",
+          e.location || "",
+          e.faculty || "",
+          e.communityName || "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (filterCat !== "all" && e.eventType !== filterCat) return false;
+      if (filterCourse && (e.course || "") !== filterCourse) return false;
+      if (filterFaculty && (e.faculty || "") !== filterFaculty) return false;
+      if (filterCommunity && (e.communityId || "") !== filterCommunity) return false;
+      return true;
     });
-  }, [entries, query, filterCat]);
+  }, [entries, query, filterCat, filterCourse, filterFaculty, filterCommunity]);
 
-  const thisWeek = filtered.filter(e => isSameWeek(e.dueDate)).sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-  const listAll = [...filtered].sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  // Distinct courses / faculties from the data, for the filter dropdowns.
+  const distinctCourses = useMemo(() => {
+    const s = new Set<string>();
+    for (const e of entries) if (e.course) s.add(e.course);
+    return Array.from(s).sort();
+  }, [entries]);
+  const distinctFaculties = useMemo(() => {
+    const s = new Set<string>();
+    for (const e of entries) if (e.faculty) s.add(e.faculty);
+    return Array.from(s).sort();
+  }, [entries]);
 
-  // Month grid
-  const firstDay = new Date(viewYear, viewMonth, 1);
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const startDow = (firstDay.getDay() + 6) % 7; // Mon=0
-  const monthName = firstDay.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  // ------------------- Derived buckets -------------------
+  const now = new Date();
+  const weekStart = startOfWeek(cursor);
+  const weekEnd = endOfWeek(cursor);
+  const dayStart = (() => {
+    const d = new Date(cursor);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
+  const dayEnd = (() => {
+    const d = new Date(cursor);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  })();
 
-  const monthEntries = filtered.filter(e => isSameMonth(e.dueDate, viewYear, viewMonth));
+  const thisWeekItems = useMemo(
+    () =>
+      filtered
+        .filter((e) => inRange(e.dueDate, weekStart, weekEnd))
+        .sort(
+          (a, b) =>
+            new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+        ),
+    [filtered, weekStart, weekEnd]
+  );
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      const fd = new FormData(e.currentTarget);
-      const date = fd.get("date") as string;
-      const time = fd.get("time") as string;
-      if (date) fd.set("dueDate", time ? `${date}T${time}` : `${date}T23:59`);
-      fd.delete("date"); fd.delete("time");
-      await createCalendarEntry(fd);
-      setShowModal(null);
-      formRef.current?.reset();
-    } finally { setIsSubmitting(false); }
-  }
+  const dayItems = useMemo(
+    () =>
+      filtered
+        .filter((e) => inRange(e.dueDate, dayStart, dayEnd))
+        .sort(
+          (a, b) =>
+            new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+        ),
+    [filtered, dayStart, dayEnd]
+  );
+
+  const myDeadlinesThisWeek = useMemo(() => {
+    const ws = startOfWeek(now);
+    const we = endOfWeek(now);
+    return entries
+      .filter(
+        (e) =>
+          e.createdBy === currentUserId &&
+          DEADLINE_CATS.has(e.category) &&
+          inRange(e.dueDate, ws, we)
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, currentUserId]);
+
+  const upcomingDeadlines = useMemo(() => {
+    return entries
+      .filter(
+        (e) =>
+          DEADLINE_CATS.has(e.category) &&
+          new Date(e.dueDate).getTime() >= now.getTime() &&
+          new Date(e.dueDate).getTime() <= now.getTime() + 72 * 60 * 60 * 1000
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      )
+      .slice(0, 5);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries]);
+
+  // ------------------- Render -------------------
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-
-      {/* Header */}
-      <section className="card" style={{ padding: "24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* ============== Hero header ============== */}
+      <section
+        className="card"
+        style={{
+          padding: "clamp(18px, 3vw, 24px)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
           <div>
-            <h1 style={{ margin: "0 0 6px", fontSize: "30px", fontWeight: 950, color: "var(--text-primary)" }}>📅 Calendar</h1>
-            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "15px" }}>
-              Track your classes, exams, deadlines, events and study groups.
+            <h1
+              style={{
+                margin: "0 0 4px",
+                fontSize: "clamp(1.4rem, 3vw, 1.9rem)",
+                fontWeight: 950,
+                color: "var(--text-primary)",
+              }}
+            >
+              📅 Calendar
+            </h1>
+            <p
+              style={{
+                margin: 0,
+                color: "var(--text-secondary)",
+                fontSize: "0.95rem",
+              }}
+            >
+              Track classes, exams, deadlines, events and study groups.
             </p>
           </div>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <button type="button" className="btn btn-primary" style={{ fontSize: "13px" }} onClick={() => setShowModal("reminder")}>🔔 Reminder</button>
-            <button type="button" className="btn btn-secondary" style={{ fontSize: "13px" }} onClick={() => setShowModal("deadline")}>⏰ Deadline</button>
-            <button type="button" className="btn btn-secondary" style={{ fontSize: "13px" }} onClick={() => setShowModal("study")}>👥 Study Session</button>
-            <button type="button" className="btn btn-secondary" style={{ fontSize: "13px" }} onClick={() => downloadIcs(filtered)}>📥 Export .ics</button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                setEditing(null);
+                setCreating(true);
+              }}
+              style={btnStyle()}
+            >
+              + New entry
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => downloadIcs(filtered)}
+              style={btnStyle()}
+            >
+              📥 Export .ics
+            </button>
           </div>
         </div>
 
-        {/* Search + Filter */}
-        <div style={{ display: "flex", gap: "10px", marginTop: "18px", flexWrap: "wrap" }}>
-          <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Search calendar events..."
-            style={{ flex: 1, minWidth: "200px", height: "44px", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "0 16px", fontSize: "14px", outline: "none" }}
-          />
-          <select
-            value={filterCat}
-            onChange={e => setFilterCat(e.target.value)}
-            style={{ height: "44px", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "0 12px", fontSize: "14px", outline: "none", background: "#fff" }}
-          >
-            <option value="all">All Categories</option>
-            {Object.entries(CATEGORY_META).map(([k,v]) => (
-              <option key={k} value={k}>{v.icon} {v.label}</option>
-            ))}
-          </select>
+        {/* Search & quick filters */}
+        <div ref={filtersRef}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search title, course, location…"
+              style={{
+                flex: 1,
+                minWidth: 200,
+                height: 42,
+                border: "1px solid var(--border-color)",
+                borderRadius: 10,
+                padding: "0 14px",
+                fontSize: "0.9rem",
+                outline: "none",
+                background: "var(--bg-main)",
+                color: "var(--text-primary)",
+              }}
+            />
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowFilters((v) => !v)}
+              style={btnStyle()}
+            >
+              {showFilters ? "Hide filters" : "Filters"}
+            </button>
+          </div>
+
+          {showFilters && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: 8,
+                marginTop: 8,
+              }}
+            >
+            <select
+              value={filterCat}
+              onChange={(e) => setFilterCat(e.target.value)}
+              style={selectStyle()}
+            >
+              <option value="all">All categories</option>
+              {Object.entries(CATEGORY_META).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v.icon} {v.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterCourse}
+              onChange={(e) => setFilterCourse(e.target.value)}
+              style={selectStyle()}
+            >
+              <option value="">Any course</option>
+              {distinctCourses.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterFaculty}
+              onChange={(e) => setFilterFaculty(e.target.value)}
+              style={selectStyle()}
+            >
+              <option value="">Any faculty</option>
+              {distinctFaculties.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterCommunity}
+              onChange={(e) => setFilterCommunity(e.target.value)}
+              style={selectStyle()}
+            >
+              <option value="">Any community</option>
+              {myCommunities.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          )}
         </div>
 
-        {/* View Tabs */}
-        <div style={{ display: "flex", gap: "6px", marginTop: "16px" }}>
-          {VIEWS.map(v => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              style={{
-                border: "1px solid var(--border-color)",
-                borderRadius: "999px",
-                padding: "8px 16px",
-                fontSize: "13px",
-                fontWeight: 800,
-                cursor: "pointer",
-                background: view === v ? "var(--french-blue)" : "#fff",
-                color: view === v ? "#fff" : "var(--text-primary)",
-                transition: "all 0.15s ease",
-              }}
-            >{v}</button>
-          ))}
+        {/* View tabs + cursor controls */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 10,
+          }}
+        >
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {VIEWS.map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                style={{
+                  border: "1px solid var(--border-color)",
+                  borderRadius: 999,
+                  padding: "8px 14px",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  background:
+                    view === v ? "var(--french-blue, #2563eb)" : "var(--bg-main)",
+                  color: view === v ? "#fff" : "var(--text-primary)",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          {view !== "List" && (
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={btnStyle({ minHeight: 36, padding: "0 12px" })}
+                onClick={() => shiftCursor(-1)}
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={btnStyle({ minHeight: 36, padding: "0 12px" })}
+                onClick={() => setCursor(new Date())}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={btnStyle({ minHeight: 36, padding: "0 12px" })}
+                onClick={() => shiftCursor(1)}
+              >
+                →
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* ── THIS WEEK ── */}
-      {view === "This Week" && (
-        <section>
-          <h2 style={{ margin: "0 0 12px", fontSize: "18px", fontWeight: 900, color: "var(--text-primary)" }}>
-            This Week
-            {thisWeek.length > 0 && (
-              <span style={{ marginLeft: "10px", fontSize: "13px", color: "var(--text-secondary)", fontWeight: 700 }}>
-                {thisWeek.length} item{thisWeek.length !== 1 ? "s" : ""}
-              </span>
-            )}
-          </h2>
-          {thisWeek.length === 0 ? (
-            <div className="card" style={{ padding: "50px 24px", textAlign: "center" }}>
-              <div style={{ fontSize: "40px", opacity: 0.3, marginBottom: "10px" }}>🗓</div>
-              <p style={{ margin: 0, color: "var(--text-secondary)", fontWeight: 700 }}>
-                No events this week. Enjoy your free time or create a study session.
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {thisWeek.map(e => <EntryCard key={e.id} entry={e} currentUserId={currentUserId} />)}
-            </div>
-          )}
-        </section>
+      {/* ============== Upcoming reminder banner ============== */}
+      {upcomingDeadlines.length > 0 && (
+        <UpcomingDeadlinesBanner deadlines={upcomingDeadlines} />
       )}
 
-      {/* ── LIST ── */}
-      {view === "List" && (
-        <section>
-          {listAll.length === 0 ? (
-            <div className="card" style={{ padding: "50px 24px", textAlign: "center" }}>
-              <div style={{ fontSize: "40px", opacity: 0.3, marginBottom: "10px" }}>📋</div>
-              <p style={{ margin: 0, color: "var(--text-secondary)", fontWeight: 700 }}>No calendar items match your filters.</p>
-            </div>
-          ) : (() => {
-            // Group by month
-            const groups = new Map<string, CalEntry[]>();
-            for (const e of listAll) {
-              const d = new Date(e.dueDate);
-              const key = `${d.getFullYear()}-${d.getMonth()}`;
-              const label = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-              if (!groups.has(key)) groups.set(key, []);
-              groups.get(key)!.push(e);
-              (groups as any).__labels = (groups as any).__labels || {};
-              (groups as any).__labels[key] = label;
-            }
-            return Array.from(groups.entries()).map(([key, items]) => (
-              <div key={key} style={{ marginBottom: "24px" }}>
-                <h3 style={{ margin: "0 0 10px", fontSize: "15px", fontWeight: 900, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  {(groups as any).__labels?.[key] || key}
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {items.map(e => <EntryCard key={e.id} entry={e} currentUserId={currentUserId} />)}
-                </div>
-              </div>
-            ));
-          })()}
-        </section>
-      )}
+      {/* ============== My deadlines this week ============== */}
+      <MyDeadlinesSection
+        items={myDeadlinesThisWeek}
+        currentUserId={currentUserId}
+        onEdit={(e) => {
+          setCreating(false);
+          setEditing(e);
+        }}
+      />
 
-      {/* ── MONTH ── */}
+      {/* ============== Main view ============== */}
+      {view === "Week" && (
+        <WeekView
+          weekStart={weekStart}
+          items={thisWeekItems}
+          currentUserId={currentUserId}
+          onEdit={(e) => {
+            setCreating(false);
+            setEditing(e);
+          }}
+        />
+      )}
+      {view === "Day" && (
+        <DayView
+          day={dayStart}
+          items={dayItems}
+          currentUserId={currentUserId}
+          onEdit={(e) => {
+            setCreating(false);
+            setEditing(e);
+          }}
+        />
+      )}
       {view === "Month" && (
-        <section className="card" style={{ padding: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <button type="button" className="btn btn-secondary" style={{ fontSize: "13px", minHeight: "36px", padding: "0 14px" }} onClick={() => setMonthOffset(o => o - 1)}>← Prev</button>
-            <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 900 }}>{monthName}</h2>
-            <button type="button" className="btn btn-secondary" style={{ fontSize: "13px", minHeight: "36px", padding: "0 14px" }} onClick={() => setMonthOffset(o => o + 1)}>Next →</button>
-          </div>
-          {/* Day headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px", marginBottom: "4px" }}>
-            {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d => (
-              <div key={d} style={{ textAlign: "center", fontSize: "12px", fontWeight: 900, color: "var(--text-muted)", padding: "4px 0" }}>{d}</div>
-            ))}
-          </div>
-          {/* Grid cells */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px" }}>
-            {Array.from({ length: startDow }).map((_, i) => <div key={`empty-${i}`} />)}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1;
-              const dayEntries = monthEntries.filter(e => new Date(e.dueDate).getDate() === day);
-              const isToday = now.getFullYear() === viewYear && now.getMonth() === viewMonth && now.getDate() === day;
-              return (
-                <div key={day} style={{
-                  minHeight: "72px",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "10px",
-                  padding: "6px",
-                  background: isToday ? "var(--french-blue-soft)" : "#fff",
-                  position: "relative",
-                }}>
-                  <div style={{
-                    fontSize: "13px", fontWeight: 900,
-                    color: isToday ? "var(--french-blue)" : "var(--text-primary)",
-                    marginBottom: "4px",
-                  }}>{day}</div>
-                  {dayEntries.slice(0, 2).map(e => {
-                    const meta = CATEGORY_META[e.eventType] || CATEGORY_META.other;
-                    return (
-                      <div key={e.id} style={{
-                        fontSize: "11px", fontWeight: 700,
-                        background: meta.bg, color: meta.color,
-                        borderRadius: "4px", padding: "2px 4px",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                        marginBottom: "2px",
-                      }}>{meta.icon} {e.title}</div>
-                    );
-                  })}
-                  {dayEntries.length > 2 && (
-                    <div style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: 700 }}>+{dayEntries.length - 2} more</div>
+        <MonthView
+          cursor={cursor}
+          items={filtered}
+          onSelectDay={(d) => {
+            setCursor(d);
+            setView("Day");
+          }}
+        />
+      )}
+      {view === "List" && (
+        <ListView
+          items={filtered}
+          currentUserId={currentUserId}
+          onEdit={(e) => {
+            setCreating(false);
+            setEditing(e);
+          }}
+        />
+      )}
+
+      {/* ============== Create/Edit modal ============== */}
+      {(creating || editing) && (
+        <EntryModal
+          editing={editing}
+          myCommunities={myCommunities}
+          onClose={() => {
+            setCreating(false);
+            setEditing(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-views
+// ---------------------------------------------------------------------------
+
+function UpcomingDeadlinesBanner({ deadlines }: { deadlines: CalEntry[] }) {
+  return (
+    <div
+      style={{
+        background:
+          "linear-gradient(90deg, rgba(220,38,38,0.08), rgba(234,88,12,0.08))",
+        border: "1px solid rgba(220,38,38,0.25)",
+        borderRadius: 12,
+        padding: "12px 16px",
+        display: "flex",
+        gap: 12,
+        alignItems: "flex-start",
+        flexWrap: "wrap",
+      }}
+    >
+      <div style={{ fontSize: 22 }}>⏳</div>
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <div style={{ fontWeight: 800, marginBottom: 4 }}>
+          {deadlines.length} deadline{deadlines.length === 1 ? "" : "s"} in the next 72 hours
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 6,
+            color: "var(--text-secondary)",
+            fontSize: "0.85rem",
+          }}
+        >
+          {deadlines.map((d) => (
+            <span
+              key={d.id}
+              style={{
+                background: "rgba(255,255,255,0.7)",
+                border: "1px solid var(--border-color)",
+                borderRadius: 999,
+                padding: "2px 10px",
+                fontWeight: 600,
+              }}
+            >
+              {d.title} · {fmtTime(d.dueDate)}{" "}
+              {fmtFullDate(d.dueDate).split(",")[0]}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MyDeadlinesSection({
+  items,
+  currentUserId,
+  onEdit,
+}: {
+  items: CalEntry[];
+  currentUserId: string;
+  onEdit: (e: CalEntry) => void;
+}) {
+  return (
+    <section>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 10,
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900 }}>
+          📌 My deadlines this week
+          <span
+            style={{
+              marginLeft: 8,
+              fontSize: "0.8rem",
+              color: "var(--text-secondary)",
+              fontWeight: 700,
+            }}
+          >
+            {items.length} item{items.length !== 1 ? "s" : ""}
+          </span>
+        </h2>
+      </div>
+      {items.length === 0 ? (
+        <div
+          className="card"
+          style={{
+            padding: "24px 20px",
+            textAlign: "center",
+            color: "var(--text-secondary)",
+            fontSize: "0.9rem",
+          }}
+        >
+          No personal deadlines this week — enjoy the free time!
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {items.map((e) => (
+            <EntryCard
+              key={e.id}
+              entry={e}
+              currentUserId={currentUserId}
+              onEdit={onEdit}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function WeekView({
+  weekStart,
+  items,
+  currentUserId,
+  onEdit,
+}: {
+  weekStart: Date;
+  items: CalEntry[];
+  currentUserId: string;
+  onEdit: (e: CalEntry) => void;
+}) {
+  // Group items by day index 0..6.
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+  const groups = days.map((d) =>
+    items.filter((e) => isSameDay(new Date(e.dueDate), d))
+  );
+
+  const headerLabel = `${weekStart.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })} – ${new Date(weekStart.getTime() + 6 * 86400_000).toLocaleDateString(
+    undefined,
+    { month: "short", day: "numeric", year: "numeric" }
+  )}`;
+
+  return (
+    <section>
+      <h2 style={{ margin: "0 0 12px", fontSize: "1rem", fontWeight: 800 }}>
+        Week of {headerLabel}
+      </h2>
+      <div className="calendar-week-grid">
+        {days.map((d, i) => {
+          const today = isSameDay(d, new Date());
+          return (
+            <div
+              key={d.toISOString()}
+              className="card"
+              style={{
+                padding: 10,
+                borderRadius: 10,
+                border: "1px solid var(--border-color)",
+                background: today
+                  ? "var(--french-blue-soft, rgba(37,99,235,0.06))"
+                  : "var(--bg-main)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                minHeight: 120,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  fontWeight: 800,
+                  color: today
+                    ? "var(--french-blue, #2563eb)"
+                    : "var(--text-secondary)",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.4,
+                }}
+              >
+                {d.toLocaleDateString(undefined, { weekday: "short" })}{" "}
+                {d.getDate()}
+              </div>
+              {groups[i].length === 0 ? (
+                <div
+                  style={{
+                    color: "var(--text-muted)",
+                    fontSize: "0.8rem",
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 60,
+                  }}
+                >
+                  —
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}
+                >
+                  {groups[i].slice(0, 4).map((e) => (
+                    <DayChip
+                      key={e.id}
+                      entry={e}
+                      onClick={() =>
+                        e.createdBy === currentUserId ? onEdit(e) : null
+                      }
+                    />
+                  ))}
+                  {groups[i].length > 4 && (
+                    <div
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "var(--text-muted)",
+                        fontWeight: 700,
+                      }}
+                    >
+                      +{groups[i].length - 4} more
+                    </div>
                   )}
                 </div>
-              );
-            })}
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <style jsx>{`
+        .calendar-week-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 8px;
+        }
+        @media (max-width: 900px) {
+          .calendar-week-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        @media (max-width: 520px) {
+          .calendar-week-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+function DayChip({
+  entry,
+  onClick,
+}: {
+  entry: CalEntry;
+  onClick?: () => void;
+}) {
+  const meta = CATEGORY_META[entry.eventType] || CATEGORY_META.other;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        textAlign: "left",
+        background: meta.bg,
+        color: meta.color,
+        border: "none",
+        borderLeft: `3px solid ${meta.color}`,
+        borderRadius: 6,
+        padding: "4px 6px",
+        fontSize: "0.78rem",
+        fontWeight: 700,
+        cursor: onClick ? "pointer" : "default",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+      title={entry.title}
+    >
+      {fmtTime(entry.dueDate)} · {meta.icon} {entry.title}
+    </button>
+  );
+}
+
+function DayView({
+  day,
+  items,
+  currentUserId,
+  onEdit,
+}: {
+  day: Date;
+  items: CalEntry[];
+  currentUserId: string;
+  onEdit: (e: CalEntry) => void;
+}) {
+  return (
+    <section>
+      <h2 style={{ margin: "0 0 12px", fontSize: "1.05rem", fontWeight: 900 }}>
+        {fmtFullDate(day.toISOString())}
+      </h2>
+      {items.length === 0 ? (
+        <div
+          className="card"
+          style={{
+            padding: "32px 20px",
+            textAlign: "center",
+            color: "var(--text-secondary)",
+          }}
+        >
+          <div style={{ fontSize: 28, opacity: 0.5, marginBottom: 6 }}>📭</div>
+          No events for this day.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {items.map((e) => (
+            <EntryCard
+              key={e.id}
+              entry={e}
+              currentUserId={currentUserId}
+              onEdit={onEdit}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function MonthView({
+  cursor,
+  items,
+  onSelectDay,
+}: {
+  cursor: Date;
+  items: CalEntry[];
+  onSelectDay: (d: Date) => void;
+}) {
+  const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const daysInMonth = new Date(
+    cursor.getFullYear(),
+    cursor.getMonth() + 1,
+    0
+  ).getDate();
+  const startDow = (firstDay.getDay() + 6) % 7;
+  const monthName = firstDay.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+  const today = new Date();
+
+  return (
+    <section className="card" style={{ padding: 16 }}>
+      <h2
+        style={{
+          margin: "0 0 12px",
+          fontSize: "1.05rem",
+          fontWeight: 900,
+          textAlign: "center",
+        }}
+      >
+        {monthName}
+      </h2>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: 2,
+          marginBottom: 4,
+        }}
+      >
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+          <div
+            key={d}
+            style={{
+              textAlign: "center",
+              fontSize: "0.7rem",
+              fontWeight: 900,
+              color: "var(--text-muted)",
+              padding: "4px 0",
+              textTransform: "uppercase",
+            }}
+          >
+            {d}
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: 2,
+        }}
+      >
+        {Array.from({ length: startDow }).map((_, i) => (
+          <div key={`empty-${i}`} />
+        ))}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const dayDate = new Date(
+            cursor.getFullYear(),
+            cursor.getMonth(),
+            day
+          );
+          const dayItems = items.filter((e) =>
+            isSameDay(new Date(e.dueDate), dayDate)
+          );
+          const isToday = isSameDay(dayDate, today);
+          return (
+            <button
+              key={day}
+              type="button"
+              onClick={() => onSelectDay(dayDate)}
+              style={{
+                textAlign: "left",
+                minHeight: 84,
+                border: "1px solid var(--border-color)",
+                borderRadius: 8,
+                padding: 4,
+                background: isToday
+                  ? "var(--french-blue-soft, rgba(37,99,235,0.06))"
+                  : "var(--bg-main)",
+                cursor: "pointer",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  fontWeight: 900,
+                  color: isToday
+                    ? "var(--french-blue, #2563eb)"
+                    : "var(--text-primary)",
+                  marginBottom: 2,
+                }}
+              >
+                {day}
+              </div>
+              {dayItems.slice(0, 2).map((e) => {
+                const meta =
+                  CATEGORY_META[e.eventType] || CATEGORY_META.other;
+                return (
+                  <div
+                    key={e.id}
+                    style={{
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      background: meta.bg,
+                      color: meta.color,
+                      borderRadius: 4,
+                      padding: "1px 4px",
+                      marginBottom: 2,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {meta.icon} {e.title}
+                  </div>
+                );
+              })}
+              {dayItems.length > 2 && (
+                <div
+                  style={{
+                    fontSize: "0.6rem",
+                    color: "var(--text-muted)",
+                    fontWeight: 700,
+                  }}
+                >
+                  +{dayItems.length - 2} more
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function ListView({
+  items,
+  currentUserId,
+  onEdit,
+}: {
+  items: CalEntry[];
+  currentUserId: string;
+  onEdit: (e: CalEntry) => void;
+}) {
+  if (items.length === 0) {
+    return (
+      <div
+        className="card"
+        style={{
+          padding: "40px 20px",
+          textAlign: "center",
+          color: "var(--text-secondary)",
+        }}
+      >
+        <div style={{ fontSize: 32, opacity: 0.4, marginBottom: 6 }}>🗓️</div>
+        Nothing matches your filters yet.
+      </div>
+    );
+  }
+  // Group by month for nicer scanning.
+  const groups = new Map<string, { label: string; rows: CalEntry[] }>();
+  for (const e of items) {
+    const d = new Date(e.dueDate);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const label = d.toLocaleDateString(undefined, {
+      month: "long",
+      year: "numeric",
+    });
+    if (!groups.has(key)) groups.set(key, { label, rows: [] });
+    groups.get(key)!.rows.push(e);
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      {Array.from(groups.entries()).map(([k, v]) => (
+        <section key={k}>
+          <h3
+            style={{
+              margin: "0 0 8px",
+              fontSize: "0.75rem",
+              fontWeight: 900,
+              color: "var(--text-secondary)",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
+            {v.label}
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {v.rows.map((e) => (
+              <EntryCard
+                key={e.id}
+                entry={e}
+                currentUserId={currentUserId}
+                onEdit={onEdit}
+              />
+            ))}
           </div>
         </section>
-      )}
+      ))}
+    </div>
+  );
+}
 
-      {/* ── MODAL BACKDROP ── */}
-      {showModal && (
+// ---------------------------------------------------------------------------
+// Entry card
+// ---------------------------------------------------------------------------
+
+function EntryCard({
+  entry,
+  currentUserId,
+  onEdit,
+}: {
+  entry: CalEntry;
+  currentUserId: string;
+  onEdit: (e: CalEntry) => void;
+}) {
+  const meta = CATEGORY_META[entry.eventType] || CATEGORY_META.other;
+  const date = new Date(entry.dueDate);
+  const isPast = date < new Date();
+  const today = isSameDay(date, new Date());
+  const isCreator = entry.createdBy === currentUserId;
+
+  return (
+    <div
+      className="card"
+      style={{
+        padding: "12px 14px",
+        display: "flex",
+        gap: 12,
+        alignItems: "stretch",
+        opacity: isPast ? 0.7 : 1,
+        borderLeft: `4px solid ${meta.color}`,
+        borderRadius: 12,
+      }}
+    >
+      <div
+        style={{
+          minWidth: 56,
+          textAlign: "center",
+          background: meta.bg,
+          borderRadius: 10,
+          padding: "8px 4px",
+          flexShrink: 0,
+        }}
+      >
         <div
-          style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
-          onMouseDown={() => setShowModal(null)}
+          style={{
+            fontSize: "0.7rem",
+            fontWeight: 900,
+            color: meta.color,
+            textTransform: "uppercase",
+          }}
         >
-          <div
-            className="card"
-            style={{ width: "100%", maxWidth: "540px", maxHeight: "90vh", overflowY: "auto", padding: "24px" }}
-            onMouseDown={e => e.stopPropagation()}
+          {date.toLocaleDateString(undefined, { month: "short" })}
+        </div>
+        <div
+          style={{
+            fontSize: "1.4rem",
+            fontWeight: 950,
+            color: meta.color,
+            lineHeight: 1,
+          }}
+        >
+          {date.getDate()}
+        </div>
+        <div
+          style={{
+            fontSize: "0.65rem",
+            color: meta.color,
+            fontWeight: 700,
+          }}
+        >
+          {date.toLocaleDateString(undefined, { weekday: "short" })}
+        </div>
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            flexWrap: "wrap",
+            marginBottom: 2,
+          }}
+        >
+          <span
+            style={{
+              fontSize: "0.7rem",
+              fontWeight: 900,
+              color: meta.color,
+              background: meta.bg,
+              borderRadius: 6,
+              padding: "2px 8px",
+              textTransform: "uppercase",
+              letterSpacing: 0.4,
+            }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 950 }}>
-                {showModal === "reminder" ? "🔔 Add Reminder" : showModal === "deadline" ? "⏰ Add Deadline" : "👥 Add Study Session"}
-              </h2>
-              <button type="button" className="btn btn-secondary" style={{ minHeight: "34px", padding: "0 12px" }} onClick={() => setShowModal(null)}>×</button>
-            </div>
+            {meta.icon} {meta.label}
+          </span>
+          {today && (
+            <span
+              style={{
+                fontSize: "0.65rem",
+                fontWeight: 900,
+                color: "#fff",
+                background: "var(--french-blue, #2563eb)",
+                borderRadius: 6,
+                padding: "2px 8px",
+              }}
+            >
+              TODAY
+            </span>
+          )}
+          {entry.recurrence !== "none" && (
+            <span
+              style={{
+                fontSize: "0.65rem",
+                color: "var(--text-secondary)",
+                fontWeight: 700,
+              }}
+            >
+              🔁 {entry.recurrence}
+            </span>
+          )}
+          {!entry.isPublic && (
+            <span
+              style={{
+                fontSize: "0.7rem",
+                color: "var(--text-muted)",
+                fontWeight: 700,
+              }}
+            >
+              🔒 Private
+            </span>
+          )}
+          {entry.source === "rsvp" && (
+            <span
+              style={{
+                fontSize: "0.7rem",
+                color: "var(--text-secondary)",
+                fontWeight: 700,
+              }}
+            >
+              ✓ RSVP
+            </span>
+          )}
+        </div>
+        <div
+          style={{
+            fontSize: "0.95rem",
+            fontWeight: 900,
+            marginBottom: 2,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {entry.title}
+        </div>
+        <div
+          style={{
+            fontSize: "0.78rem",
+            color: "var(--text-secondary)",
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <span>🕐 {fmtTime(entry.dueDate)}</span>
+          {entry.endDate && <span>– {fmtTime(entry.endDate)}</span>}
+          {entry.course && <span>📖 {entry.course}</span>}
+          {entry.location && <span>📍 {entry.location}</span>}
+          {entry.communityName && <span>👥 {entry.communityName}</span>}
+        </div>
+        {entry.description && (
+          <p
+            style={{
+              margin: "4px 0 0",
+              fontSize: "0.8rem",
+              color: "var(--text-secondary)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {entry.description}
+          </p>
+        )}
+      </div>
 
-            <form ref={formRef} style={{ display: "flex", flexDirection: "column", gap: "14px" }} onSubmit={handleSubmit}>
-              {/* Hidden category */}
-              <input type="hidden" name="eventType" value={showModal === "reminder" ? "reminder" : showModal === "deadline" ? "deadline" : "study_group"} />
-              <input type="hidden" name="isPublic" value={showModal === "study" ? "true" : "false"} />
-
-              <label>
-                <FieldLabel>{showModal === "study" ? "Subject" : "Title"}</FieldLabel>
-                <FieldInput name="title" required placeholder={
-                  showModal === "reminder" ? "e.g., Review lecture notes" :
-                  showModal === "deadline" ? "e.g., Marketing Assignment" :
-                  "e.g., Statistics Study Group"
-                } />
-              </label>
-
-              {showModal === "deadline" && (
-                <label>
-                  <FieldLabel>Subject / Course</FieldLabel>
-                  <FieldInput name="course" placeholder="e.g., MKTG 201" />
-                </label>
-              )}
-
-              {showModal === "study" && (
-                <label>
-                  <FieldLabel>Goal</FieldLabel>
-                  <FieldInput name="description" placeholder="e.g., Prepare for Chapter 5 exam" />
-                </label>
-              )}
-
-              <label>
-                <FieldLabel>Description</FieldLabel>
-                <textarea name="description" rows={3} placeholder="Optional details..." style={fieldStyle} />
-              </label>
-
-              <div>
-                <FieldLabel>Date</FieldLabel>
-                <div style={{ display: "flex", gap: "10px", marginTop: "7px" }}>
-                  <input name="date" type="date" required style={{ ...fieldStyle, flex: 1, marginTop: 0 }} />
-                  <input name="time" type="time" style={{ ...fieldStyle, flex: 1, marginTop: 0 }} />
-                </div>
-              </div>
-
-              {showModal === "study" && (
-                <>
-                  <label>
-                    <FieldLabel>Location / Online Link</FieldLabel>
-                    <FieldInput name="location" placeholder="Room 301 or https://meet.google.com/..." />
-                  </label>
-                  <label>
-                    <FieldLabel>Max Participants</FieldLabel>
-                    <FieldInput name="maxAttendees" type="number" min="2" placeholder="e.g., 10" />
-                  </label>
-                </>
-              )}
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "4px" }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={isSubmitting} style={{ opacity: isSubmitting ? 0.7 : 1 }}>
-                  {isSubmitting ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </form>
-          </div>
+      {isCreator && entry.source === "academic" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <button
+            type="button"
+            onClick={() => onEdit(entry)}
+            style={iconBtnStyle()}
+            title="Edit"
+          >
+            ✏️
+          </button>
+          <form action={deleteAction}>
+            <input type="hidden" name="entryId" value={entry.masterId} />
+            <button
+              type="submit"
+              style={iconBtnStyle()}
+              title="Delete"
+              onClick={(e) => {
+                if (!confirm("Delete this entry?")) e.preventDefault();
+              }}
+            >
+              🗑️
+            </button>
+          </form>
         </div>
       )}
     </div>
   );
 }
 
-function EntryCard({ entry, currentUserId }: { entry: CalEntry; currentUserId: string }) {
-  const meta = CATEGORY_META[entry.eventType] || CATEGORY_META.other;
-  const date = new Date(entry.dueDate);
-  const isPast = date < new Date();
-  const isToday = fmtDate(entry.dueDate) === fmtDate(new Date().toISOString());
-  const isCreator = entry.createdBy === currentUserId;
+// ---------------------------------------------------------------------------
+// Modal: create / edit
+// ---------------------------------------------------------------------------
+
+function EntryModal({
+  editing,
+  myCommunities,
+  onClose,
+}: {
+  editing: CalEntry | null;
+  myCommunities: Community[];
+  onClose: () => void;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const initial = editing;
+  const initialReminders = useMemo(
+    () => new Set(initial?.reminderOffsets ?? []),
+    [initial]
+  );
+  const [reminders, setReminders] = useState<Set<number>>(initialReminders);
+  const [recurrence, setRecurrence] = useState(initial?.recurrence ?? "none");
+  const [isAllDay, setIsAllDay] = useState(initial?.isAllDay ?? false);
+  const [isPublic, setIsPublic] = useState(initial?.isPublic ?? false);
+  const [eventType, setEventType] = useState(
+    initial?.eventType ?? "personal"
+  );
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const fd = new FormData(e.currentTarget);
+      // Build reminder CSV from selected checkboxes.
+      fd.set(
+        "reminderOffsets",
+        Array.from(reminders).sort((a, b) => b - a).join(",")
+      );
+      fd.set("recurrence", recurrence);
+      fd.set("isAllDay", isAllDay ? "true" : "false");
+      fd.set("isPublic", isPublic ? "true" : "false");
+      fd.set("eventType", eventType);
+
+      // Combine date + time to ISO strings.
+      const dueDate = fd.get("dueDate") as string;
+      const dueTime = (fd.get("dueTime") as string) || (isAllDay ? "00:00" : "09:00");
+      if (dueDate) fd.set("dueDate", `${dueDate}T${dueTime}`);
+      fd.delete("dueTime");
+
+      const endDate = (fd.get("endDate") as string) || "";
+      const endTime = (fd.get("endTime") as string) || "";
+      if (endDate) fd.set("endDate", `${endDate}T${endTime || "23:59"}`);
+      else fd.delete("endDate");
+      fd.delete("endTime");
+
+      const recurrenceUntil = (fd.get("recurrenceUntil") as string) || "";
+      if (recurrenceUntil) {
+        fd.set("recurrenceUntil", `${recurrenceUntil}T23:59`);
+      }
+
+      const res = editing
+        ? await updateCalendarEntry(fd)
+        : await createCalendarEntry(fd);
+
+      if ((res as any)?.error) {
+        setError((res as any).error);
+      } else {
+        onClose();
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to save");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className="card" style={{
-      padding: "14px 18px",
-      display: "flex",
-      gap: "14px",
-      alignItems: "center",
-      opacity: isPast ? 0.65 : 1,
-      borderLeft: `4px solid ${meta.color}`,
-      borderRadius: "14px",
-    }}>
-      {/* Date badge */}
-      <div style={{
-        minWidth: "50px", textAlign: "center",
-        background: meta.bg, borderRadius: "10px", padding: "8px 6px",
-        flexShrink: 0,
-      }}>
-        <div style={{ fontSize: "11px", fontWeight: 900, color: meta.color, textTransform: "uppercase" }}>
-          {date.toLocaleDateString("en-US", { month: "short" })}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        background: "rgba(15,23,42,0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+      onMouseDown={onClose}
+    >
+      <div
+        className="card"
+        style={{
+          width: "100%",
+          maxWidth: 600,
+          maxHeight: "92vh",
+          overflowY: "auto",
+          padding: 20,
+          borderRadius: 14,
+          background: "var(--bg-main)",
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 950 }}>
+            {editing ? "Edit entry" : "New entry"}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-secondary"
+            style={btnStyle({ minHeight: 32, padding: "0 10px" })}
+          >
+            ×
+          </button>
         </div>
-        <div style={{ fontSize: "22px", fontWeight: 950, color: meta.color, lineHeight: 1 }}>{date.getDate()}</div>
-        <div style={{ fontSize: "10px", color: meta.color, fontWeight: 700 }}>
-          {date.toLocaleDateString("en-US", { weekday: "short" })}
-        </div>
-      </div>
 
-      {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
-          <span style={{
-            fontSize: "11px", fontWeight: 900, color: meta.color,
-            background: meta.bg, borderRadius: "6px", padding: "2px 8px",
-            textTransform: "uppercase", letterSpacing: "0.04em",
-          }}>{meta.icon} {meta.label}</span>
-          {isToday && <span style={{ fontSize: "11px", fontWeight: 900, color: "#fff", background: "var(--french-blue)", borderRadius: "6px", padding: "2px 8px" }}>TODAY</span>}
-          {!entry.isPublic && <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 700 }}>🔒 Private</span>}
-        </div>
-        <div style={{ fontSize: "16px", fontWeight: 900, color: "var(--text-primary)", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {entry.title}
-        </div>
-        <div style={{ fontSize: "13px", color: "var(--text-secondary)", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <span>🕐 {fmt(entry.dueDate)}</span>
-          {entry.course && <span>📖 {entry.course}</span>}
-          {entry.location && <span>📍 {entry.location}</span>}
-        </div>
-        {entry.description && (
-          <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {entry.description}
-          </p>
+        {error && (
+          <div
+            style={{
+              background: "rgba(220,38,38,0.08)",
+              border: "1px solid rgba(220,38,38,0.25)",
+              color: "#b91c1c",
+              padding: "8px 12px",
+              borderRadius: 8,
+              fontSize: "0.85rem",
+              marginBottom: 12,
+            }}
+          >
+            {error}
+          </div>
         )}
-      </div>
 
-      {/* Actions */}
-      {isCreator && (
-        <form action={deleteAction} style={{ flexShrink: 0 }}>
-          <input type="hidden" name="entryId" value={entry.id} />
-          <button type="submit" style={{
-            border: "none", background: "transparent", cursor: "pointer",
-            color: "var(--text-muted)", fontSize: "16px", padding: "4px 8px",
-          }} title="Delete">🗑</button>
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: 12 }}
+        >
+          {editing && (
+            <input type="hidden" name="entryId" value={editing.masterId} />
+          )}
+
+          <Field label="Title">
+            <input
+              required
+              defaultValue={initial?.title ?? ""}
+              maxLength={200}
+              name="title"
+              placeholder="e.g., Marketing midterm"
+              style={fieldStyle}
+            />
+          </Field>
+
+          {/* Category buttons */}
+          <Field label="Category">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(110px, 1fr))",
+                gap: 6,
+              }}
+            >
+              {PRIMARY_CATEGORIES.map((c) => {
+                const m = CATEGORY_META[c];
+                const active = eventType === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setEventType(c)}
+                    style={{
+                      borderRadius: 8,
+                      padding: "8px 10px",
+                      border: `1px solid ${active ? m.color : "var(--border-color)"}`,
+                      background: active ? m.bg : "var(--bg-main)",
+                      color: active ? m.color : "var(--text-primary)",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      justifyContent: "center",
+                    }}
+                  >
+                    <span>{m.icon}</span>
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <Field label={isAllDay ? "Date" : "Start date"}>
+              <input
+                required
+                type="date"
+                name="dueDate"
+                defaultValue={toLocalDateValue(initial?.dueDate)}
+                style={fieldStyle}
+              />
+            </Field>
+            {!isAllDay && (
+              <Field label="Time">
+                <input
+                  type="time"
+                  name="dueTime"
+                  defaultValue={(() => {
+                    const v = toLocalInputValue(initial?.dueDate);
+                    return v ? v.split("T")[1] : "";
+                  })()}
+                  style={fieldStyle}
+                />
+              </Field>
+            )}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <Field label="End date (optional)">
+              <input
+                type="date"
+                name="endDate"
+                defaultValue={toLocalDateValue(initial?.endDate)}
+                style={fieldStyle}
+              />
+            </Field>
+            {!isAllDay && (
+              <Field label="End time">
+                <input
+                  type="time"
+                  name="endTime"
+                  defaultValue={(() => {
+                    const v = toLocalInputValue(initial?.endDate);
+                    return v ? v.split("T")[1] : "";
+                  })()}
+                  style={fieldStyle}
+                />
+              </Field>
+            )}
+          </div>
+
+          <label
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.85rem" }}
+          >
+            <input
+              type="checkbox"
+              checked={isAllDay}
+              onChange={(e) => setIsAllDay(e.target.checked)}
+            />
+            All-day event
+          </label>
+
+          <Field label="Description">
+            <textarea
+              rows={2}
+              defaultValue={initial?.description ?? ""}
+              maxLength={1000}
+              name="description"
+              placeholder="Optional details…"
+              style={{ ...fieldStyle, resize: "none" }}
+            />
+          </Field>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <Field label="Course (optional)">
+              <input
+                name="course"
+                defaultValue={initial?.course ?? ""}
+                placeholder="e.g., FIN-201"
+                style={fieldStyle}
+              />
+            </Field>
+            <Field label="Faculty (optional)">
+              <input
+                name="faculty"
+                defaultValue={initial?.faculty ?? ""}
+                placeholder="e.g., Finance"
+                style={fieldStyle}
+              />
+            </Field>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <Field label="Location">
+              <input
+                name="location"
+                defaultValue={initial?.location ?? ""}
+                placeholder="Room 301, Library, …"
+                style={fieldStyle}
+              />
+            </Field>
+            <Field label="Online link">
+              <input
+                name="onlineLink"
+                defaultValue={initial?.onlineLink ?? ""}
+                placeholder="https://meet.google.com/…"
+                style={fieldStyle}
+              />
+            </Field>
+          </div>
+
+          {myCommunities.length > 0 && (
+            <Field label="Community (optional)">
+              <select
+                name="communityId"
+                defaultValue={initial?.communityId ?? ""}
+                style={fieldStyle}
+              >
+                <option value="">None</option>
+                {myCommunities.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+
+          {/* Recurrence */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <Field label="Repeats">
+              <select
+                value={recurrence}
+                onChange={(e) => setRecurrence(e.target.value as any)}
+                style={fieldStyle}
+              >
+                <option value="none">Does not repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </Field>
+            {recurrence !== "none" && (
+              <Field label="Repeat until">
+                <input
+                  type="date"
+                  name="recurrenceUntil"
+                  defaultValue={toLocalDateValue(initial?.dueDate)}
+                  style={fieldStyle}
+                />
+              </Field>
+            )}
+          </div>
+
+          {/* Reminders */}
+          <Field label="Reminders">
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 6,
+              }}
+            >
+              {REMINDER_OPTIONS.map((opt) => {
+                const active = reminders.has(opt.value);
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      const next = new Set(reminders);
+                      if (active) next.delete(opt.value);
+                      else next.add(opt.value);
+                      setReminders(next);
+                    }}
+                    style={{
+                      borderRadius: 999,
+                      padding: "6px 12px",
+                      border: `1px solid ${active ? "var(--french-blue, #2563eb)" : "var(--border-color)"}`,
+                      background: active
+                        ? "var(--french-blue-soft, rgba(37,99,235,0.1))"
+                        : "var(--bg-main)",
+                      color: active
+                        ? "var(--french-blue, #2563eb)"
+                        : "var(--text-primary)",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    🔔 {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+
+          <label
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.85rem" }}
+          >
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+            />
+            Public event
+            <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>
+              (requires moderator role or community ownership)
+            </span>
+          </label>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 8,
+              marginTop: 6,
+            }}
+          >
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onClose}
+              style={btnStyle()}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={submitting}
+              style={{ ...btnStyle(), opacity: submitting ? 0.7 : 1 }}
+            >
+              {submitting ? "Saving…" : editing ? "Save changes" : "Create"}
+            </button>
+          </div>
         </form>
-      )}
+      </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tiny style helpers
+// ---------------------------------------------------------------------------
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label style={{ display: "block" }}>
+      <span
+        style={{
+          display: "block",
+          fontSize: "0.78rem",
+          fontWeight: 800,
+          marginBottom: 4,
+          color: "var(--text-secondary)",
+          textTransform: "uppercase",
+          letterSpacing: 0.4,
+        }}
+      >
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }
 
 const fieldStyle: React.CSSProperties = {
   width: "100%",
   border: "1px solid var(--border-color)",
-  borderRadius: "12px",
-  padding: "10px 12px",
-  fontSize: "14px",
+  borderRadius: 10,
+  padding: "9px 11px",
+  fontSize: "0.9rem",
   outline: "none",
-  marginTop: "7px",
+  background: "var(--bg-main)",
+  color: "var(--text-primary)",
 };
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <span style={{ display: "block", color: "var(--text-primary)", fontSize: "13px", fontWeight: 900 }}>{children}</span>;
+function btnStyle(
+  overrides: Partial<React.CSSProperties> = {}
+): React.CSSProperties {
+  return {
+    fontSize: "0.85rem",
+    minHeight: 38,
+    padding: "0 14px",
+    borderRadius: 8,
+    cursor: "pointer",
+    ...overrides,
+  };
 }
-function FieldInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} style={fieldStyle} />;
+
+function selectStyle(): React.CSSProperties {
+  return {
+    height: 40,
+    border: "1px solid var(--border-color)",
+    borderRadius: 10,
+    padding: "0 12px",
+    fontSize: "0.85rem",
+    outline: "none",
+    background: "var(--bg-main)",
+    color: "var(--text-primary)",
+  };
+}
+
+function iconBtnStyle(): React.CSSProperties {
+  return {
+    border: "1px solid var(--border-color)",
+    background: "var(--bg-main)",
+    cursor: "pointer",
+    color: "var(--text-secondary)",
+    fontSize: "0.9rem",
+    padding: "4px 6px",
+    borderRadius: 6,
+  };
 }

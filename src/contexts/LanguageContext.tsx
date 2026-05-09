@@ -3,10 +3,17 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { translations, Language } from "@/lib/i18n";
 
+export const LOCALE_MAP: Record<Language, string> = {
+  en: "en-GB",
+  fr: "fr-FR",
+  hy: "hy-AM",
+};
+
 type LanguageContextType = {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
+  locale: string;
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -25,6 +32,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem("language", lang);
+    document.cookie = `language=${lang};path=/;max-age=31536000;samesite=lax`;
   };
 
   const t = (key: string): string => {
@@ -52,7 +60,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, locale: LOCALE_MAP[language] }}>
       {children}
     </LanguageContext.Provider>
   );

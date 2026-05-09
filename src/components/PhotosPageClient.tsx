@@ -609,6 +609,14 @@ export default function PhotosPageClient({
           type="image"
           alt={recentPhotos[selectedPhotoIndex].caption || "Photo"}
           title={recentPhotos[selectedPhotoIndex].caption}
+          photoId={recentPhotos[selectedPhotoIndex].id}
+          currentUserId={currentUserId}
+          likesCount={recentPhotos[selectedPhotoIndex].likesCount}
+          commentsCount={recentPhotos[selectedPhotoIndex].commentsCount}
+          isLiked={recentPhotos[selectedPhotoIndex].isLiked}
+          isSaved={recentPhotos[selectedPhotoIndex].isSaved}
+          viewsCount={recentPhotos[selectedPhotoIndex].viewCount}
+          authorName={recentPhotos[selectedPhotoIndex].ownerName}
           onClose={() => setSelectedPhotoIndex(null)}
           items={recentPhotos}
           currentIndex={selectedPhotoIndex}

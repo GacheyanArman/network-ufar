@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { and, count, desc, eq, or } from "drizzle-orm";
 import { redirect, notFound } from "next/navigation";
 
@@ -13,6 +14,7 @@ import {
   blockedUsers,
   userFollows,
 } from "@/lib/schema";
+import { getFacultyLabel } from "@/lib/profile-utils";
 import { getSession } from "@/lib/session";
 import { followUser, unfollowUser } from "@/app/actions/follow";
 import { sendFriendRequest } from "@/app/actions/friends";
@@ -29,6 +31,9 @@ export default async function PublicProfilePage({ params, searchParams }) {
   if (!session?.userId) {
     redirect("/login");
   }
+
+  const cookieStore = await cookies();
+  const lang = cookieStore.get("language")?.value || "en";
 
   const routeParams = await params;
   const pageParams = await searchParams;
@@ -216,7 +221,8 @@ export default async function PublicProfilePage({ params, searchParams }) {
   const safeInitial = safeName.charAt(0).toUpperCase() || "U";
   const safeEmail = profileUser.email || "No email provided";
   const safeUsername = profileUser.username ? `@${profileUser.username}` : "@username";
-  const safeFaculty = profileUser.faculty || "Faculty not specified";
+  const safeFaculty = profileUser.faculty ? getFacultyLabel(profileUser.faculty, lang) : "Faculty not specified";
+  const rawFaculty = profileUser.faculty || "";
   const safeBio = profileUser.bio || "No bio yet.";
   const avatarImage = profileUser.image || profileUser.avatarUrl || "";
 
@@ -240,7 +246,7 @@ export default async function PublicProfilePage({ params, searchParams }) {
     ...post,
     authorName: safeName,
     authorImage: avatarImage,
-    authorFaculty: safeFaculty,
+    authorFaculty: rawFaculty,
     likedByMe: false,
   }));
 
@@ -431,6 +437,7 @@ export default async function PublicProfilePage({ params, searchParams }) {
               <section className="uf-photos-section">
                 <ProfilePhotoTabs
                   isOwner={false}
+                  currentUserId={session.userId}
                   photos={userPhotos}
                   tagged={taggedPhotos}
                   saved={[]}

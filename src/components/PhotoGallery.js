@@ -3,7 +3,7 @@
 import { useState } from "react";
 import MediaViewer from "@/components/MediaViewer";
 
-export default function PhotoGallery({ photos }) {
+export default function PhotoGallery({ photos, currentUserId }) {
   const [selectedIndex, setSelectedIndex] = useState(null);
 
   if (photos.length === 0) {
@@ -46,6 +46,13 @@ export default function PhotoGallery({ photos }) {
           type="image"
           alt={selectedPhoto.caption || "Gallery photo"}
           title={selectedPhoto.caption || undefined}
+          photoId={selectedPhoto.id}
+          currentUserId={currentUserId}
+          likesCount={selectedPhoto.likesCount}
+          commentsCount={selectedPhoto.commentsCount}
+          isLiked={selectedPhoto.isLiked}
+          isSaved={selectedPhoto.isSaved}
+          authorName={selectedPhoto.ownerName}
           onClose={() => setSelectedIndex(null)}
           items={photos}
           currentIndex={selectedIndex}

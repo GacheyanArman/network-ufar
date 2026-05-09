@@ -778,7 +778,7 @@ textarea[name="content"] {
   width: 100% !important;
   min-height: 92px !important;
   padding: 14px 16px !important;
-  resize: vertical !important;
+  resize: none !important;
   border: 1px solid var(--border-color-light) !important;
   border-radius: 16px !important;
   background: var(--bg-soft) !important;
@@ -2695,52 +2695,93 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 
 .uf-photo-viewer-actions {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin: 16px 0;
-  padding: 10px;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 12px 0;
+  padding: 0;
+  max-width: 100%;
 }
 
-.uf-photo-viewer-actions button,
-.uf-photo-viewer-actions a {
+.uf-photo-viewer-action {
   min-width: 0;
-  min-height: 58px;
+  height: 36px;
+  padding: 0;
   border: none;
-  border-radius: 14px;
+  border-radius: 999px;
   background: transparent;
-  color: #475569;
-  cursor: default;
+  color: #65758b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition: color 160ms ease;
   text-decoration: none;
-  display: flex;
-  flex-direction: column;
+}
+
+.uf-photo-viewer-action-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 850;
+  transition: background-color 160ms ease;
 }
 
-.uf-photo-viewer-actions a {
-  cursor: pointer;
+.uf-photo-viewer-action-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.uf-photo-viewer-actions .active {
-  background: #eef4ff;
+.uf-photo-viewer-action-count {
+  min-width: 12px;
+  color: currentColor;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.uf-photo-viewer-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.uf-photo-viewer-action.comment:hover,
+.uf-photo-viewer-action.download:hover,
+.uf-photo-viewer-action.bookmark:hover,
+.uf-photo-viewer-action.share:hover,
+.uf-photo-viewer-action.bookmark.active {
   color: #0b3aa8;
 }
 
-.uf-photo-viewer-actions span {
-  font-size: 18px;
-  line-height: 1;
+.uf-photo-viewer-action.comment:hover .uf-photo-viewer-action-icon,
+.uf-photo-viewer-action.download:hover .uf-photo-viewer-action-icon,
+.uf-photo-viewer-action.bookmark:hover .uf-photo-viewer-action-icon,
+.uf-photo-viewer-action.share:hover .uf-photo-viewer-action-icon,
+.uf-photo-viewer-action.bookmark.active .uf-photo-viewer-action-icon {
+  background: rgba(11, 58, 168, 0.08);
 }
 
-.uf-photo-viewer-actions strong {
-  font-size: 11px;
-  font-weight: 850;
+.uf-photo-viewer-action.like:hover,
+.uf-photo-viewer-action.like.active {
+  color: #e11d48;
+}
+
+.uf-photo-viewer-action.like:hover .uf-photo-viewer-action-icon,
+.uf-photo-viewer-action.like.active .uf-photo-viewer-action-icon {
+  background: rgba(225, 29, 72, 0.1);
+}
+
+.uf-photo-viewer-action.like.active .uf-photo-viewer-action-icon svg {
+  fill: currentColor;
 }
 
 .uf-photo-viewer-student-box {
@@ -2842,6 +2883,95 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
   font-size: 14px;
   font-weight: 750;
   text-align: center;
+}
+
+.uf-photo-viewer-comments {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.uf-photo-viewer-comments-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+
+.uf-photo-viewer-comment {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 13px;
+  position: relative;
+}
+
+.uf-photo-viewer-comment-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.uf-photo-viewer-comment-delete:hover {
+  color: #ef4444;
+}
+
+.uf-photo-viewer-comment-input {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 8px;
+}
+
+.uf-photo-viewer-comment-input input {
+  flex: 1;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d9e2ef;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.uf-photo-viewer-comment-input input:focus {
+  border-color: #0b3aa8;
+}
+
+.uf-photo-viewer-comment-input button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: #0b3aa8;
+  color: white;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.uf-photo-viewer-comment-input button:hover:not(:disabled) {
+  background: #062fae;
+}
+
+.uf-photo-viewer-comment-input button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
 }
 
 @media (max-width: 980px) {

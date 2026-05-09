@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getFacultyLabel } from "@/lib/profile-utils";
 
 export default function SearchAutocomplete() {
   const [query, setQuery] = useState("");
@@ -12,6 +14,7 @@ export default function SearchAutocomplete() {
   const router = useRouter();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const { language } = useLanguage();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -191,7 +194,7 @@ export default function SearchAutocomplete() {
                       <div style={{ fontWeight: 700, fontSize: "14px" }}>{item.name}</div>
                       {item.faculty && (
                         <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                          {item.faculty}
+                          {getFacultyLabel(item.faculty, language)}
                         </div>
                       )}
                     </div>

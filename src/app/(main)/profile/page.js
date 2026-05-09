@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, desc, eq, or, count } from "drizzle-orm";
 
@@ -12,6 +13,7 @@ import ProfilePhotoTabs from "@/components/ProfilePhotoTabs";
 import UiIcon from "@/components/UiIcon";
 import ProfileInfo from "@/components/ProfileInfo";
 import ProfileAboutInfo from "@/components/ProfileAboutInfo";
+import { getFacultyLabel } from "@/lib/profile-utils";
 
 export default async function ProfilePage({ searchParams }) {
   const session = await getSession();
@@ -19,6 +21,9 @@ export default async function ProfilePage({ searchParams }) {
   if (!session?.userId) {
     redirect("/login");
   }
+
+  const cookieStore = await cookies();
+  const lang = cookieStore.get("language")?.value || "en";
 
   const params = await searchParams;
   const currentTab = Array.isArray(params?.tab)
@@ -166,7 +171,7 @@ export default async function ProfilePage({ searchParams }) {
   const safeUsername = currentUser.username
     ? `@${currentUser.username}`
     : "@username";
-  const safeFaculty = currentUser.faculty || "Student";
+  const safeFaculty = currentUser.faculty ? getFacultyLabel(currentUser.faculty, lang) : "Student";
   const safeBio = currentUser.bio || "";
   const avatarImage = currentUser.image || "";
 
@@ -324,6 +329,7 @@ export default async function ProfilePage({ searchParams }) {
               <section className="uf-photos-section">
                 <ProfilePhotoTabs
                   isOwner={true}
+                  currentUserId={session.userId}
                   photos={userPhotos}
                   tagged={taggedPhotos}
                   saved={savedPhotos}

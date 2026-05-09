@@ -5,6 +5,7 @@ This directory contains SQL migration files for the UFAR Network database.
 ## Migration Files
 
 - `006_add_photo_features.sql` - Adds photo features (likes, saves, tags, comments, moderation)
+- `013_events_hub.sql` - Adds the full Events hub schema (cover images, categories, waitlist, comments, co-organizers, reminders and QR check-in)
 
 ## How to Apply Migrations
 

@@ -1,121 +1,68 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { events, eventRsvps, users, communities } from "@/lib/schema";
+import { communities, communityMembers } from "@/lib/schema";
 import { getSession } from "@/lib/session";
-import { eq, gte, inArray, sql, and } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
+import { getEventsList } from "@/app/actions/events";
+import { getUserRole, isStaff } from "@/lib/roles";
 import EventsPageClient from "@/components/EventsPageClient";
+
+export const metadata = {
+  title: "Events | UFAR Network",
+  description:
+    "Discover and RSVP to academic events, workshops, club meetups, parties, sports and more at UFAR.",
+};
 
 export default async function EventsPage() {
   const session = await getSession();
+  if (!session?.userId) redirect("/login");
 
-  if (!session?.userId) {
-    redirect("/login");
-  }
+  // Initial render shows the "upcoming" feed. The client can switch filters
+  // by re-fetching via server actions.
+  const initialEvents = await getEventsList({ filter: "upcoming" });
 
-  const upcomingEvents = await db
-    .select({
-      id: events.id,
-      title: events.title,
-      description: events.description,
-      eventType: events.eventType,
-      location: events.location,
-      startTime: events.startTime,
-      endTime: events.endTime,
-      imageUrl: events.imageUrl,
-      maxAttendees: events.maxAttendees,
-      organizerId: events.organizerId,
-      organizerName: users.fullName,
-      organizerImage: users.image,
-      communityName: communities.name,
-      createdAt: events.createdAt,
-    })
-    .from(events)
-    .innerJoin(users, eq(events.organizerId, users.id))
-    .leftJoin(communities, eq(events.communityId, communities.id))
-    .where(gte(events.startTime, new Date()))
-    .orderBy(events.startTime)
-    .limit(80);
-
-  const eventIds = upcomingEvents.map((event) => event.id);
-
-  const rsvpCounts =
-    eventIds.length > 0
+  // Communities the user can create events for. Members can still discover
+  // their community events via the "Community" filter; only owners/moderators
+  // and platform staff can publish on behalf of a community.
+  const role = await getUserRole(session.userId);
+  const staff = isStaff(role);
+  const memberships = staff
+    ? []
+    : await db
+        .select({
+          communityId: communityMembers.communityId,
+          memberRole: communityMembers.role,
+        })
+        .from(communityMembers)
+        .where(eq(communityMembers.userId, session.userId));
+  const memberCommunityIds = memberships.map((m) => m.communityId);
+  const manageableCommunityIds = memberships
+    .filter((m) => m.memberRole === "owner" || m.memberRole === "moderator")
+    .map((m) => m.communityId);
+  const allCommunities = staff
+    ? await db
+        .select({ id: communities.id, name: communities.name })
+        .from(communities)
+    : [];
+  const filterCommunities = staff
+    ? allCommunities
+    : memberCommunityIds.length > 0
       ? await db
-          .select({
-            eventId: eventRsvps.eventId,
-            status: eventRsvps.status,
-            count: sql`count(*)::int`,
-          })
-          .from(eventRsvps)
-          .where(inArray(eventRsvps.eventId, eventIds))
-          .groupBy(eventRsvps.eventId, eventRsvps.status)
+          .select({ id: communities.id, name: communities.name })
+          .from(communities)
+          .where(inArray(communities.id, memberCommunityIds))
       : [];
-
-  const userRsvps =
-    eventIds.length > 0
-      ? await db
-          .select({
-            eventId: eventRsvps.eventId,
-            status: eventRsvps.status,
-          })
-          .from(eventRsvps)
-          .where(
-            and(
-              eq(eventRsvps.userId, session.userId),
-              inArray(eventRsvps.eventId, eventIds)
-            )
-          )
+  const myCommunities = staff
+    ? allCommunities
+    : manageableCommunityIds.length > 0
+      ? filterCommunities.filter((c) => manageableCommunityIds.includes(c.id))
       : [];
-
-  const userRsvpMap = new Map(
-    userRsvps.map((row) => [row.eventId, row.status])
-  );
-
-  const countsByEvent = new Map();
-
-  for (const row of rsvpCounts) {
-    const current = countsByEvent.get(row.eventId) || {
-      going: 0,
-      interested: 0,
-      not_going: 0,
-    };
-
-    current[row.status] = Number(row.count || 0);
-    countsByEvent.set(row.eventId, current);
-  }
-
-  const normalizedEvents = upcomingEvents.map((event) => {
-    const counts = countsByEvent.get(event.id) || {
-      going: 0,
-      interested: 0,
-      not_going: 0,
-    };
-
-    return {
-      id: event.id,
-      title: event.title,
-      description: event.description,
-      eventType: event.eventType,
-      location: event.location,
-      startTime: event.startTime ? event.startTime.toISOString() : null,
-      endTime: event.endTime ? event.endTime.toISOString() : null,
-      imageUrl: event.imageUrl,
-      maxAttendees: event.maxAttendees,
-      organizerId: event.organizerId,
-      organizerName: event.organizerName,
-      organizerImage: event.organizerImage,
-      communityName: event.communityName,
-      createdAt: event.createdAt ? event.createdAt.toISOString() : null,
-      goingCount: counts.going,
-      maybeCount: counts.interested,
-      notGoingCount: counts.not_going,
-      rsvpStatus: userRsvpMap.get(event.id) || null,
-    };
-  });
 
   return (
     <EventsPageClient
-      events={normalizedEvents}
+      events={initialEvents}
+      myCommunities={myCommunities}
+      filterCommunities={filterCommunities}
       currentUserId={session.userId}
     />
   );

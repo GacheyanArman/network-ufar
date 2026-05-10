@@ -1,36 +1,33 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ilike, or, and, ne, sql, notInArray } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { unifiedSearch } from "@/app/actions/search";
 import { getSession } from "@/lib/session";
-import { users, communities, blockedUsers } from "@/lib/schema";
+import { translations } from "@/lib/i18n";
+import { getFacultyLabel } from "@/lib/profile-utils";
 import UiIcon from "@/components/UiIcon";
 import SearchBar from "@/components/SearchBar";
-import { getFacultyLabel } from "@/lib/profile-utils";
 
 export default async function SearchPage({ searchParams }) {
   const session = await getSession();
-
-  if (!session?.userId) {
-    redirect("/login");
-  }
+  if (!session?.userId) redirect("/login");
 
   const cookieStore = await cookies();
   const lang = cookieStore.get("language")?.value || "en";
+  const t = translations[lang]?.searchPage || translations.en.searchPage;
+  const es = (translations[lang] || translations.en).emptyStates;
 
   const params = await searchParams;
   const query = params?.q?.trim() || "";
 
-  // Если нет query, показываем пустую страницу поиска
   if (!query) {
     return (
       <div className="uf-search-page">
         <style>{searchPageStyles}</style>
 
         <div className="uf-search-header">
-          <h1>Search</h1>
-          <p>Find people, communities, and more.</p>
+          <h1>{t.title}</h1>
+          <p>{t.subtitle}</p>
         </div>
 
         <div className="uf-card uf-search-bar-card">
@@ -41,102 +38,36 @@ export default async function SearchPage({ searchParams }) {
           <div className="uf-search-empty-icon">
             <UiIcon name="search" size={48} />
           </div>
-          <h2>Start searching</h2>
-          <p>Type in the search box above to find students, teachers, and communities.</p>
+          <h2>{t.emptyTitle}</h2>
+          <p>{t.emptyHint}</p>
         </div>
       </div>
     );
   }
 
-  const searchPattern = `%${query}%`;
+  const results = await unifiedSearch(query);
 
-  // Get blocked user IDs
-  const blockedUserIds = new Set();
-  const blockedRows = await db
-    .select({
-      blockedId: blockedUsers.blockedId,
-      blockerId: blockedUsers.blockerId,
-    })
-    .from(blockedUsers)
-    .where(
-      or(
-        sql`${blockedUsers.blockerId} = ${session.userId}`,
-        sql`${blockedUsers.blockedId} = ${session.userId}`
-      )
-    );
-
-  for (const row of blockedRows) {
-    if (row.blockerId === session.userId) {
-      blockedUserIds.add(row.blockedId);
-    } else {
-      blockedUserIds.add(row.blockerId);
-    }
-  }
-
-  // Параллельный поиск пользователей и сообществ
-  const [usersResults, communitiesResults] = await Promise.all([
-    db
-      .select({
-        id: users.id,
-        fullName: users.fullName,
-        username: users.username,
-        faculty: users.faculty,
-        image: users.image,
-      })
-      .from(users)
-      .where(
-        blockedUserIds.size > 0
-          ? and(
-              ne(users.id, session.userId),
-              notInArray(users.id, Array.from(blockedUserIds)),
-              or(
-                ilike(users.fullName, searchPattern),
-                ilike(users.username, searchPattern),
-                ilike(users.email, searchPattern),
-                ilike(users.faculty, searchPattern)
-              )
-            )
-          : and(
-              ne(users.id, session.userId),
-              or(
-                ilike(users.fullName, searchPattern),
-                ilike(users.username, searchPattern),
-                ilike(users.email, searchPattern),
-                ilike(users.faculty, searchPattern)
-              )
-            )
-      )
-      .orderBy(users.fullName)
-      .limit(50),
-
-    db
-      .select({
-        id: communities.id,
-        name: communities.name,
-        description: communities.description,
-        imageUrl: communities.imageUrl,
-      })
-      .from(communities)
-      .where(
-        or(
-          ilike(communities.name, searchPattern),
-          ilike(communities.description, searchPattern)
-        )
-      )
-      .orderBy(communities.name)
-      .limit(50),
-  ]);
-
-  const totalResults = usersResults.length + communitiesResults.length;
+  const totalResults =
+    results.users.length +
+    results.posts.length +
+    results.communities.length +
+    results.events.length +
+    results.materials.length +
+    results.library.length +
+    results.photos.length +
+    results.albums.length +
+    results.calendar.length;
 
   return (
     <div className="uf-search-page">
       <style>{searchPageStyles}</style>
 
       <div className="uf-search-header">
-        <h1>Search Results</h1>
+        <h1>{t.resultsTitle}</h1>
         <p>
-          Found {totalResults} result{totalResults === 1 ? "" : "s"} for "{query}"
+          {t.resultsCount
+            .replace("{count}", String(totalResults))
+            .replace("{query}", query)}
         </p>
       </div>
 
@@ -149,80 +80,340 @@ export default async function SearchPage({ searchParams }) {
           <div className="uf-search-empty-icon">
             <UiIcon name="search" size={48} />
           </div>
-          <h2>No results found</h2>
-          <p>Try searching with different keywords or check your spelling.</p>
+          <h2>{es.search.noResults}</h2>
+          <p>{es.search.noResultsHint}</p>
+          <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/friends" className="btn btn-secondary" style={{ textDecoration: "none", fontSize: "0.85rem" }}>
+              {es.search.browsePeople}
+            </Link>
+            <Link href="/events" className="btn btn-secondary" style={{ textDecoration: "none", fontSize: "0.85rem" }}>
+              {es.search.browseEvents}
+            </Link>
+            <Link href="/materials" className="btn btn-secondary" style={{ textDecoration: "none", fontSize: "0.85rem" }}>
+              {es.search.browseMaterials}
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="uf-search-results">
-          {usersResults.length > 0 && (
-            <section className="uf-card uf-search-section">
-              <h2 className="uf-search-section-title">
-                <UiIcon name="user" size={20} />
-                People ({usersResults.length})
-              </h2>
-
-              <div className="uf-search-grid">
-                {usersResults.map((user) => (
-                  <Link
-                    key={user.id}
-                    href={`/profile/${user.id}`}
-                    className="uf-search-user-card"
-                  >
-                    <div className="uf-search-user-avatar">
-                      {user.image ? (
-                        <img src={user.image} alt={user.fullName} />
-                      ) : (
-                        <span>{user.fullName?.[0] || "U"}</span>
-                      )}
-                    </div>
-
-                    <div className="uf-search-user-info">
-                      <strong>{user.fullName}</strong>
-                      <span>
-                        {user.username ? `@${user.username}` : user.faculty ? getFacultyLabel(user.faculty, lang) : "Student"}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
+          {results.users.length > 0 && (
+            <SearchSection
+              icon="user"
+              title={t.people}
+              count={results.users.length}
+              seeAll={`/friends?q=${encodeURIComponent(query)}`}
+              seeAllLabel={t.seeAll}
+            >
+              {results.users.map((u) => (
+                <Link
+                  key={u.id}
+                  href={`/profile/${u.id}`}
+                  className="uf-search-item"
+                >
+                  <div className="uf-search-item-avatar">
+                    {u.image ? (
+                      <img src={u.image} alt={u.fullName} />
+                    ) : (
+                      <span>{u.fullName?.[0] || "U"}</span>
+                    )}
+                  </div>
+                  <div className="uf-search-item-info">
+                    <strong>{u.fullName}</strong>
+                    <span>
+                      {u.username
+                        ? `@${u.username}`
+                        : u.faculty
+                          ? getFacultyLabel(u.faculty, lang)
+                          : "Student"}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </SearchSection>
           )}
 
-          {communitiesResults.length > 0 && (
-            <section className="uf-card uf-search-section">
-              <h2 className="uf-search-section-title">
-                <UiIcon name="users" size={20} />
-                Communities ({communitiesResults.length})
-              </h2>
+          {results.materials.length > 0 && (
+            <SearchSection
+              icon="graduation"
+              title={t.materials}
+              count={results.materials.length}
+              seeAll={`/study-materials?q=${encodeURIComponent(query)}`}
+              seeAllLabel={t.seeAll}
+            >
+              {results.materials.map((m) => (
+                <Link
+                  key={m.id}
+                  href={`/study-materials?id=${m.id}`}
+                  className="uf-search-item"
+                >
+                  <div className="uf-search-item-icon-wrap" style={{ background: "#eef4ff", color: "#0b3aa8" }}>
+                    <UiIcon name="file" size={20} />
+                  </div>
+                  <div className="uf-search-item-info">
+                    <strong>{m.title}</strong>
+                    <span>
+                      {[m.subject, m.course, m.faculty ? getFacultyLabel(m.faculty, lang) : null]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </div>
+                  <div className="uf-search-item-badge">{m.type}</div>
+                </Link>
+              ))}
+            </SearchSection>
+          )}
 
-              <div className="uf-search-grid">
-                {communitiesResults.map((community) => (
-                  <Link
-                    key={community.id}
-                    href={`/communities/${community.id}`}
-                    className="uf-search-user-card"
-                  >
-                    <div className="uf-search-user-avatar">
-                      {community.imageUrl ? (
-                        <img src={community.imageUrl} alt={community.name} />
+          {results.calendar.length > 0 && (
+            <SearchSection
+              icon="calendar"
+              title={t.calendar}
+              count={results.calendar.length}
+              seeAll={`/calendar?q=${encodeURIComponent(query)}`}
+              seeAllLabel={t.seeAll}
+            >
+              {results.calendar.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/calendar`}
+                  className="uf-search-item"
+                >
+                  <div className="uf-search-item-icon-wrap" style={{ background: "#fef3c7", color: "#92400e" }}>
+                    <UiIcon name="calendar" size={20} />
+                  </div>
+                  <div className="uf-search-item-info">
+                    <strong>{c.title}</strong>
+                    <span>
+                      {c.course
+                        ? `${c.course} · `
+                        : ""}
+                      {new Date(c.dueDate).toLocaleDateString(lang, {
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </span>
+                  </div>
+                  <div className="uf-search-item-badge">{c.eventType}</div>
+                </Link>
+              ))}
+            </SearchSection>
+          )}
+
+          {results.communities.length > 0 && (
+            <SearchSection
+              icon="users"
+              title={t.communities}
+              count={results.communities.length}
+              seeAll={`/communities?q=${encodeURIComponent(query)}`}
+              seeAllLabel={t.seeAll}
+            >
+              {results.communities.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/communities/${c.id}`}
+                  className="uf-search-item"
+                >
+                  <div className="uf-search-item-avatar">
+                    {c.avatar ? (
+                      <img src={c.avatar} alt={c.name} />
+                    ) : (
+                      <span>{c.name?.[0] || "C"}</span>
+                    )}
+                  </div>
+                  <div className="uf-search-item-info">
+                    <strong>{c.name}</strong>
+                    <span>{c.description || "Community"}</span>
+                  </div>
+                </Link>
+              ))}
+            </SearchSection>
+          )}
+
+          {results.events.length > 0 && (
+            <SearchSection
+              icon="calendar"
+              title={t.events}
+              count={results.events.length}
+              seeAll={`/events?q=${encodeURIComponent(query)}`}
+              seeAllLabel={t.seeAll}
+            >
+              {results.events.map((e) => (
+                <Link
+                  key={e.id}
+                  href={`/events/${e.id}`}
+                  className="uf-search-item"
+                >
+                  <div className="uf-search-item-icon-wrap" style={{ background: "#fce7f3", color: "#9d174d" }}>
+                    <UiIcon name="calendar" size={20} />
+                  </div>
+                  <div className="uf-search-item-info">
+                    <strong>
+                      {e.isCancelled ? (
+                        <span style={{ textDecoration: "line-through", opacity: 0.6 }}>{e.title}</span>
                       ) : (
-                        <span>{community.name?.[0] || "C"}</span>
+                        e.title
                       )}
-                    </div>
+                    </strong>
+                    <span>
+                      {new Date(e.startTime).toLocaleDateString(lang, {
+                        day: "numeric",
+                        month: "long",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                      {e.location ? ` · ${e.location}` : ""}
+                    </span>
+                  </div>
+                  <div className="uf-search-item-badge">{e.eventType}</div>
+                </Link>
+              ))}
+            </SearchSection>
+          )}
 
-                    <div className="uf-search-user-info">
-                      <strong>{community.name}</strong>
-                      <span>{community.description || "Community"}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
+          {results.library.length > 0 && (
+            <SearchSection
+              icon="book"
+              title={t.library}
+              count={results.library.length}
+              seeAll={`/library?q=${encodeURIComponent(query)}`}
+              seeAllLabel={t.seeAll}
+            >
+              {results.library.map((l) => (
+                <Link
+                  key={l.id}
+                  href={`/library?id=${l.id}`}
+                  className="uf-search-item"
+                >
+                  <div className="uf-search-item-icon-wrap" style={{ background: "#ecfdf5", color: "#065f46" }}>
+                    <UiIcon name="book" size={20} />
+                  </div>
+                  <div className="uf-search-item-info">
+                    <strong>{l.title}</strong>
+                    <span>
+                      {[l.author, l.subject, l.faculty ? getFacultyLabel(l.faculty, lang) : null]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </div>
+                  <div className="uf-search-item-badge">{l.type}</div>
+                </Link>
+              ))}
+            </SearchSection>
+          )}
+
+          {results.posts.length > 0 && (
+            <SearchSection
+              icon="message"
+              title={t.posts}
+              count={results.posts.length}
+              seeAll={`/?q=${encodeURIComponent(query)}`}
+              seeAllLabel={t.seeAll}
+            >
+              {results.posts.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/?highlight=${p.id}`}
+                  className="uf-search-item"
+                >
+                  <div className="uf-search-item-avatar">
+                    {p.authorImage ? (
+                      <img src={p.authorImage} alt={p.authorName} />
+                    ) : (
+                      <span>{p.authorName?.[0] || "U"}</span>
+                    )}
+                  </div>
+                  <div className="uf-search-item-info">
+                    <strong>{p.authorName}</strong>
+                    <span>{truncate(p.content, 100)}</span>
+                  </div>
+                </Link>
+              ))}
+            </SearchSection>
+          )}
+
+          {results.photos.length > 0 && (
+            <SearchSection
+              icon="camera"
+              title={t.photos}
+              count={results.photos.length}
+              seeAll={`/photos/explore?q=${encodeURIComponent(query)}`}
+              seeAllLabel={t.seeAll}
+            >
+              {results.photos.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/photos#${p.id}`}
+                  className="uf-search-item"
+                >
+                  <div className="uf-search-item-thumb">
+                    <img src={p.imageUrl} alt={p.caption || "Photo"} />
+                  </div>
+                  <div className="uf-search-item-info">
+                    <strong>{p.caption || "Campus moment"}</strong>
+                    <span>{p.ownerName} · {p.likesCount} likes</span>
+                  </div>
+                </Link>
+              ))}
+            </SearchSection>
+          )}
+
+          {results.albums.length > 0 && (
+            <SearchSection
+              icon="image"
+              title={t.albums}
+              count={results.albums.length}
+              seeAll={`/photos/albums?q=${encodeURIComponent(query)}`}
+              seeAllLabel={t.seeAll}
+            >
+              {results.albums.map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/photos/albums/${a.id}`}
+                  className="uf-search-item"
+                >
+                  <div className="uf-search-item-thumb">
+                    {a.coverPhotoUrl ? (
+                      <img src={a.coverPhotoUrl} alt={a.title} />
+                    ) : (
+                      <span>{a.title?.[0] || "A"}</span>
+                    )}
+                  </div>
+                  <div className="uf-search-item-info">
+                    <strong>{a.title}</strong>
+                    <span>{a.description || a.category || "Album"}</span>
+                  </div>
+                </Link>
+              ))}
+            </SearchSection>
           )}
         </div>
       )}
     </div>
   );
+}
+
+function SearchSection({ icon, title, count, seeAll, seeAllLabel, children }) {
+  return (
+    <section className="uf-card uf-search-section">
+      <h2 className="uf-search-section-title">
+        <UiIcon name={icon} size={20} />
+        {title}
+        <span className="uf-search-section-count">{count}</span>
+      </h2>
+
+      <div className="uf-search-list">{children}</div>
+
+      {count > 3 && seeAll && (
+        <Link href={seeAll} className="uf-search-section-see-all">
+          {seeAllLabel} →
+        </Link>
+      )}
+    </section>
+  );
+}
+
+function truncate(str, max) {
+  if (!str) return "";
+  return str.length > max ? str.slice(0, max) + "…" : str;
 }
 
 const searchPageStyles = `
@@ -289,51 +480,62 @@ const searchPageStyles = `
 .uf-search-results {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .uf-search-section {
-  padding: 24px;
+  padding: 20px;
 }
 
 .uf-search-section-title {
-  margin: 0 0 20px;
-  font-size: 18px;
+  margin: 0 0 14px;
+  font-size: 17px;
   font-weight: 900;
   color: #0f172a;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.uf-search-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+.uf-search-section-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: auto;
 }
 
-.uf-search-user-card {
+.uf-search-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.uf-search-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px;
+  gap: 12px;
+  padding: 12px 8px;
   border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e7edf5;
   text-decoration: none;
-  transition: all 0.2s ease;
+  color: inherit;
+  transition: all 0.15s ease;
 }
 
-.uf-search-user-card:hover {
-  background: #eef4ff;
-  border-color: #d4e3ff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(11, 58, 168, 0.08);
+.uf-search-item + .uf-search-item {
+  border-top: 1px solid #f8fafc;
 }
 
-.uf-search-user-avatar {
-  width: 56px;
-  height: 56px;
+.uf-search-item:hover {
+  background: #f8fafc;
+}
+
+.uf-search-item-avatar {
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   background: linear-gradient(135deg, #0b3aa8 0%, #062fae 100%);
   color: #ffffff;
@@ -342,41 +544,101 @@ const searchPageStyles = `
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 20px;
+  font-size: 17px;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(11, 58, 168, 0.16);
 }
 
-.uf-search-user-avatar img {
+.uf-search-item-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.uf-search-user-info {
+.uf-search-item-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.uf-search-item-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 900;
+  font-size: 16px;
+  color: #64748b;
+}
+
+.uf-search-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uf-search-item-info {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
-.uf-search-user-info strong {
-  font-size: 15px;
-  font-weight: 900;
+.uf-search-item-info strong {
+  font-size: 14px;
+  font-weight: 800;
   color: #0f172a;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.uf-search-user-info span {
-  font-size: 13px;
+.uf-search-item-info span {
+  font-size: 12px;
   color: #64748b;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.uf-search-item-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
+
+.uf-search-section-see-all {
+  display: block;
+  text-align: center;
+  padding: 12px 0 0;
+  margin-top: 8px;
+  border-top: 1px solid #f1f5f9;
+  color: #0b3aa8;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.uf-search-section-see-all:hover {
+  color: #062fae;
 }
 
 .uf-search-empty-state {
@@ -419,10 +681,6 @@ const searchPageStyles = `
 @media (max-width: 768px) {
   .uf-search-header h1 {
     font-size: 24px;
-  }
-
-  .uf-search-grid {
-    grid-template-columns: 1fr;
   }
 
   .uf-search-section {

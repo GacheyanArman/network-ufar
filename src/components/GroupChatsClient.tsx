@@ -5,11 +5,13 @@ import { createGroupChat, joinGroupChat, leaveGroupChat } from "@/app/actions/gr
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getFacultyLabel } from "@/lib/profile-utils";
+import { translations } from "@/lib/i18n";
 
 export default function GroupChatsClient({ allGroupChats, membershipSet, currentUserId }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
   const { language } = useLanguage();
+  const es = (translations[language] || translations.en).emptyStates;
 
   const handleCreateGroup = async (formData) => {
     await createGroupChat(formData);
@@ -51,11 +53,18 @@ export default function GroupChatsClient({ allGroupChats, membershipSet, current
             👥
           </div>
           <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 800 }}>
-            No groups found
+            {es.groups.noGroups}
           </h3>
           <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "14px" }}>
-            Create the first group for your faculty or course!
+            {es.groups.noGroupsHint}
           </p>
+          <button
+            className="btn btn-primary"
+            style={{ marginTop: 12 }}
+            onClick={() => setIsModalOpen(true)}
+          >
+            {es.groups.createGroup}
+          </button>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>

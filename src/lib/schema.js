@@ -15,7 +15,14 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "like",
   "comment",
   "friend_request",
+  "friend_accept",
+  "message",
   "reminder",
+  "material_approved",
+  "photo_approved",
+  "event_new",
+  "deadline",
+  "group_join",
 ]);
 export const genderEnum = pgEnum("gender", [
   "male",
@@ -398,19 +405,49 @@ export const comments = pgTable("comment", {
   id: text("id").$defaultFn(() => createId()).primaryKey(),
   postId: text("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
   authorId: text("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  // Instagram-style threading: a reply points at the comment it replies to.
+  parentId: text("parent_comment_id"),
   content: text("content").notNull(),
+  likesCount: integer("likes_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  postIdx: index("comment_post_idx").on(table.postId),
+  parentIdx: index("comment_parent_idx").on(table.parentId),
+}));
+
+export const commentLikes = pgTable("comment_like", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  commentId: text("comment_id").notNull().references(() => comments.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  commentUserUnique: uniqueIndex("comment_like_comment_user_unique").on(table.commentId, table.userId),
+  commentIdx: index("comment_like_comment_idx").on(table.commentId),
+}));
 
 export const notifications = pgTable("notification", {
   id: text("id").$defaultFn(() => createId()).primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   actorId: text("actor_id").references(() => users.id, { onDelete: "set null" }),
   type: notificationTypeEnum("type").notNull(),
+  category: text("category").notNull().default("social"),
   entityId: text("entity_id"),
   postId: text("post_id").references(() => posts.id, { onDelete: "cascade" }),
   isRead: boolean("is_read").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const notificationPreferences = pgTable("notification_preference", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  academic: boolean("academic").default(true).notNull(),
+  events: boolean("events").default(true).notNull(),
+  photos: boolean("photos").default(true).notNull(),
+  messages: boolean("messages").default(true).notNull(),
+  materials: boolean("materials").default(true).notNull(),
+  social: boolean("social").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const albumCategoryEnum = pgEnum("album_category", [
@@ -517,11 +554,24 @@ export const photoComments = pgTable("photo_comment", {
   id: text("id").$defaultFn(() => createId()).primaryKey(),
   photoId: text("photo_id").notNull().references(() => photos.id, { onDelete: "cascade" }),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  parentId: text("parent_comment_id"),
   content: text("content").notNull(),
+  likesCount: integer("likes_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   photoIdx: index("photo_comment_photo_idx").on(table.photoId),
   userIdx: index("photo_comment_user_idx").on(table.userId),
+  parentIdx: index("photo_comment_parent_idx").on(table.parentId),
+}));
+
+export const photoCommentLikes = pgTable("photo_comment_like", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  commentId: text("comment_id").notNull().references(() => photoComments.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  commentUserUnique: uniqueIndex("photo_comment_like_comment_user_unique").on(table.commentId, table.userId),
+  commentIdx: index("photo_comment_like_comment_idx").on(table.commentId),
 }));
 
 export const hashtags = pgTable("hashtag", {
@@ -677,6 +727,7 @@ export const reports = pgTable("report", {
   postId: text("post_id").references(() => posts.id, { onDelete: "cascade" }),
   commentId: text("comment_id").references(() => comments.id, { onDelete: "cascade" }),
   photoId: text("photo_id").references(() => photos.id, { onDelete: "cascade" }),
+  photoCommentId: text("photo_comment_id").references(() => photoComments.id, { onDelete: "cascade" }),
   reason: reportReasonEnum("reason").notNull(),
   description: text("description"),
   status: reportStatusEnum("status").default("pending").notNull(),
@@ -900,3 +951,77 @@ export const libraryRequests = pgTable("library_request", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const studyGroupStatusEnum = pgEnum("study_group_status", [
+  "active",
+  "completed",
+  "cancelled",
+]);
+
+export const studyGroups = pgTable("study_group", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  title: text("title").notNull(),
+  subject: text("subject"),
+  faculty: text("faculty"),
+  description: text("description"),
+  meetingDay: text("meeting_day"),
+  meetingTime: text("meeting_time"),
+  location: text("location"),
+  onlineLink: text("online_link"),
+  maxMembers: integer("max_members").default(10),
+  membersCount: integer("members_count").default(1).notNull(),
+  status: studyGroupStatusEnum("status").default("active").notNull(),
+  communityId: text("community_id").references(() => communities.id, { onDelete: "set null" }),
+  calendarEntryId: text("calendar_entry_id").references(() => academicCalendar.id, { onDelete: "set null" }),
+  groupChatId: text("group_chat_id").references(() => groupChats.id, { onDelete: "set null" }),
+  ownerId: text("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  ownerIdx: index("study_group_owner_idx").on(table.ownerId),
+  subjectIdx: index("study_group_subject_idx").on(table.subject),
+  facultyIdx: index("study_group_faculty_idx").on(table.faculty),
+  statusIdx: index("study_group_status_idx").on(table.status),
+}));
+
+export const studyGroupMembers = pgTable("study_group_member", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  groupId: text("group_id").notNull().references(() => studyGroups.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").default("member").notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueIdx: uniqueIndex("study_group_member_unique_idx").on(table.groupId, table.userId),
+  groupIdx: index("study_group_member_group_idx").on(table.groupId),
+}));
+
+export const lostFoundStatusEnum = pgEnum("lost_found_status", [
+  "open",
+  "returned",
+  "expired",
+]);
+
+export const lostFoundTypeEnum = pgEnum("lost_found_type", [
+  "lost",
+  "found",
+]);
+
+export const lostFoundItems = pgTable("lost_found_item", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  title: text("title").notNull(),
+  type: lostFoundTypeEnum("type").notNull(),
+  description: text("description"),
+  location: text("location").notNull(),
+  itemDate: timestamp("item_date").defaultNow().notNull(),
+  imageUrl: text("image_url"),
+  contact: text("contact"),
+  status: lostFoundStatusEnum("status").default("open").notNull(),
+  communityId: text("community_id").references(() => communities.id, { onDelete: "set null" }),
+  ownerId: text("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  typeIdx: index("lost_found_type_idx").on(table.type),
+  statusIdx: index("lost_found_status_idx").on(table.status),
+  ownerIdx: index("lost_found_owner_idx").on(table.ownerId),
+}));

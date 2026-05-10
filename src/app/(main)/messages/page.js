@@ -7,10 +7,17 @@ import MessagesClient from "@/components/MessagesClient";
 import MessagesPageClient from "@/components/MessagesPageClient";
 import MessagesNotificationBridge from "@/components/MessagesNotificationBridge";
 import UiIcon from "@/components/UiIcon";
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { translations } from "@/lib/i18n";
 
 export default async function MessagesPage({ searchParams }) {
   const session = await getSession();
   if (!session?.userId) redirect("/login");
+
+  const cookieStore = await cookies();
+  const lang = cookieStore.get("language")?.value || "en";
+  const es = (translations[lang] || translations.en).emptyStates;
 
   const params = await searchParams;
   const activeUserId = params?.user?.toString() || "";
@@ -264,8 +271,11 @@ export default async function MessagesPage({ searchParams }) {
             <div className="tg-empty-icon">
               <UiIcon name="message" size={48} />
             </div>
-            <h3>Select a chat</h3>
-            <p>Pick a conversation from the sidebar to start messaging.</p>
+            <h3>{es.messages.noChat}</h3>
+            <p>{es.messages.noChatHint}</p>
+            <Link href="/search" className="btn btn-primary" style={{ marginTop: 12, textDecoration: "none" }}>
+              {es.messages.startChat}
+            </Link>
           </div>
         )}
       </MessagesPageClient>

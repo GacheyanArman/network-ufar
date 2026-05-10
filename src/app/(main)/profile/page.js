@@ -14,6 +14,7 @@ import UiIcon from "@/components/UiIcon";
 import ProfileInfo from "@/components/ProfileInfo";
 import ProfileAboutInfo from "@/components/ProfileAboutInfo";
 import { getFacultyLabel } from "@/lib/profile-utils";
+import { translations } from "@/lib/i18n";
 
 export default async function ProfilePage({ searchParams }) {
   const session = await getSession();
@@ -24,6 +25,8 @@ export default async function ProfilePage({ searchParams }) {
 
   const cookieStore = await cookies();
   const lang = cookieStore.get("language")?.value || "en";
+  const t = translations[lang] || translations.en;
+  const es = t.emptyStates;
 
   const params = await searchParams;
   const currentTab = Array.isArray(params?.tab)
@@ -291,11 +294,11 @@ export default async function ProfilePage({ searchParams }) {
 
                 {serializedPosts.length === 0 ? (
                   <div className="uf-card uf-profile-empty">
-                    <h2>No posts yet</h2>
-                    <p>
-                      Create your first post and it will appear here in the same
-                      layout as in the reference.
-                    </p>
+                    <h2>{es.profile.noPosts}</h2>
+                    <p>{es.profile.noPostsHint}</p>
+                    <Link href="/?compose=1" className="btn btn-primary" style={{ marginTop: 12, textDecoration: "none" }}>
+                      {es.profile.writePost}
+                    </Link>
                   </div>
                 ) : (
                   <ProfilePostsClient posts={serializedPosts} currentUser={currentUser} />
@@ -307,7 +310,17 @@ export default async function ProfilePage({ searchParams }) {
               <section className="uf-about-grid">
                 <div className="uf-card uf-about-card">
                   <h3>Bio</h3>
-                  <p className="uf-about-bio">{safeBio || "No bio yet."}</p>
+                  {!safeBio ? (
+                    <div>
+                      <p className="uf-about-bio">{es.profile.noBio}</p>
+                      <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.85rem" }}>{es.profile.noBioHint}</p>
+                      <Link href="/profile/edit" className="btn btn-secondary" style={{ marginTop: 8, textDecoration: "none", fontSize: "0.85rem" }}>
+                        {es.profile.addBio}
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className="uf-about-bio">{safeBio}</p>
+                  )}
                 </div>
 
                 <div className="uf-card uf-about-card">

@@ -13,6 +13,7 @@ import {
 } from "@/app/actions/friends";
 import { followUser, unfollowUser } from "@/app/actions/follow";
 import { getFacultyLabel } from "@/lib/profile-utils";
+import { translations } from "@/lib/i18n";
 import {
   getFollowingSummary,
   getPeopleYouMayKnow,
@@ -79,6 +80,8 @@ export default async function FriendsPage() {
 
   const cookieStore = await cookies();
   const lang = cookieStore.get("language")?.value || "en";
+  const t = translations[lang] || translations.en;
+  const es = t.emptyStates;
 
   const relationships = await db
     .select()
@@ -206,7 +209,8 @@ export default async function FriendsPage() {
               color: "var(--text-secondary)",
             }}
           >
-            No pending requests.
+            <p style={{ margin: "0 0 8px" }}>{es.friends.noPending}</p>
+            <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.7 }}>{es.friends.noPendingHint}</p>
           </div>
         ) : (
           <div
@@ -300,10 +304,18 @@ export default async function FriendsPage() {
             style={{
               padding: "32px",
               textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 8,
               color: "var(--text-secondary)",
             }}
           >
-            You are not following anyone yet.
+            <p style={{ margin: 0 }}>{es.friends.noFollowing}</p>
+            <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.7 }}>{es.friends.noFollowingHint}</p>
+            <Link href="/search" className="btn btn-primary" style={{ marginTop: 8, textDecoration: "none" }}>
+              {es.friends.findPeople}
+            </Link>
           </div>
         ) : (
           <div
@@ -381,10 +393,18 @@ export default async function FriendsPage() {
             style={{
               padding: "40px",
               textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 8,
               color: "var(--text-secondary)",
             }}
           >
-            No suggestions right now.
+            <p style={{ margin: 0 }}>{es.friends.noSuggestions}</p>
+            <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.7 }}>{es.friends.noSuggestionsHint}</p>
+            <Link href="/search" className="btn btn-secondary" style={{ marginTop: 8, textDecoration: "none" }}>
+              {es.friends.searchFriends}
+            </Link>
           </div>
         ) : (
           <div
@@ -473,10 +493,18 @@ export default async function FriendsPage() {
             style={{
               padding: "32px",
               textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 8,
               color: "var(--text-secondary)",
             }}
           >
-            You have no friends yet.
+            <p style={{ margin: 0 }}>{es.friends.noFriends}</p>
+            <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.7 }}>{es.friends.noFriendsHint}</p>
+            <Link href="/search" className="btn btn-primary" style={{ marginTop: 8, textDecoration: "none" }}>
+              {es.friends.findFriends}
+            </Link>
           </div>
         ) : (
           <div

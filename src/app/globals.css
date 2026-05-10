@@ -2974,6 +2974,336 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
   cursor: not-allowed;
 }
 
+/* Instagram-style "Post" send button — flat, text-only */
+.uf-photo-viewer-comment-input .uf-photo-viewer-comment-send {
+  width: auto;
+  height: 38px;
+  padding: 0 14px;
+  background: transparent !important;
+  color: #0b3aa8;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  border-radius: 8px;
+}
+
+.uf-photo-viewer-comment-input .uf-photo-viewer-comment-send:hover:not(:disabled) {
+  background: rgba(11, 58, 168, 0.08) !important;
+}
+
+.uf-photo-viewer-comment-input .uf-photo-viewer-comment-send:disabled {
+  background: transparent !important;
+  color: #94a3b8;
+}
+
+/* "Replying to @user" banner above the input */
+.uf-photo-viewer-comment-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 8px;
+}
+
+.uf-photo-viewer-comment-input-wrap .uf-photo-viewer-comment-input {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+.uf-photo-viewer-replying-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(11, 58, 168, 0.06);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.uf-photo-viewer-replying-banner strong {
+  color: #0b3aa8;
+}
+
+.uf-photo-viewer-replying-banner button {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uf-photo-viewer-replying-banner button:hover {
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+/* ===== Instagram-style threaded comments ===== */
+.uf-ig-comment {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+  transition: opacity 0.2s ease;
+}
+
+.uf-ig-comment.is-sending {
+  opacity: 0.55;
+}
+
+.uf-ig-comment-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.uf-ig-comment-avatar {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0b3aa8 0%, #163f73 100%);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.uf-ig-comment.is-reply .uf-ig-comment-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.uf-ig-comment-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uf-ig-comment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.uf-ig-comment-text {
+  margin: 0;
+  color: #0f172a;
+  font-size: 13.5px;
+  line-height: 1.45;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.uf-ig-comment-text strong {
+  font-weight: 850;
+  margin-right: 4px;
+}
+
+.uf-ig-comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.uf-ig-comment-time {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.uf-ig-comment-likes {
+  color: #475569;
+}
+
+.uf-ig-comment-meta-btn {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.uf-ig-comment-meta-btn:hover:not(:disabled) {
+  color: #0f172a;
+}
+
+.uf-ig-comment-meta-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.uf-ig-comment-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.uf-ig-comment-like-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.uf-ig-comment-like-btn:hover:not(:disabled) {
+  color: #e11d48;
+  transform: scale(1.12);
+}
+
+.uf-ig-comment-like-btn.active {
+  color: #e11d48;
+}
+
+.uf-ig-comment-like-btn.active svg {
+  fill: currentColor;
+}
+
+.uf-ig-comment-like-btn svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.uf-ig-comment-like-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.uf-ig-comment-menu-wrap {
+  position: relative;
+}
+
+.uf-ig-comment-menu-trigger {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 160ms ease, background-color 160ms ease;
+}
+
+.uf-ig-comment:hover .uf-ig-comment-menu-trigger {
+  opacity: 1;
+}
+
+.uf-ig-comment-menu-trigger:hover:not(:disabled),
+.uf-ig-comment-menu-trigger[aria-expanded="true"] {
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+.uf-ig-comment-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 5;
+  min-width: 130px;
+  margin-top: 4px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+
+.uf-ig-comment-menu button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.uf-ig-comment-menu button:hover {
+  background: #f1f5f9;
+}
+
+.uf-ig-comment-menu button.danger {
+  color: #b91c1c;
+}
+
+.uf-ig-comment-menu button.danger:hover {
+  background: #fef2f2;
+}
+
+.uf-ig-comment-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 40px;
+  margin-top: 8px;
+}
+
+.uf-ig-comment-thread-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.uf-ig-comment-thread-toggle:hover {
+  color: #0f172a;
+}
+
+.uf-ig-comment-thread-line {
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: #cbd5e1;
+}
+
 @media (max-width: 980px) {
   .uf-photo-viewer-backdrop {
     padding: 14px;

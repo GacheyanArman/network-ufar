@@ -152,6 +152,27 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
     });
   }
 
+  // Awaitable variant used by MediaViewer so it can manage its own
+  // optimistic state and surface errors back to the user.
+  async function handleLikeFromViewer() {
+    if (post.isOptimistic) {
+      throw new Error("Post is still being created");
+    }
+
+    const formData = new FormData();
+    formData.append("postId", post.id);
+
+    startTransition(() => updateOptimistic({ type: "like" }));
+
+    try {
+      await toggleLike(formData);
+    } catch (err) {
+      // Roll back PostCard's optimistic state and let MediaViewer rollback too.
+      startTransition(() => updateOptimistic({ type: "like" }));
+      throw err;
+    }
+  }
+
   function handleRepost() {
     startTransition(() => {
       updateOptimistic({ type: "repost" });
@@ -165,6 +186,12 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
   }
 
   function handleToggleComments() {
+    // Posts with media should open the immersive MediaViewer instead of an
+    // inline comments drawer (Instagram-style).
+    if (post.imageUrl) {
+      setIsViewerOpen(true);
+      return;
+    }
     setShowComments((prev) => !prev);
   }
 
@@ -352,10 +379,13 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
                   caption={post.content}
                   authorName={post.authorName}
                   authorImage={post.authorImage}
-                  likesCount={post.likesCount || 0}
+                  likesCount={state.likesCount}
                   commentsCount={post.commentsCount || 0}
-                  isLiked={Boolean(post.likedByMe)}
+                  isLiked={state.likedByMe}
                   communityName={post.communityName || null}
+                  postId={post.id}
+                  currentUserId={currentUser?.id || null}
+                  onLike={handleLikeFromViewer}
                   onClose={() => setIsViewerOpen(false)}
                 />
               )}
@@ -439,12 +469,15 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
           authorName={post.authorName}
           authorImage={post.authorImage}
           createdAt={post.createdAt}
-          likesCount={post.likesCount ?? 0}
+          likesCount={state.likesCount}
           commentsCount={post.commentsCount ?? post.comments?.length ?? 0}
           viewsCount={post.viewsCount ?? 0}
-          isLiked={Boolean(post.likedByMe)}
+          isLiked={state.likedByMe}
           communityName={post.communityName || null}
           comments={post.comments || []}
+          postId={post.id}
+          currentUserId={currentUser?.id || null}
+          onLike={handleLikeFromViewer}
           onClose={() => setIsViewerOpen(false)}
         />
       )}

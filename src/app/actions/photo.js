@@ -1,15 +1,17 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
+  users,
   photoAlbums,
   photos,
   photoLikes,
   photoSaves,
   photoTags,
   photoComments,
+  photoCommentLikes,
   photoHashtags,
   hashtags,
   reports,
@@ -193,6 +195,10 @@ export async function deletePhotoAlbum(formData) {
 
 export async function getPhotoComments(photoId) {
   if (!photoId) return [];
+  const session = await getSession();
+  const currentUserId =
+    typeof session?.userId === "string" ? session.userId : null;
+
   const rows = await db
     .select({
       id: photoComments.id,
@@ -201,12 +207,48 @@ export async function getPhotoComments(photoId) {
       userId: photoComments.userId,
       authorName: users.fullName,
       authorImage: users.image,
+      parentId: photoComments.parentId,
+      likesCount: photoComments.likesCount,
     })
     .from(photoComments)
     .innerJoin(users, eq(photoComments.userId, users.id))
     .where(eq(photoComments.photoId, photoId))
-    .orderBy(photoComments.createdAt);
-  return rows;
+    .orderBy(asc(photoComments.createdAt));
+
+  // Hydrate the "did current user like this" flag in one query.
+  let likedSet = new Set();
+  if (currentUserId && rows.length > 0) {
+    const ids = rows.map((r) => r.id);
+    const likedRows = await db
+      .select({ commentId: photoCommentLikes.commentId })
+      .from(photoCommentLikes)
+      .where(
+        and(
+          eq(photoCommentLikes.userId, currentUserId),
+          inArray(photoCommentLikes.commentId, ids),
+        ),
+      );
+    likedSet = new Set(likedRows.map((r) => r.commentId));
+  }
+
+  // Group into a 2-level tree: top-level comments hold flat replies.
+  const byId = new Map();
+  const tree = [];
+  for (const row of rows) {
+    const node = {
+      ...row,
+      likesCount: Number(row.likesCount || 0),
+      isLikedByMe: likedSet.has(row.id),
+      replies: [],
+    };
+    byId.set(row.id, node);
+    if (row.parentId && byId.has(row.parentId)) {
+      byId.get(row.parentId).replies.push(node);
+    } else {
+      tree.push(node);
+    }
+  }
+  return tree;
 }
 
 export async function deletePhoto(formData) {
@@ -310,6 +352,8 @@ export async function commentPhoto(formData) {
   const userId = await requireUserId();
   const photoId = formData.get("photoId")?.toString().trim();
   const content = String(formData.get("content") || "").trim();
+  const parentIdRaw = String(formData.get("parentId") || "").trim();
+  const parentId = parentIdRaw || null;
 
   if (!photoId) throw new Error("Invalid photo");
   if (!content) throw new Error("Comment cannot be empty");
@@ -317,12 +361,32 @@ export async function commentPhoto(formData) {
   const rate = checkRateLimit(userId, "commentOnPhoto");
   if (!rate.allowed) throw new Error(getRateLimitError(rate.resetTime));
 
+  // Verify the parent comment, and flatten reply-to-reply into the same thread.
+  let resolvedParentId = null;
+  if (parentId) {
+    const [parent] = await db
+      .select({
+        id: photoComments.id,
+        photoId: photoComments.photoId,
+        parentId: photoComments.parentId,
+      })
+      .from(photoComments)
+      .where(eq(photoComments.id, parentId))
+      .limit(1);
+
+    if (!parent || parent.photoId !== photoId) {
+      throw new Error("Invalid parent comment");
+    }
+    resolvedParentId = parent.parentId || parent.id;
+  }
+
   const inserted = await db
     .insert(photoComments)
     .values({
       photoId,
       userId,
       content: content.slice(0, 500),
+      parentId: resolvedParentId,
     })
     .returning({ id: photoComments.id, createdAt: photoComments.createdAt });
 
@@ -336,6 +400,87 @@ export async function commentPhoto(formData) {
     ok: true,
     comment: { id: inserted[0].id, createdAt: inserted[0].createdAt },
   };
+}
+
+/**
+ * Toggle like on a photo comment. Returns the new state.
+ */
+export async function togglePhotoCommentLike(formData) {
+  const userId = await requireUserId();
+  const commentId = formData.get("commentId")?.toString().trim();
+  if (!commentId) throw new Error("Invalid comment");
+
+  const [comment] = await db
+    .select({ id: photoComments.id, photoId: photoComments.photoId })
+    .from(photoComments)
+    .where(eq(photoComments.id, commentId))
+    .limit(1);
+
+  if (!comment) throw new Error("Comment not found");
+
+  const [existing] = await db
+    .select({ id: photoCommentLikes.id })
+    .from(photoCommentLikes)
+    .where(
+      and(
+        eq(photoCommentLikes.commentId, commentId),
+        eq(photoCommentLikes.userId, userId),
+      ),
+    )
+    .limit(1);
+
+  let liked;
+  if (existing) {
+    await db.delete(photoCommentLikes).where(eq(photoCommentLikes.id, existing.id));
+    await db
+      .update(photoComments)
+      .set({ likesCount: sql`GREATEST(${photoComments.likesCount} - 1, 0)` })
+      .where(eq(photoComments.id, commentId));
+    liked = false;
+  } else {
+    try {
+      await db.insert(photoCommentLikes).values({ commentId, userId });
+      await db
+        .update(photoComments)
+        .set({ likesCount: sql`${photoComments.likesCount} + 1` })
+        .where(eq(photoComments.id, commentId));
+      liked = true;
+    } catch {
+      liked = true;
+    }
+  }
+
+  revalidatePath("/photos");
+  return { ok: true, liked };
+}
+
+/**
+ * Report a photo comment for moderation.
+ */
+export async function reportPhotoComment(formData) {
+  const userId = await requireUserId();
+  const commentId = formData.get("commentId")?.toString().trim();
+  const reason = formData.get("reason")?.toString().trim() || "inappropriate_content";
+  const description = String(formData.get("description") || "").trim();
+
+  if (!commentId) throw new Error("Invalid comment");
+
+  const [comment] = await db
+    .select({ id: photoComments.id })
+    .from(photoComments)
+    .where(eq(photoComments.id, commentId))
+    .limit(1);
+
+  if (!comment) throw new Error("Comment not found");
+
+  await db.insert(reports).values({
+    reporterId: userId,
+    photoCommentId: commentId,
+    reason,
+    description: description.slice(0, 500),
+  });
+
+  return { ok: true };
 }
 
 // Legacy name used in earlier UI.
@@ -483,6 +628,11 @@ export async function moderatePhoto(formData) {
   const role = await getUserRole(userId);
   if (!isStaff(role)) throw new Error("Forbidden");
 
+  const [photo] = await db
+    .select({ ownerId: photos.ownerId })
+    .from(photos)
+    .where(eq(photos.id, photoId));
+
   await db
     .update(photos)
     .set({
@@ -491,6 +641,15 @@ export async function moderatePhoto(formData) {
       moderatedAt: new Date(),
     })
     .where(eq(photos.id, photoId));
+
+  if (status === "approved" && photo?.ownerId) {
+    const { createSystemNotification } = await import("@/lib/notifications");
+    await createSystemNotification({
+      userId: photo.ownerId,
+      type: "photo_approved",
+      entityId: photoId,
+    });
+  }
 
   revalidatePath("/photos");
   return { ok: true };

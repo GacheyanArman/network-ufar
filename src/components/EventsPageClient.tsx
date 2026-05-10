@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useMemo, useState, useTransition, useRef } from "react";
 import UiIcon from "@/components/UiIcon";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { translations } from "@/lib/i18n";
 import {
   createEvent,
   deleteEvent,
@@ -99,7 +100,8 @@ export default function EventsPageClient({
   filterCommunities = myCommunities,
   currentUserId,
 }: Props) {
-  const { t } = useLanguage();
+  const { t, locale, language } = useLanguage();
+  const es = (translations[language] || translations.en).emptyStates;
   const [events, setEvents] = useState<EventListItem[]>(initialEvents);
   const [filter, setFilter] = useState<EventsFilter>("upcoming");
   const [category, setCategory] = useState<string>("");
@@ -346,6 +348,8 @@ export default function EventsPageClient({
               ? t("events.noPastEvents")
               : t("events.emptyCreateHint")
           }
+          actionLabel={filter !== "past" ? es.events.createEvent : undefined}
+          onAction={filter !== "past" ? () => setShowCreate(true) : undefined}
         />
       ) : (
         <div className="events-grid">
@@ -898,7 +902,7 @@ function SkeletonGrid() {
   );
 }
 
-function EmptyState({ title, message }: { title: string; message: string }) {
+function EmptyState({ title, message, actionLabel, onAction }: { title: string; message: string; actionLabel?: string; onAction?: () => void }) {
   return (
     <div
       className="card"
@@ -906,6 +910,10 @@ function EmptyState({ title, message }: { title: string; message: string }) {
         padding: "40px 20px",
         textAlign: "center",
         color: "var(--text-secondary)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 6,
       }}
     >
       <div style={{ opacity: 0.45, marginBottom: 6 }}>
@@ -915,6 +923,11 @@ function EmptyState({ title, message }: { title: string; message: string }) {
         {title}
       </h3>
       <p style={{ margin: 0, fontSize: "0.9rem" }}>{message}</p>
+      {actionLabel && onAction && (
+        <button className="btn btn-primary" style={{ marginTop: 8, fontSize: "0.85rem" }} onClick={onAction}>
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }

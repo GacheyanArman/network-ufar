@@ -104,11 +104,8 @@ export default function SearchBar() {
         e.preventDefault();
         if (selectedIndex >= 0 && results[selectedIndex]) {
           const result = results[selectedIndex];
-          if (result.type === "user") {
-            router.push(`/profile/${result.id}`);
-          } else if (result.type === "community") {
-            router.push(`/communities/${result.id}`);
-          }
+          const href = result.href || (result.type === "user" ? `/profile/${result.id}` : result.type === "community" ? `/communities/${result.id}` : `/search?q=${encodeURIComponent(query.trim())}`);
+          router.push(href);
           setIsOpen(false);
           setQuery("");
           inputRef.current?.blur();
@@ -130,6 +127,22 @@ export default function SearchBar() {
     setIsOpen(false);
     setQuery("");
     setSelectedIndex(-1);
+  }
+
+  function typeIcon(r) {
+    if (r.type === "event") return "📅";
+    if (r.type === "material") return "📄";
+    if (r.type === "library") return "📚";
+    if (r.type === "post") return "💬";
+    return r.name?.[0] || "?";
+  }
+
+  function typeLabel(t) {
+    if (t === "event") return "Event";
+    if (t === "material") return "Study Material";
+    if (t === "library") return "Library Resource";
+    if (t === "post") return "Post";
+    return t;
   }
 
   return (
@@ -183,21 +196,19 @@ export default function SearchBar() {
           {results.map((result, index) => (
             <Link
               key={`${result.type}-${result.id}`}
-              href={
-                result.type === "user"
-                  ? `/profile/${result.id}`
-                  : `/communities/${result.id}`
-              }
+              href={result.href || (result.type === "user" ? `/profile/${result.id}` : result.type === "community" ? `/communities/${result.id}` : `/search?q=${encodeURIComponent(query.trim())}`)}
               className={`uf-search-result ${
                 index === selectedIndex ? "selected" : ""
               }`}
               onClick={() => handleResultClick(result)}
             >
-              <div className="uf-search-result-avatar">
-                {result.image ? (
+              <div className={`uf-search-result-avatar uf-search-result-avatar--${result.type}`}>
+                {result.type === "user" && result.image ? (
+                  <img src={result.image} alt={result.name} />
+                ) : result.type === "community" && result.image ? (
                   <img src={result.image} alt={result.name} />
                 ) : (
-                  <span>{result.name?.[0] || "?"}</span>
+                  <span>{typeIcon(result)}</span>
                 )}
               </div>
 
@@ -205,17 +216,18 @@ export default function SearchBar() {
                 <strong>{result.name}</strong>
                 <span>
                   {result.type === "user"
-                    ? result.faculty ? getFacultyLabel(result.faculty, language) : result.username || "Student"
-                    : result.description || "Community"}
+                    ? result.faculty ? getFacultyLabel(result.faculty, language) : result.username ? `@${result.username}` : "Student"
+                    : result.subtitle || result.description || typeLabel(result.type)}
                 </span>
               </div>
 
               <div className="uf-search-result-type">
-                {result.type === "user" ? (
-                  <UiIcon name="user" size={14} />
-                ) : (
-                  <UiIcon name="users" size={14} />
-                )}
+                {result.type === "user" ? <UiIcon name="user" size={14} /> :
+                 result.type === "community" ? <UiIcon name="users" size={14} /> :
+                 result.type === "event" ? <UiIcon name="calendar" size={14} /> :
+                 result.type === "material" ? <UiIcon name="graduation" size={14} /> :
+                 result.type === "library" ? <UiIcon name="book" size={14} /> :
+                 <UiIcon name="message" size={14} />}
               </div>
             </Link>
           ))}
@@ -405,6 +417,30 @@ const searchStyles = `
   font-size: 15px;
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(11, 58, 168, 0.16);
+}
+
+.uf-search-result-avatar--event {
+  border-radius: 12px;
+  background: linear-gradient(135deg, #9d174d, #be185d);
+  font-size: 16px;
+}
+
+.uf-search-result-avatar--material {
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  font-size: 16px;
+}
+
+.uf-search-result-avatar--library {
+  border-radius: 12px;
+  background: linear-gradient(135deg, #065f46, #059669);
+  font-size: 16px;
+}
+
+.uf-search-result-avatar--post {
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+  font-size: 16px;
 }
 
 .uf-search-result-avatar img {

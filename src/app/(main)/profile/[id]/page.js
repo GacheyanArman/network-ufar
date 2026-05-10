@@ -24,6 +24,7 @@ import UiIcon from "@/components/UiIcon";
 import BlockButton from "@/components/BlockButton";
 import ProfileInfo from "@/components/ProfileInfo";
 import ProfileAboutInfo from "@/components/ProfileAboutInfo";
+import { translations } from "@/lib/i18n";
 
 export default async function PublicProfilePage({ params, searchParams }) {
   const session = await getSession();
@@ -34,6 +35,8 @@ export default async function PublicProfilePage({ params, searchParams }) {
 
   const cookieStore = await cookies();
   const lang = cookieStore.get("language")?.value || "en";
+  const t = translations[lang] || translations.en;
+  const es = t.emptyStates;
 
   const routeParams = await params;
   const pageParams = await searchParams;
@@ -396,8 +399,8 @@ export default async function PublicProfilePage({ params, searchParams }) {
               <section className="uf-profile-feed">
                 {normalizedPosts.length === 0 ? (
                   <div className="uf-card uf-profile-empty">
-                    <h2>No posts yet</h2>
-                    <p>This student has not posted anything yet.</p>
+                    <h2>{es.profile.noPostsOther}</h2>
+                    <p>{es.profile.noPostsOtherHint}</p>
                   </div>
                 ) : (
                   normalizedPosts.map((post) => (
@@ -415,7 +418,7 @@ export default async function PublicProfilePage({ params, searchParams }) {
               <section className="uf-about-grid">
                 <div className="uf-card uf-about-card">
                   <h3>Bio</h3>
-                  <p className="uf-about-bio">{safeBio || "No bio yet."}</p>
+                  <p className="uf-about-bio">{safeBio || es.profile.noBioOther}</p>
                 </div>
 
                 <div className="uf-card uf-about-card">

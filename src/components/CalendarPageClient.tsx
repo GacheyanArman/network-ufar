@@ -6,6 +6,7 @@ import {
   updateCalendarEntry,
   deleteCalendarEntry,
 } from "@/app/actions/calendar";
+import { translations } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // Types & constants
@@ -211,6 +212,8 @@ export default function CalendarPageClient({
   myCommunities,
   currentUserId,
 }: Props) {
+  const lang = typeof window !== "undefined" ? (localStorage.getItem("language") || "en") : "en";
+  const es = (translations[lang as keyof typeof translations] || translations.en).emptyStates;
   const [view, setView] = useState<View>("Week");
   const [query, setQuery] = useState("");
   const [filterCat, setFilterCat] = useState<string>("all");
@@ -590,6 +593,7 @@ export default function CalendarPageClient({
           setCreating(false);
           setEditing(e);
         }}
+        onCreate={() => setCreating(true)}
       />
 
       {/* ============== Main view ============== */}
@@ -613,6 +617,7 @@ export default function CalendarPageClient({
             setCreating(false);
             setEditing(e);
           }}
+          onCreate={() => setCreating(true)}
         />
       )}
       {view === "Month" && (
@@ -632,6 +637,14 @@ export default function CalendarPageClient({
           onEdit={(e) => {
             setCreating(false);
             setEditing(e);
+          }}
+          onCreate={() => setCreating(true)}
+          onClearFilters={() => {
+            setFilterCat("all");
+            setFilterCourse("");
+            setFilterFaculty("");
+            setFilterCommunity("");
+            setQuery("");
           }}
         />
       )}
@@ -709,11 +722,15 @@ function MyDeadlinesSection({
   items,
   currentUserId,
   onEdit,
+  onCreate,
 }: {
   items: CalEntry[];
   currentUserId: string;
   onEdit: (e: CalEntry) => void;
+  onCreate: () => void;
 }) {
+  const lang = typeof window !== "undefined" ? (localStorage.getItem("language") || "en") : "en";
+  const es = (translations[lang as keyof typeof translations] || translations.en).emptyStates;
   return (
     <section>
       <div
@@ -744,13 +761,25 @@ function MyDeadlinesSection({
         <div
           className="card"
           style={{
-            padding: "24px 20px",
+            padding: "32px 20px",
             textAlign: "center",
             color: "var(--text-secondary)",
             fontSize: "0.9rem",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 6,
           }}
         >
-          No personal deadlines this week — enjoy the free time!
+          <p style={{ margin: 0 }}>{es.calendar.noDeadlines}</p>
+          <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.7 }}>{es.calendar.noDeadlinesHint}</p>
+          <button
+            className="btn btn-primary"
+            style={{ marginTop: 6, fontSize: "0.85rem" }}
+            onClick={onCreate}
+          >
+            {es.calendar.addDeadline}
+          </button>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -944,12 +973,16 @@ function DayView({
   items,
   currentUserId,
   onEdit,
+  onCreate,
 }: {
   day: Date;
   items: CalEntry[];
   currentUserId: string;
   onEdit: (e: CalEntry) => void;
+  onCreate: () => void;
 }) {
+  const lang = typeof window !== "undefined" ? (localStorage.getItem("language") || "en") : "en";
+  const es = (translations[lang as keyof typeof translations] || translations.en).emptyStates;
   return (
     <section>
       <h2 style={{ margin: "0 0 12px", fontSize: "1.05rem", fontWeight: 900 }}>
@@ -965,7 +998,11 @@ function DayView({
           }}
         >
           <div style={{ fontSize: 28, opacity: 0.5, marginBottom: 6 }}>📭</div>
-          No events for this day.
+          <p style={{ margin: 0 }}>{es.calendar.noDayEvents}</p>
+          <p style={{ margin: "4px 0 0", fontSize: "0.85rem", opacity: 0.7 }}>{es.calendar.noDayEventsHint}</p>
+          <button className="btn btn-primary" style={{ marginTop: 8, fontSize: "0.85rem" }} onClick={onCreate}>
+            {es.calendar.addEntry}
+          </button>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1138,11 +1175,18 @@ function ListView({
   items,
   currentUserId,
   onEdit,
+  onCreate,
+  onClearFilters,
 }: {
   items: CalEntry[];
   currentUserId: string;
   onEdit: (e: CalEntry) => void;
+  onCreate: () => void;
+  onClearFilters: () => void;
 }) {
+  const lang = typeof window !== "undefined" ? (localStorage.getItem("language") || "en") : "en";
+  const es = (translations[lang as keyof typeof translations] || translations.en).emptyStates;
+
   if (items.length === 0) {
     return (
       <div
@@ -1151,10 +1195,23 @@ function ListView({
           padding: "40px 20px",
           textAlign: "center",
           color: "var(--text-secondary)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 6,
         }}
       >
         <div style={{ fontSize: 32, opacity: 0.4, marginBottom: 6 }}>🗓️</div>
-        Nothing matches your filters yet.
+        <p style={{ margin: 0 }}>{es.calendar.noFilterMatch}</p>
+        <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.7 }}>{es.calendar.noFilterMatchHint}</p>
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <button className="btn btn-secondary" style={{ fontSize: "0.85rem" }} onClick={onClearFilters}>
+            {es.calendar.clearFilters}
+          </button>
+          <button className="btn btn-primary" style={{ fontSize: "0.85rem" }} onClick={onCreate}>
+            {es.calendar.addNew}
+          </button>
+        </div>
       </div>
     );
   }

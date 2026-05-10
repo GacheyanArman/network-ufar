@@ -78,6 +78,7 @@ export default function PhotosPageClient({
   const { language } = useLanguage();
   const t = translations[language].photos;
   const tCommon = translations[language].common;
+  const es = (translations[language] || translations.en).emptyStates;
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateAlbumModal, setShowCreateAlbumModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -517,7 +518,7 @@ export default function PhotosPageClient({
                     color: "var(--text-primary)",
                   }}
                 >
-                  No photos yet
+                  {es.photos.noPhotos}
                 </h3>
                 <p
                   style={{
@@ -528,11 +529,11 @@ export default function PhotosPageClient({
                     lineHeight: "1.6",
                   }}
                 >
-                  Be the first to share memories from UFAR student life
+                  {es.photos.noPhotosHint}
                 </p>
                 <button onClick={() => setShowUploadModal(true)} className="btn-primary">
                   <UiIcon name="upload" size={18} />
-                  Upload first photo
+                  {es.photos.uploadPhoto}
                 </button>
               </div>
             ) : (

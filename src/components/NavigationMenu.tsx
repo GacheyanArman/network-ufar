@@ -55,6 +55,8 @@ export default function NavigationMenu({ unreadNotifications }: { unreadNotifica
       <div className="nav-section">
         <NavItem href="/library" icon="book" translationKey="nav.library" />
         <NavItem href="/study-materials" icon="folder" translationKey="nav.materials" />
+        <NavItem href="/study-groups" icon="users" translationKey="nav.studyGroups" />
+        <NavItem href="/lost-found" icon="search" translationKey="nav.lostFound" />
       </div>
     </nav>
   );

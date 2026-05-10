@@ -118,6 +118,13 @@ export async function acceptRequest(formData) {
     .set({ status: "accepted", updatedAt: new Date() })
     .where(eq(friendships.id, friendshipId));
 
+  await createNotification({
+    userId: request.requesterId,
+    actorId: userId,
+    type: "friend_accept",
+    entityId: friendshipId,
+  });
+
   revalidatePath("/friends");
   revalidatePath("/profile");
   return { ok: true };

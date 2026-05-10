@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import UiIcon from "./UiIcon";
 import MediaViewer from "./MediaViewer";
+import { translations } from "@/lib/i18n";
 
 export type ProfilePhotoTile = {
   id: string;
@@ -190,15 +192,20 @@ function TabBtn({
 }
 
 function EmptyState({ tab, isOwner }: { tab: Tab; isOwner: boolean }) {
-  const messages: Record<Tab, string> = {
-    photos: isOwner
-      ? "You haven’t shared any moments yet."
-      : "No public moments yet.",
-    tagged: isOwner
-      ? "When friends tag you in a moment, it’ll show here once you approve."
-      : "No tagged moments yet.",
-    saved: "Tap the bookmark on any moment to save it here.",
+  const lang = typeof window !== "undefined" ? (localStorage.getItem("language") || "en") : "en";
+  const es = (translations[lang as keyof typeof translations] || translations.en).emptyStates;
+
+  const title: Record<Tab, string> = {
+    photos: isOwner ? es.photos.noPhotos : "No public moments yet.",
+    tagged: isOwner ? es.photos.noTagged : es.photos.noTaggedOther,
+    saved: es.photos.noSaved,
   };
+  const hint: Record<Tab, string> = {
+    photos: isOwner ? es.photos.noPhotosHint : "",
+    tagged: isOwner ? "" : "",
+    saved: es.photos.noSavedHint,
+  };
+
   return (
     <div
       style={{
@@ -209,9 +216,24 @@ function EmptyState({ tab, isOwner }: { tab: Tab; isOwner: boolean }) {
         textAlign: "center",
         color: "var(--text-secondary)",
         fontSize: 14,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 6,
       }}
     >
-      {messages[tab]}
+      <p style={{ margin: 0 }}>{title[tab]}</p>
+      {hint[tab] && <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.7 }}>{hint[tab]}</p>}
+      {isOwner && tab === "photos" && (
+        <Link href="/photos" className="btn btn-primary" style={{ marginTop: 6, textDecoration: "none", fontSize: "0.85rem" }}>
+          {es.photos.uploadPhoto}
+        </Link>
+      )}
+      {isOwner && tab === "saved" && (
+        <Link href="/photos/explore" className="btn btn-secondary" style={{ marginTop: 6, textDecoration: "none", fontSize: "0.85rem" }}>
+          {es.photos.browseMoments}
+        </Link>
+      )}
     </div>
   );
 }

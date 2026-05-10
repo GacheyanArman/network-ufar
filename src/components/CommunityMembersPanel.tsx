@@ -11,6 +11,7 @@ import {
 } from "@/app/actions/community";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getFacultyLabel } from "@/lib/profile-utils";
+import { translations } from "@/lib/i18n";
 
 export type Member = {
   userId: string;
@@ -58,6 +59,7 @@ export default function CommunityMembersPanel({
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
   const { language } = useLanguage();
+  const es = (translations[language] || translations.en).emptyStates;
 
   useEffect(() => {
     if (!open) return;
@@ -271,6 +273,9 @@ export default function CommunityMembersPanel({
                   {filteredMembers.length === 0 ? (
                     <div className="uf-empty-state" style={{ padding: 40 }}>
                       <p className="uf-empty-description">No members found.</p>
+                      <button className="btn btn-secondary" style={{ marginTop: 8, fontSize: "0.85rem" }} onClick={() => setSearch("")}>
+                        Clear search
+                      </button>
                     </div>
                   ) : null}
                 </div>

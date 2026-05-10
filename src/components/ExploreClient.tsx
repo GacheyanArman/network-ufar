@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import UiIcon from "./UiIcon";
 import MediaViewer from "./MediaViewer";
+import { translations } from "@/lib/i18n";
 
 type TrendingPhoto = {
   id: string;
@@ -41,6 +42,8 @@ export default function ExploreClient({
   currentUserId,
 }: ExploreClientProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const lang = typeof window !== "undefined" ? (localStorage.getItem("language") || "en") : "en";
+  const es = (translations[lang as keyof typeof translations] || translations.en).emptyStates;
 
   return (
     <>
@@ -48,7 +51,7 @@ export default function ExploreClient({
       <section style={{ marginBottom: 28 }}>
         <h2 style={sectionTitle}>Trending hashtags</h2>
         {trendingTags.length === 0 ? (
-          <EmptyHint>No hashtags yet — be the first to start a trend.</EmptyHint>
+          <EmptyHint>{es.explore.noHashtags} <Link href="/photos" className="btn btn-secondary" style={{ marginLeft: 8, textDecoration: "none", fontSize: "0.85rem" }}>{es.explore.shareMoment}</Link></EmptyHint>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {trendingTags.map((t) => (
@@ -69,7 +72,7 @@ export default function ExploreClient({
       <section style={{ marginBottom: 28 }}>
         <h2 style={sectionTitle}>Most loved this week</h2>
         {trendingPhotos.length === 0 ? (
-          <EmptyHint>No public moments yet.</EmptyHint>
+          <EmptyHint>{es.explore.noTrending} <Link href="/photos" className="btn btn-secondary" style={{ marginLeft: 8, textDecoration: "none", fontSize: "0.85rem" }}>{es.explore.shareMoment}</Link></EmptyHint>
         ) : (
           <div
             style={{
@@ -121,7 +124,7 @@ export default function ExploreClient({
       <section>
         <h2 style={sectionTitle}>From recent events</h2>
         {eventPhotos.length === 0 ? (
-          <EmptyHint>No event photos yet. Tag a moment to an event!</EmptyHint>
+          <EmptyHint>{es.explore.noEventPhotos} <Link href="/events" className="btn btn-secondary" style={{ marginLeft: 8, textDecoration: "none", fontSize: "0.85rem" }}>{es.explore.browseEvents}</Link></EmptyHint>
         ) : (
           <div
             style={{

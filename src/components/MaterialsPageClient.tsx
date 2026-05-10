@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useTransition, useCallback, useRef } from "react";
 import UiIcon from "@/components/UiIcon";
+import { translations } from "@/lib/i18n";
 import {
   getMyMaterials,
   toggleSaveMaterial,
@@ -246,6 +247,9 @@ export default function MaterialsPageClient({
   openRequests: initialOpenRequests,
   currentUserId,
 }: Props) {
+  const lang = typeof window !== "undefined" ? (localStorage.getItem("language") || "en") : "en";
+  const es = (translations[lang as keyof typeof translations] || translations.en).emptyStates;
+
   // ------------------- Tab + filter/sort state -------------------
   const [activeTab, setActiveTab] = useState<
     "browse" | "my_materials" | "requests"
@@ -860,9 +864,9 @@ export default function MaterialsPageClient({
             {filteredMaterials.length === 0 ? (
               <EmptyState
                 icon="folder"
-                title="No materials match your filters"
-                hint="Try clearing some filters or request the material you need — other students get notified and can upload it."
-                actionLabel="Request material"
+                title={es.materials.noFilterMatch}
+                hint={es.materials.noFilterMatchHint}
+                actionLabel={es.materials.requestMaterial}
                 onAction={() => setIsRequestModalOpen(true)}
               />
             ) : (
@@ -891,6 +895,9 @@ export default function MaterialsPageClient({
           onUnsave={handleToggleSave}
           onDelete={handleDeleteMaterial}
           currentUserId={currentUserId}
+          onUpload={() => setIsUploadModalOpen(true)}
+          onBrowse={() => setActiveTab("browse")}
+          onRequest={() => setIsRequestModalOpen(true)}
         />
       )}
 
@@ -1464,13 +1471,21 @@ function MyMaterialsView({
   onUnsave,
   onDelete,
   currentUserId,
+  onUpload,
+  onBrowse,
+  onRequest,
 }: {
   loading: boolean;
   data: { uploaded: any[]; saved: any[]; requested: any[] } | null;
   onUnsave: (id: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   currentUserId: string;
+  onUpload: () => void;
+  onBrowse: () => void;
+  onRequest: () => void;
 }) {
+  const lang = typeof window !== "undefined" ? (localStorage.getItem("language") || "en") : "en";
+  const es = (translations[lang as keyof typeof translations] || translations.en).emptyStates;
   if (loading || !data) {
     return (
       <div
@@ -1507,8 +1522,10 @@ function MyMaterialsView({
         {data.uploaded.length === 0 ? (
           <EmptyState
             icon="upload"
-            title="You haven't uploaded any materials yet"
-            hint="Share your notes with the community — uploads go through quick moderation."
+            title={es.materials.noUploaded}
+            hint={es.materials.noUploadedHint}
+            actionLabel={es.materials.upload}
+            onAction={onUpload}
           />
         ) : (
           <div
@@ -1643,8 +1660,10 @@ function MyMaterialsView({
         {data.saved.length === 0 ? (
           <EmptyState
             icon="bookmark"
-            title="No saved materials yet"
-            hint="Bookmark materials you'd like to come back to and they'll show up here."
+            title={es.materials.noSaved}
+            hint={es.materials.noSavedHint}
+            actionLabel={es.materials.browse}
+            onAction={onBrowse}
           />
         ) : (
           <div
@@ -1745,8 +1764,10 @@ function MyMaterialsView({
         {data.requested.length === 0 ? (
           <EmptyState
             icon="comment"
-            title="No requests yet"
-            hint="Can't find what you need? Send a request and other students can support or fulfil it."
+            title={es.materials.noRequests}
+            hint={es.materials.noRequestsHint}
+            actionLabel={es.materials.requestMaterial}
+            onAction={onRequest}
           />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1821,13 +1842,16 @@ function RequestsView({
   onSupport: (id: string) => Promise<void>;
   onCreate: () => void;
 }) {
+  const lang = typeof window !== "undefined" ? (localStorage.getItem("language") || "en") : "en";
+  const es = (translations[lang as keyof typeof translations] || translations.en).emptyStates;
+
   if (requests.length === 0) {
     return (
       <EmptyState
         icon="comment"
         title="No open material requests"
         hint="Be the first to ask the community for the materials you need."
-        actionLabel="Request material"
+        actionLabel={es.materials.requestMaterial}
         onAction={onCreate}
       />
     );

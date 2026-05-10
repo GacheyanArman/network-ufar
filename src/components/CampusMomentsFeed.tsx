@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import StoriesBar, { StoryAuthorSummary } from "./StoriesBar";
+import { translations } from "@/lib/i18n";
 import PhotoFeedCard, { PhotoFeedItem } from "./PhotoFeedCard";
 import PhotoUploadModal from "./PhotoUploadModal";
 import UiIcon from "./UiIcon";
@@ -30,6 +31,8 @@ export default function CampusMomentsFeed({
   isStaff,
 }: CampusMomentsFeedProps) {
   const [uploadOpen, setUploadOpen] = useState(false);
+  const lang = typeof window !== "undefined" ? (localStorage.getItem("language") || "en") : "en";
+  const es = (translations[lang as keyof typeof translations] || translations.en).emptyStates;
 
   const handleUpload = async (formData: FormData) => {
     await createPhotoPost(formData);
@@ -151,7 +154,7 @@ export default function CampusMomentsFeed({
             <UiIcon name="camera" size={26} />
           </div>
           <h2 style={{ margin: "0 0 6px", fontWeight: 900, fontSize: 18 }}>
-            No moments yet
+            {es.photos.noPhotos}
           </h2>
           <p
             style={{
@@ -160,10 +163,10 @@ export default function CampusMomentsFeed({
               fontSize: 14,
             }}
           >
-            Be the first to share a Campus Moment with the UFAR community.
+            {es.photos.noPhotosHint}
           </p>
           <button onClick={() => setUploadOpen(true)} style={primaryBtn}>
-            Share your first moment
+            {es.photos.uploadPhoto}
           </button>
         </div>
       ) : (

@@ -1,80 +1,104 @@
 import Link from "next/link";
-import { desc, eq } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { desc, eq, and } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { notifications, users } from "@/lib/schema";
 import { getSession } from "@/lib/session";
+import { getNotificationPreferences } from "@/lib/notifications";
+import { translations } from "@/lib/i18n";
 import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/app/actions/notifications";
+import NotificationControls from "@/components/NotificationControls";
+import UiIcon from "@/components/UiIcon";
 
-function notificationLabel(type) {
-  if (type === "like") return "liked your post";
-  if (type === "comment") return "commented on your post";
-  if (type === "friend_request") return "sent you a friend request";
-  if (type === "friend_accept") return "accepted your friend request";
-  if (type === "message") return "sent you a message";
-  return "interacted with you";
-}
+const TYPE_ICON = {
+  like: "heart",
+  comment: "comment",
+  friend_request: "user-plus",
+  friend_accept: "check",
+  message: "mail",
+  reminder: "bell",
+  material_approved: "check-circle",
+  photo_approved: "check-circle",
+  event_new: "calendar",
+  deadline: "clock",
+  group_join: "users",
+};
 
-function notificationIcon(type) {
-  if (type === "like") return "♡";
-  if (type === "comment") return "💬";
-  if (type === "friend_request") return "👥";
-  if (type === "friend_accept") return "✅";
-  if (type === "message") return "✉️";
-  return "🔔";
-}
+const TYPE_COLOR = {
+  like: "#e11d48",
+  comment: "#0b3aa8",
+  friend_request: "#7c3aed",
+  friend_accept: "#059669",
+  message: "#0b3aa8",
+  reminder: "#d97706",
+  material_approved: "#059669",
+  photo_approved: "#059669",
+  event_new: "#7c3aed",
+  deadline: "#dc2626",
+  group_join: "#0b3aa8",
+};
 
 function formatTime(value) {
   if (!value) return "";
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-
   const diff = Date.now() - date.getTime();
   const minute = 60 * 1000;
   const hour = 60 * minute;
   const day = 24 * hour;
-
   if (diff < minute) return "just now";
-  if (diff < hour) return `${Math.floor(diff / minute)}m ago`;
-  if (diff < day) return `${Math.floor(diff / hour)}h ago`;
-  if (diff < day * 7) return `${Math.floor(diff / day)}d ago`;
-
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  if (diff < hour) return `${Math.floor(diff / minute)}m`;
+  if (diff < day) return `${Math.floor(diff / hour)}h`;
+  if (diff < day * 7) return `${Math.floor(diff / day)}d`;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export default async function NotificationsPage() {
+export default async function NotificationsPage({ searchParams }) {
   const session = await getSession();
+  if (!session?.userId) redirect("/login");
 
-  if (!session?.userId) {
-    redirect("/login");
-  }
+  const cookieStore = await cookies();
+  const lang = cookieStore.get("language")?.value || "en";
+  const t = translations[lang]?.notifications || translations.en.notifications;
+
+  const params = await searchParams;
+  const filter = params?.cat || "all";
+
+  const prefs = await getNotificationPreferences(session.userId);
+
+  const whereClause =
+    filter === "all"
+      ? eq(notifications.userId, session.userId)
+      : and(
+          eq(notifications.userId, session.userId),
+          eq(notifications.category, filter)
+        );
 
   const rows = await db
     .select({
       id: notifications.id,
       type: notifications.type,
+      category: notifications.category,
       isRead: notifications.isRead,
       createdAt: notifications.createdAt,
+      entityId: notifications.entityId,
       actorId: users.id,
       actorName: users.fullName,
       actorImage: users.image,
     })
     .from(notifications)
     .leftJoin(users, eq(notifications.actorId, users.id))
-    .where(eq(notifications.userId, session.userId))
+    .where(whereClause)
     .orderBy(desc(notifications.createdAt))
-    .limit(50);
+    .limit(80);
 
   const unreadCount = rows.filter((item) => !item.isRead).length;
+
+  const grouped = groupByCategory(rows);
 
   return (
     <div className="uf-notifications-page">
@@ -85,126 +109,175 @@ export default async function NotificationsPage() {
           <div className="uf-notifications-header">
             <div className="uf-notifications-title-wrap">
               <div className="uf-notifications-title-row">
-                <h1>Notifications</h1>
-
+                <h1>{t.title}</h1>
                 {unreadCount > 0 ? (
                   <span className="uf-notifications-count">
-                    {unreadCount} unread
+                    {unreadCount} {t.unread}
                   </span>
                 ) : null}
               </div>
-
-              <p>
-                Stay updated with likes, comments, friend requests and other
-                activity.
-              </p>
+              <p>{t.subtitle}</p>
             </div>
 
             {rows.length > 0 ? (
               <form action={markAllNotificationsRead}>
                 <button className="uf-mark-all-btn" type="submit">
-                  Mark all as read
+                  {t.markAllRead}
                 </button>
               </form>
             ) : null}
           </div>
         </div>
 
+        <NotificationControls
+          prefs={prefs}
+        />
+
         {rows.length === 0 ? (
           <div className="uf-notifications-empty-card">
-            <div className="uf-notifications-empty-icon">🔔</div>
-            <h2>No notifications yet</h2>
-            <p>
-              When someone likes your post, comments, sends a request or
-              interacts with you, it will appear here.
-            </p>
+            <div className="uf-notifications-empty-icon">
+              <UiIcon name="bell" size={28} />
+            </div>
+            <h2>{t.emptyTitle}</h2>
+            <p>{t.emptyHint}</p>
           </div>
         ) : (
           <div className="uf-notifications-list-card">
             <div className="uf-notifications-list">
-              {rows.map((item) => {
-                const actorName = item.actorName || "Someone";
-                const actorInitial = actorName.charAt(0).toUpperCase() || "U";
-                const actorHref = item.actorId ? `/profile/${item.actorId}` : "/profile";
-
-                return (
-                  <article
-                    key={item.id}
-                    className={`uf-notification-item ${
-                      item.isRead ? "" : "is-unread"
-                    }`}
-                  >
-                    <div className="uf-notification-left">
-                      <Link href={actorHref} className="uf-notification-avatar-link">
-                        <div className="uf-notification-avatar-wrap">
-                          {item.actorImage ? (
-                            <img
-                              src={item.actorImage}
-                              alt={actorName}
-                              className="uf-notification-avatar"
-                            />
-                          ) : (
-                            <div className="uf-notification-avatar uf-notification-avatar-fallback">
-                              {actorInitial}
-                            </div>
-                          )}
-
-                          <span className="uf-notification-type-icon">
-                            {notificationIcon(item.type)}
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-
-                    <div className="uf-notification-main">
-                      <div className="uf-notification-text">
-                        <Link href={actorHref} className="uf-notification-actor">
-                          {actorName}
-                        </Link>{" "}
-                        <span>{notificationLabel(item.type)}</span>
-                      </div>
-
-                      <div className="uf-notification-meta">
-                        <span className="uf-notification-time">
-                          {formatTime(item.createdAt)}
-                        </span>
-
-                        {!item.isRead ? (
-                          <span className="uf-unread-pill">New</span>
-                        ) : (
-                          <span className="uf-read-pill">Read</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="uf-notification-right">
-                      {!item.isRead ? (
-                        <form action={markNotificationRead}>
-                          <input
-                            type="hidden"
-                            name="notificationId"
-                            value={item.id}
-                          />
-                          <button
-                            className="uf-notification-read-btn"
-                            type="submit"
-                          >
-                            Mark as read
-                          </button>
-                        </form>
-                      ) : (
-                        <div className="uf-notification-read-state">✓</div>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
+              {rows.map((item) => (
+                <NotificationItem
+                  key={item.id}
+                  item={item}
+                  t={t}
+                  lang={lang}
+                />
+              ))}
             </div>
           </div>
         )}
       </section>
     </div>
   );
+}
+
+function NotificationItem({ item, t, lang }) {
+  const actorName = item.actorName || "System";
+  const actorInitial = actorName.charAt(0).toUpperCase() || "S";
+  const actorHref = item.actorId ? `/profile/${item.actorId}` : null;
+  const iconName = TYPE_ICON[item.type] || "bell";
+  const iconColor = TYPE_COLOR[item.type] || "#64748b";
+  const label = t.types?.[item.type] || item.type;
+  const isSystem = !item.actorId;
+
+  return (
+    <article
+      className={`uf-notification-item ${item.isRead ? "" : "is-unread"}`}
+    >
+      <div className="uf-notification-left">
+        {actorHref ? (
+          <Link href={actorHref} className="uf-notification-avatar-link">
+            <NotificationAvatar
+              image={item.actorImage}
+              initial={actorInitial}
+              iconName={iconName}
+              iconColor={iconColor}
+            />
+          </Link>
+        ) : (
+          <NotificationAvatar
+            image={null}
+            initial={actorInitial}
+            iconName={iconName}
+            iconColor={iconColor}
+            isSystem
+          />
+        )}
+      </div>
+
+      <div className="uf-notification-main">
+        <div className="uf-notification-text">
+          {actorHref ? (
+            <Link href={actorHref} className="uf-notification-actor">
+              {actorName}
+            </Link>
+          ) : (
+            <span className="uf-notification-actor uf-notification-actor--system">
+              {isSystem ? t.systemLabel : actorName}
+            </span>
+          )}{" "}
+          <span>{label}</span>
+        </div>
+
+        <div className="uf-notification-meta">
+          <span className="uf-notification-time">
+            {formatTime(item.createdAt)}
+          </span>
+          {!item.isRead ? (
+            <span className="uf-unread-pill">{t.new}</span>
+          ) : (
+            <span className="uf-read-pill">{t.read}</span>
+          )}
+          <span
+            className="uf-notification-cat-badge"
+            style={{ color: iconColor }}
+          >
+            {t.categories?.[item.category] || item.category}
+          </span>
+        </div>
+      </div>
+
+      <div className="uf-notification-right">
+        {!item.isRead ? (
+          <form action={markNotificationRead}>
+            <input type="hidden" name="notificationId" value={item.id} />
+            <button className="uf-notification-read-btn" type="submit">
+              {t.markRead}
+            </button>
+          </form>
+        ) : (
+          <div className="uf-notification-read-state">
+            <UiIcon name="check" size={14} />
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function NotificationAvatar({ image, initial, iconName, iconColor, isSystem }) {
+  return (
+    <div className="uf-notification-avatar-wrap">
+      {image ? (
+        <img src={image} alt="" className="uf-notification-avatar" />
+      ) : (
+        <div
+          className={`uf-notification-avatar uf-notification-avatar-fallback ${isSystem ? "is-system" : ""}`}
+        >
+          {isSystem ? (
+            <UiIcon name={iconName} size={20} />
+          ) : (
+            initial
+          )}
+        </div>
+      )}
+      <span
+        className="uf-notification-type-icon"
+        style={{ color: iconColor, background: "#fff" }}
+      >
+        <UiIcon name={iconName} size={11} />
+      </span>
+    </div>
+  );
+}
+
+function groupByCategory(rows) {
+  const map = {};
+  for (const r of rows) {
+    const cat = r.category || "social";
+    if (!map[cat]) map[cat] = [];
+    map[cat].push(r);
+  }
+  return map;
 }
 
 const pageStyles = `
@@ -294,12 +367,130 @@ const pageStyles = `
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  transition: background-color 160ms ease, border-color 160ms ease;
 }
 
 .uf-mark-all-btn:hover {
   background: #f4f7fb;
   border-color: rgba(11, 58, 168, 0.24);
+}
+
+.uf-notif-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.uf-notif-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.uf-notif-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid #d9e2ef;
+  background: #fff;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.uf-notif-filter:hover {
+  background: #f8fafc;
+  border-color: #c7d2e0;
+}
+
+.uf-notif-filter.active {
+  background: #0b3aa8;
+  color: #fff;
+  border-color: #0b3aa8;
+}
+
+.uf-notif-prefs {
+  background: #fff;
+  border: 1px solid #d9e2ef;
+  border-radius: 14px;
+  padding: 16px 20px;
+}
+
+.uf-notif-prefs-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.uf-notif-prefs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.uf-notif-pref-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.uf-notif-pref-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.uf-notif-toggle {
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: background 200ms ease;
+  flex-shrink: 0;
+}
+
+.uf-notif-toggle.on {
+  background: #0b3aa8;
+}
+
+.uf-notif-toggle.off {
+  background: #cbd5e1;
+}
+
+.uf-notif-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.uf-notif-toggle-knob {
+  position: absolute;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: left 200ms ease;
+}
+
+.uf-notif-toggle.on .uf-notif-toggle-knob {
+  left: 20px;
+}
+
+.uf-notif-toggle.off .uf-notif-toggle-knob {
+  left: 2px;
 }
 
 .uf-notifications-list-card {
@@ -316,7 +507,7 @@ const pageStyles = `
   grid-template-columns: 60px minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
-  padding: 18px 22px;
+  padding: 16px 22px;
   border-bottom: 1px solid #e7edf5;
   background: #ffffff;
   transition: background-color 160ms ease;
@@ -334,23 +525,19 @@ const pageStyles = `
   background: #fbfdff;
 }
 
-.uf-notification-left {
-  min-width: 0;
-}
-
 .uf-notification-avatar-link {
   text-decoration: none;
 }
 
 .uf-notification-avatar-wrap {
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
 }
 
 .uf-notification-avatar {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   object-fit: cover;
   display: block;
@@ -363,24 +550,27 @@ const pageStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 900;
+}
+
+.uf-notification-avatar-fallback.is-system {
+  background: linear-gradient(135deg, #0b3aa8, #062fae);
+  border-radius: 14px;
 }
 
 .uf-notification-type-icon {
   position: absolute;
   right: -3px;
   bottom: -2px;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
-  background: #ffffff;
   border: 1px solid #d9e2ef;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
 }
 
 .uf-notification-main {
@@ -389,44 +579,49 @@ const pageStyles = `
 
 .uf-notification-text {
   color: #334155;
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: 14px;
+  line-height: 1.5;
   word-break: break-word;
 }
 
 .uf-notification-actor {
   color: #0f172a;
   text-decoration: none;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .uf-notification-actor:hover {
   text-decoration: underline;
 }
 
+.uf-notification-actor--system {
+  font-style: italic;
+  color: #0b3aa8;
+}
+
 .uf-notification-meta {
-  margin-top: 8px;
+  margin-top: 6px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .uf-notification-time {
   color: #64748b;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .uf-unread-pill,
 .uf-read-pill {
-  min-height: 24px;
-  padding: 0 9px;
+  min-height: 20px;
+  padding: 0 7px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -437,7 +632,14 @@ const pageStyles = `
 
 .uf-read-pill {
   background: #f4f7fb;
-  color: #64748b;
+  color: #94a3b8;
+}
+
+.uf-notification-cat-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .uf-notification-right {
@@ -447,17 +649,17 @@ const pageStyles = `
 }
 
 .uf-notification-read-btn {
-  min-height: 38px;
-  padding: 0 14px;
-  border-radius: 10px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
   border: 1px solid #d9e2ef;
   background: #ffffff;
   color: #0f172a;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  transition: all 160ms ease;
 }
 
 .uf-notification-read-btn:hover {
@@ -467,16 +669,14 @@ const pageStyles = `
 }
 
 .uf-notification-read-state {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border-radius: 999px;
   background: #f4f7fb;
-  color: #64748b;
+  color: #94a3b8;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
-  font-weight: 900;
 }
 
 .uf-notifications-empty-card {
@@ -494,7 +694,6 @@ const pageStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
 }
 
 .uf-notifications-empty-card h2 {
@@ -508,7 +707,7 @@ const pageStyles = `
   margin: 0 auto;
   max-width: 420px;
   color: #64748b;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -518,14 +717,18 @@ const pageStyles = `
   }
 
   .uf-notification-item {
-    grid-template-columns: 52px minmax(0, 1fr);
-    padding: 16px;
+    grid-template-columns: 48px minmax(0, 1fr);
+    padding: 14px 16px;
   }
 
   .uf-notification-right {
     grid-column: 2 / 3;
     justify-content: flex-start;
-    margin-top: 10px;
+    margin-top: 8px;
+  }
+
+  .uf-notif-prefs-grid {
+    grid-template-columns: 1fr;
   }
 }
 `;

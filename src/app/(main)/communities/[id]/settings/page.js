@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { db } from "@/lib/db";
-import { communities } from "@/lib/schema";
+import { db } from "@/shared/db/db";
+import { communities } from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
-import { getSession } from "@/lib/session";
-import { getCommunityContext } from "@/lib/community";
-import { updateCommunity, deleteCommunity } from "@/app/actions/community";
-import UiIcon from "@/components/UiIcon";
+import { getSession } from "@/shared/auth/session";
+import { getCommunityContext } from "@/features/communities/server/queries";
+import { updateCommunity, deleteCommunity } from "@/features/communities/server/actions";
+import UiIcon from "@/shared/ui/UiIcon";
 
 export default async function CommunitySettingsPage({ params }) {
   const session = await getSession();
@@ -188,13 +188,13 @@ export default async function CommunitySettingsPage({ params }) {
         style={{
           padding: 22,
           border: "1px solid #fca5a5",
-          background: "#fff7f7",
+          background: "var(--danger-soft)",
         }}
       >
         <h3
           style={{
             margin: "0 0 8px 0",
-            color: "#991b1b",
+            color: "var(--danger)",
             fontSize: 16,
             fontWeight: 900,
           }}
@@ -217,8 +217,8 @@ export default async function CommunitySettingsPage({ params }) {
             type="submit"
             className="btn btn-secondary"
             style={{
-              borderColor: "#fecaca",
-              color: "#991b1b",
+              borderColor: "var(--danger-soft)",
+              color: "var(--danger)",
             }}
           >
             Delete community
@@ -245,7 +245,7 @@ function Field({
     padding: "12px 14px",
     border: "1px solid var(--border-color)",
     borderRadius: 12,
-    background: "#ffffff",
+    background: "var(--bg-card)",
     fontFamily: "inherit",
     fontSize: 15,
     color: "var(--text-primary)",

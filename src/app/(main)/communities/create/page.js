@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getSession } from "@/lib/session";
-import { createCommunity } from "@/app/actions/community";
-import UiIcon from "@/components/UiIcon";
+import { getSession } from "@/shared/auth/session";
+import { createCommunity } from "@/features/communities/server/actions";
+import UiIcon from "@/shared/ui/UiIcon";
 
 export default async function CreateCommunityPage() {
   const session = await getSession();
@@ -169,7 +169,7 @@ export default async function CreateCommunityPage() {
                 padding: "12px 16px",
                 border: "1px dashed var(--border-color)",
                 borderRadius: 12,
-                background: "#ffffff",
+                background: "var(--bg-card)",
                 color: "var(--text-secondary)",
                 fontSize: 14,
                 fontWeight: 700,
@@ -266,7 +266,7 @@ function Field({
     padding: "12px 14px",
     border: "1px solid var(--border-color)",
     borderRadius: 12,
-    background: "#ffffff",
+    background: "var(--bg-card)",
     fontFamily: "inherit",
     fontSize: 15,
     color: "var(--text-primary)",

@@ -1,23 +1,25 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { and, eq, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { friendships, users } from "@/lib/schema";
-import { getSession } from "@/lib/session";
+import { db } from "@/shared/db/db";
+import { friendships, users } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 import {
   acceptRequest,
   rejectRequest,
   sendFriendRequest,
   unfriend,
-} from "@/app/actions/friends";
-import { followUser, unfollowUser } from "@/app/actions/follow";
-import { getFacultyLabel } from "@/lib/profile-utils";
-import { translations } from "@/lib/i18n";
+} from "@/features/profile/server/friends";
+import { followUser, unfollowUser } from "@/features/profile/server/follow";
+import { getFacultyLabel } from "@/features/profile/server/utils";
+import { translations } from "@/shared/i18n/i18n";
+import { PageShell } from "@/shared/ui/Layout";
 import {
   getFollowingSummary,
   getPeopleYouMayKnow,
-} from "@/lib/social";
+} from "@/features/feed/server/social";
 
 function avatar(user) {
   return (
@@ -39,9 +41,11 @@ function avatar(user) {
       }}
     >
       {user.image || user.avatarUrl ? (
-        <img
+        <Image
           src={user.image || user.avatarUrl}
           alt={user.fullName}
+          width={56}
+          height={56}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       ) : (
@@ -142,7 +146,8 @@ export default async function FriendsPage() {
   const followingPeople = followingSummary.users;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <PageShell>
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div className="card">
         <div
           style={{
@@ -556,6 +561,7 @@ export default async function FriendsPage() {
           </div>
         )}
       </section>
-    </div>
+      </div>
+    </PageShell>
   );
 }

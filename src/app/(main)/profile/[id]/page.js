@@ -1,9 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { and, count, desc, eq, or } from "drizzle-orm";
 import { redirect, notFound } from "next/navigation";
 
-import { db } from "@/lib/db";
+import { db } from "@/shared/db/db";
 import {
   communities,
   friendships,
@@ -13,18 +14,18 @@ import {
   users,
   blockedUsers,
   userFollows,
-} from "@/lib/schema";
-import { getFacultyLabel } from "@/lib/profile-utils";
-import { getSession } from "@/lib/session";
-import { followUser, unfollowUser } from "@/app/actions/follow";
-import { sendFriendRequest } from "@/app/actions/friends";
-import ProfilePhotoTabs from "@/components/ProfilePhotoTabs";
-import PostCard from "@/components/PostCard";
-import UiIcon from "@/components/UiIcon";
-import BlockButton from "@/components/BlockButton";
-import ProfileInfo from "@/components/ProfileInfo";
-import ProfileAboutInfo from "@/components/ProfileAboutInfo";
-import { translations } from "@/lib/i18n";
+} from "@/shared/db/schema";
+import { getFacultyLabel } from "@/features/profile/server/utils";
+import { getSession } from "@/shared/auth/session";
+import { followUser, unfollowUser } from "@/features/profile/server/follow";
+import { sendFriendRequest } from "@/features/profile/server/friends";
+import ProfilePhotoTabs from "@/features/profile/components/ProfilePhotoTabs";
+import PostCard from "@/features/feed/components/PostCard";
+import UiIcon from "@/shared/ui/UiIcon";
+import BlockButton from "@/features/profile/components/BlockButton";
+import ProfileInfo from "@/features/profile/components/ProfileInfo";
+import ProfileAboutInfo from "@/features/profile/components/ProfileAboutInfo";
+import { translations } from "@/shared/i18n/i18n";
 
 export default async function PublicProfilePage({ params, searchParams }) {
   const session = await getSession();
@@ -65,9 +66,11 @@ export default async function PublicProfilePage({ params, searchParams }) {
       image: users.image,
       avatarUrl: users.avatarUrl,
       coverImage: users.coverImage,
-      gender: users.gender,
-      relationshipStatus: users.relationshipStatus,
-      birthDate: users.birthDate,
+      year: users.year,
+      studyGroup: users.studyGroup,
+      interests: users.interests,
+      languages: users.languages,
+      lookingFor: users.lookingFor,
       createdAt: users.createdAt,
     })
     .from(users)
@@ -108,6 +111,10 @@ export default async function PublicProfilePage({ params, searchParams }) {
     .select({
       id: photos.id,
       imageUrl: photos.imageUrl,
+      thumbnailUrl: photos.thumbnailUrl,
+      mediumUrl: photos.mediumUrl,
+      width: photos.width,
+      height: photos.height,
       caption: photos.caption,
       ownerId: photos.ownerId,
       createdAt: photos.createdAt,
@@ -116,11 +123,14 @@ export default async function PublicProfilePage({ params, searchParams }) {
     .where(and(eq(photos.ownerId, profileId), eq(photos.isPrivate, false)))
     .orderBy(desc(photos.createdAt));
 
-  // Photos where this profile user is approved-tagged.
   const taggedPhotos = await db
     .select({
       id: photos.id,
       imageUrl: photos.imageUrl,
+      thumbnailUrl: photos.thumbnailUrl,
+      mediumUrl: photos.mediumUrl,
+      width: photos.width,
+      height: photos.height,
       caption: photos.caption,
       ownerId: photos.ownerId,
       ownerName: users.fullName,
@@ -275,7 +285,7 @@ export default async function PublicProfilePage({ params, searchParams }) {
             <section className="uf-card uf-profile-card">
               <div className="uf-profile-avatar">
                 {avatarImage ? (
-                  <img src={avatarImage} alt={safeName} />
+                  <Image src={avatarImage} alt={safeName} width={106} height={106} />
                 ) : (
                   <span>{safeInitial}</span>
                 )}
@@ -307,9 +317,6 @@ export default async function PublicProfilePage({ params, searchParams }) {
               <div className="uf-profile-info">
                 <ProfileInfo
                   email={safeEmail}
-                  gender={profileUser.gender}
-                  relationshipStatus={profileUser.relationshipStatus}
-                  birthDate={profileUser.birthDate}
                   friendsCount={friendsCount}
                   followingCount={Number(followingRow?.value || 0)}
                 />
@@ -317,7 +324,7 @@ export default async function PublicProfilePage({ params, searchParams }) {
 
               <div className="public-profile-actions">
                 {isBlockedByThem ? (
-                  <div style={{ padding: "12px", textAlign: "center", color: "#64748b", fontSize: "14px" }}>
+                  <div style={{ padding: "12px", textAlign: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
                     This user has blocked you
                   </div>
                 ) : (
@@ -427,10 +434,11 @@ export default async function PublicProfilePage({ params, searchParams }) {
                   <InfoBlock label="Username" value={safeUsername} />
                   <InfoBlock label="Email" value={safeEmail} />
                   <InfoBlock label="Faculty" value={safeFaculty} />
-                  <ProfileAboutInfo
-                    gender={profileUser.gender}
-                    relationshipStatus={profileUser.relationshipStatus}
-                  />
+                  {profileUser.year && <InfoBlock label="Year" value={profileUser.year} />}
+                  {profileUser.studyGroup && <InfoBlock label="Study Group" value={profileUser.studyGroup} />}
+                  {profileUser.languages && <InfoBlock label="Languages" value={profileUser.languages} />}
+                  {profileUser.interests && <InfoBlock label="Interests" value={profileUser.interests} />}
+                  {profileUser.lookingFor && <InfoBlock label="Looking For" value={profileUser.lookingFor} />}
                   <InfoBlock label="Joined" value={joinedAt} />
                 </div>
               </section>

@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createStudyGroup } from "@/app/actions/study-groups";
-import UiIcon from "@/components/UiIcon";
+import { createStudyGroup } from "@/features/study-groups/server/actions";
+import UiIcon from "@/shared/ui/UiIcon";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -30,11 +30,11 @@ export default function CreateStudyGroupPage() {
         <button
           type="button"
           onClick={() => router.back()}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: 8 }}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", padding: 8 }}
         >
           <UiIcon name="arrow-left" size={20} />
         </button>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#0f172a" }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "var(--text-primary)" }}>
           Create Study Group
         </h1>
       </div>
@@ -44,8 +44,8 @@ export default function CreateStudyGroupPage() {
         <CardInput label="Subject" name="subject" placeholder="e.g. Statistics, Accounting" />
         <CardInput label="Faculty" name="faculty" placeholder="e.g. Finance, Computer Science" />
 
-        <div style={{ background: "#fff", border: "1px solid #d9e2ef", borderRadius: 14, padding: 16 }}>
-          <label style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", display: "block", marginBottom: 8 }}>
+        <div style={{ background: "var(--bg-card)", border: "1px solid #d9e2ef", borderRadius: 14, padding: 16 }}>
+          <label style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)", display: "block", marginBottom: 8 }}>
             Description
           </label>
           <textarea
@@ -58,8 +58,8 @@ export default function CreateStudyGroupPage() {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div style={{ background: "#fff", border: "1px solid #d9e2ef", borderRadius: 14, padding: 16 }}>
-            <label style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", display: "block", marginBottom: 8 }}>
+          <div style={{ background: "var(--bg-card)", border: "1px solid #d9e2ef", borderRadius: 14, padding: 16 }}>
+            <label style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)", display: "block", marginBottom: 8 }}>
               Meeting Day
             </label>
             <select name="meetingDay" style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: 8, fontSize: 14 }}>
@@ -81,8 +81,8 @@ export default function CreateStudyGroupPage() {
           style={{
             padding: "14px 24px",
             borderRadius: 12,
-            background: "#0b3aa8",
-            color: "#fff",
+            background: "var(--french-blue-deep)",
+            color: "var(--bg-card)",
             border: "none",
             fontSize: 15,
             fontWeight: 800,
@@ -99,8 +99,8 @@ export default function CreateStudyGroupPage() {
 
 function CardInput({ label, name, placeholder, required, type = "text", min, max }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #d9e2ef", borderRadius: 14, padding: 16 }}>
-      <label style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", display: "block", marginBottom: 8 }}>
+    <div style={{ background: "var(--bg-card)", border: "1px solid #d9e2ef", borderRadius: 14, padding: 16 }}>
+      <label style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)", display: "block", marginBottom: 8 }}>
         {label}
       </label>
       <input

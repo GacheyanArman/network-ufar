@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { communities, communityMembers } from "@/lib/schema";
-import { getSession } from "@/lib/session";
+import { db } from "@/shared/db/db";
+import { communities, communityMembers } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 import { eq, inArray } from "drizzle-orm";
-import { getEventsList } from "@/app/actions/events";
-import { getUserRole, isStaff } from "@/lib/roles";
-import EventsPageClient from "@/components/EventsPageClient";
+import { getEventsList } from "@/features/events/server/actions";
+import { getUserRole, isStaff } from "@/shared/auth/roles";
+import { PageShell } from "@/shared/ui/Layout";
+import EventsPageClient from "@/features/events/components/EventsPageClient";
 
 export const metadata = {
   title: "Events | UFAR Network",
@@ -59,11 +60,13 @@ export default async function EventsPage() {
       : [];
 
   return (
-    <EventsPageClient
-      events={initialEvents}
-      myCommunities={myCommunities}
-      filterCommunities={filterCommunities}
-      currentUserId={session.userId}
-    />
+    <PageShell>
+      <EventsPageClient
+        events={initialEvents}
+        myCommunities={myCommunities}
+        filterCommunities={filterCommunities}
+        currentUserId={session.userId}
+      />
+    </PageShell>
   );
 }

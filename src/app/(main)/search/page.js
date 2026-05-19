@@ -1,12 +1,13 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { unifiedSearch } from "@/app/actions/search";
-import { getSession } from "@/lib/session";
-import { translations } from "@/lib/i18n";
-import { getFacultyLabel } from "@/lib/profile-utils";
-import UiIcon from "@/components/UiIcon";
-import SearchBar from "@/components/SearchBar";
+import { unifiedSearch } from "@/features/search/server/actions";
+import { getSession } from "@/shared/auth/session";
+import { translations } from "@/shared/i18n/i18n";
+import { getFacultyLabel } from "@/features/profile/server/utils";
+import UiIcon from "@/shared/ui/UiIcon";
+import SearchBar from "@/features/search/components/SearchBar";
 
 export default async function SearchPage({ searchParams }) {
   const session = await getSession();
@@ -112,7 +113,7 @@ export default async function SearchPage({ searchParams }) {
                 >
                   <div className="uf-search-item-avatar">
                     {u.image ? (
-                      <img src={u.image} alt={u.fullName} />
+                      <Image src={u.image} alt={u.fullName} width={44} height={44} />
                     ) : (
                       <span>{u.fullName?.[0] || "U"}</span>
                     )}
@@ -146,7 +147,7 @@ export default async function SearchPage({ searchParams }) {
                   href={`/study-materials?id=${m.id}`}
                   className="uf-search-item"
                 >
-                  <div className="uf-search-item-icon-wrap" style={{ background: "#eef4ff", color: "#0b3aa8" }}>
+                  <div className="uf-search-item-icon-wrap" style={{ background: "var(--french-blue-soft)", color: "var(--french-blue-deep)" }}>
                     <UiIcon name="file" size={20} />
                   </div>
                   <div className="uf-search-item-info">
@@ -177,7 +178,7 @@ export default async function SearchPage({ searchParams }) {
                   href={`/calendar`}
                   className="uf-search-item"
                 >
-                  <div className="uf-search-item-icon-wrap" style={{ background: "#fef3c7", color: "#92400e" }}>
+                  <div className="uf-search-item-icon-wrap" style={{ background: "var(--warning-soft)", color: "#92400e" }}>
                     <UiIcon name="calendar" size={20} />
                   </div>
                   <div className="uf-search-item-info">
@@ -214,7 +215,7 @@ export default async function SearchPage({ searchParams }) {
                 >
                   <div className="uf-search-item-avatar">
                     {c.avatar ? (
-                      <img src={c.avatar} alt={c.name} />
+                      <Image src={c.avatar} alt={c.name} width={44} height={44} />
                     ) : (
                       <span>{c.name?.[0] || "C"}</span>
                     )}
@@ -283,7 +284,7 @@ export default async function SearchPage({ searchParams }) {
                   href={`/library?id=${l.id}`}
                   className="uf-search-item"
                 >
-                  <div className="uf-search-item-icon-wrap" style={{ background: "#ecfdf5", color: "#065f46" }}>
+                  <div className="uf-search-item-icon-wrap" style={{ background: "var(--success-soft)", color: "var(--success)" }}>
                     <UiIcon name="book" size={20} />
                   </div>
                   <div className="uf-search-item-info">
@@ -316,7 +317,7 @@ export default async function SearchPage({ searchParams }) {
                 >
                   <div className="uf-search-item-avatar">
                     {p.authorImage ? (
-                      <img src={p.authorImage} alt={p.authorName} />
+                      <Image src={p.authorImage} alt={p.authorName} width={44} height={44} />
                     ) : (
                       <span>{p.authorName?.[0] || "U"}</span>
                     )}
@@ -345,7 +346,7 @@ export default async function SearchPage({ searchParams }) {
                   className="uf-search-item"
                 >
                   <div className="uf-search-item-thumb">
-                    <img src={p.imageUrl} alt={p.caption || "Photo"} />
+                    <Image src={p.imageUrl} alt={p.caption || "Photo"} width={44} height={44} />
                   </div>
                   <div className="uf-search-item-info">
                     <strong>{p.caption || "Campus moment"}</strong>
@@ -372,7 +373,7 @@ export default async function SearchPage({ searchParams }) {
                 >
                   <div className="uf-search-item-thumb">
                     {a.coverPhotoUrl ? (
-                      <img src={a.coverPhotoUrl} alt={a.title} />
+                      <Image src={a.coverPhotoUrl} alt={a.title} width={44} height={44} />
                     ) : (
                       <span>{a.title?.[0] || "A"}</span>
                     )}

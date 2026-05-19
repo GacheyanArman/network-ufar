@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
-import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
+import { getSession } from "@/shared/auth/session";
+import { db } from "@/shared/db/db";
+import { users } from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
 import OnboardingClient from "./OnboardingClient";
 

@@ -1,34 +1,39 @@
 # Database Migrations
 
-This directory contains SQL migration files for the UFAR Network database.
+This project uses **Drizzle ORM** for database schema management and migrations.
 
-## Migration Files
+## Migration Systems Overview
 
-- `006_add_photo_features.sql` - Adds photo features (likes, saves, tags, comments, moderation)
-- `013_events_hub.sql` - Adds the full Events hub schema (cover images, categories, waitlist, comments, co-organizers, reminders and QR check-in)
+Historically, this project had a mix of manual SQL scripts and Drizzle-generated migrations. We have now consolidated the workflow:
+1. **`src/shared/db/schema.js`** is the absolute source of truth.
+2. **`drizzle/`** contains the official Drizzle-tracked migrations and the meta journal.
+3. **`migrations/`** contains legacy manual SQL migrations, which have been renumbered sequentially (`001` to `013`) for historical reference and seeding.
 
 ## How to Apply Migrations
 
-### Using Drizzle Kit (Recommended)
+### 1. The Drizzle Way (Recommended)
+
+Since the database is actively synced with `schema.js`, the primary method for deploying schema changes is using Drizzle Kit's push command:
 
 ```bash
-npm run db:push
+npx drizzle-kit push
+```
+This command introspects the database and applies all necessary changes to match `schema.js` safely.
+
+If you prefer explicit migration files (for CI/CD):
+```bash
+npx drizzle-kit generate
+npx drizzle-kit migrate
 ```
 
-### Manual Application
+### 2. Manual SQL Scripts (Legacy & Seeding)
 
-If you need to apply migrations manually:
+If you are setting up a fresh database and want to apply the legacy manual scripts (e.g., for seed data), apply them in order:
 
 ```bash
-# Connect to your database
-psql -U your_username -d your_database
-
-# Run the migration
-\i migrations/006_add_photo_features.sql
+psql -U your_username -d your_database -f migrations/001_add_photo_features.sql
+psql -U your_username -d your_database -f migrations/002_campus_moments.sql
+# ... continue through 013_seed_communities.sql
 ```
 
-## Notes
-
-- Always backup your database before applying migrations
-- Migrations should be applied in order
-- The photo features migration adds new tables and columns for the enhanced photo section
+**Note**: Do NOT manually apply these scripts if you are using `drizzle-kit push`, as `schema.js` already contains all schema definitions (including features introduced in these manual migrations). Applying them may cause "relation already exists" errors.

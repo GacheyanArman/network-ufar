@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
-import { getCalendarFeed } from "@/app/actions/calendar";
-import CalendarPageClient from "@/components/CalendarPageClient";
+import { getSession } from "@/shared/auth/session";
+import { getCalendarFeed } from "@/features/courses/server/calendar";
+import CalendarPageClient from "@/features/courses/components/CalendarPageClient";
 
 export const metadata = {
   title: "Calendar | UFAR Network",

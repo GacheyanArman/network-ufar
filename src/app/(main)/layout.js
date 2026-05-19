@@ -1,23 +1,28 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
+import Image from "next/image";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { getSession } from "@/lib/session";
-import { users } from "@/lib/schema";
-import { eq } from "drizzle-orm";
-import { logoutUser } from "@/app/actions/auth";
-import { followUser } from "@/app/actions/follow";
-import { getFacultyLabel } from "@/lib/profile-utils";
+import { getSession } from "@/shared/auth/session";
+import { logoutUser } from "@/features/auth/server/actions";
+import { followUser } from "@/features/profile/server/follow";
+import { getFacultyLabel } from "@/features/profile/server/utils";
 import {
-  getFollowingSummary,
-  getPeopleYouMayKnow,
-} from "@/lib/social";
-import { getTodayBirthdays } from "@/lib/birthdays";
-import { getCachedUserBasicInfo, getCachedUnreadNotifications } from "@/lib/cache";
-import UiIcon from "@/components/UiIcon";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import NavigationMenu from "@/components/NavigationMenu";
-import SearchBar from "@/components/SearchBar";
+  getCachedUserBasicInfo,
+  getCachedUnreadNotifications,
+  getCachedFollowingSummary,
+  getCachedPeopleYouMayKnow,
+} from "@/shared/cache/cache";
+import UiIcon from "@/shared/ui/UiIcon";
+import LanguageSwitcher from "@/shared/ui/LanguageSwitcher";
+import NavigationMenu from "@/shared/ui/NavigationMenu";
+import TopbarSearch from "@/shared/ui/TopbarSearch";
+import TopbarNotifications from "@/shared/ui/TopbarNotifications";
+import RightPanelWidgets from "@/features/dashboard/components/RightPanelWidgets";
+
+// Routes where the right sidebar is intentionally hidden.
+// Keeping this list server-side lets us skip the DB fetches entirely
+// instead of just CSS-hiding the panel after the queries already ran.
+const HIDE_RIGHT_PANEL_PREFIXES = ["/messages", "/group-chats"];
 
 export default async function MainLayout({ children }) {
   const session = await getSession();
@@ -29,32 +34,29 @@ export default async function MainLayout({ children }) {
   const cookieStore = await cookies();
   const lang = cookieStore.get("language")?.value || "en";
 
-  const [obRow] = await db
-    .select({ onboardingComplete: users.onboardingComplete })
-    .from(users)
-    .where(eq(users.id, session.userId))
-    .limit(1);
+  // Derive the current pathname from request headers so we can skip
+  // the right-panel queries on routes where the sidebar is hidden.
+  const headerStore = await headers();
+  const pathname =
+    headerStore.get("x-pathname") ||
+    headerStore.get("next-url") ||
+    "";
+  const showRightPanel = !HIDE_RIGHT_PANEL_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix)
+  );
 
-  if (obRow && !obRow.onboardingComplete) {
-    redirect("/onboarding");
-  }
-
-  let currentUser = null;
-  let unreadNotifications = 0;
-  let followingSummary = { count: 0, users: [] };
-  let peopleYouMayKnow = [];
-  let todayBirthdays = [];
-
-  if (session?.userId) {
-    // Объединяем все запросы в один Promise.all для параллельного выполнения
-    // Используем кэшированные функции для часто запрашиваемых данных
-    [currentUser, unreadNotifications, followingSummary, peopleYouMayKnow, todayBirthdays] = await Promise.all([
+  // Fetch user info + notifications unconditionally; social widget data
+  // only when the right panel will actually be rendered.
+  const [currentUser, unreadNotifications, followingSummary, peopleYouMayKnow] =
+    await Promise.all([
       getCachedUserBasicInfo(session.userId),
       getCachedUnreadNotifications(session.userId),
-      getFollowingSummary(session.userId, 5),
-      getPeopleYouMayKnow(session.userId, 5),
-      getTodayBirthdays(session.userId, 5),
+      showRightPanel ? getCachedFollowingSummary(session.userId, 5) : Promise.resolve({ count: 0, users: [] }),
+      showRightPanel ? getCachedPeopleYouMayKnow(session.userId, 5) : Promise.resolve([]),
     ]);
+
+  if (currentUser && !currentUser.onboardingComplete) {
+    redirect("/onboarding");
   }
 
   const safeName = currentUser?.fullName || session?.fullName || "User";
@@ -72,14 +74,21 @@ export default async function MainLayout({ children }) {
             </Link>
           </div>
 
+          <div className="topbar-actions">
+            <TopbarSearch />
+            <TopbarNotifications unread={unreadNotifications} />
+          </div>
+
           <div className="clean-topbar-profile">
             <LanguageSwitcher />
 
             <Link href="/profile" className="topbar-avatar-link">
               {avatarImage ? (
-                <img
+                <Image
                   src={avatarImage}
                   alt={safeName}
+                  width={42}
+                  height={42}
                   className="topbar-avatar-img"
                 />
               ) : (
@@ -99,162 +108,122 @@ export default async function MainLayout({ children }) {
 
       <div className="app-container">
         <aside className="sidebar-left">
-          <NavigationMenu unreadNotifications={unreadNotifications} />
+          <NavigationMenu userRole={currentUser?.role || "user"} />
         </aside>
 
         <main className="main-content">{children}</main>
 
-        <aside className="sidebar-right">
-          <div className="card contextual-search-card">
-            <SearchBar />
-          </div>
+        {showRightPanel && (
+          <aside className="sidebar-right">
+            <RightPanelWidgets userId={session.userId} />
 
-          <div className="card">
-            <div className="old-widget-head">
-              <h4 className="widget-title">You may also know</h4>
-              <Link href="/friends" className="old-widget-link">
-                View all
-              </Link>
-            </div>
-
-            {peopleYouMayKnow.length === 0 ? (
-              <div className="empty-state-mini">
-                <p>No suggestions.</p>
-              </div>
-            ) : (
-              <div className="mini-user-list">
-                {peopleYouMayKnow.map((user) => (
-                  <div className="mini-user-row" key={user.id}>
-                    <Link
-                      href={`/profile/${user.id}`}
-                      className="mini-user-avatar"
-                      style={{ textDecoration: "none" }}
-                    >
-                      {user.image || user.avatarUrl ? (
-                        <img
-                          src={user.image || user.avatarUrl}
-                          alt={user.fullName}
-                        />
-                      ) : (
-                        user.fullName?.[0] || "U"
-                      )}
-                    </Link>
-
-                    <Link
-                      href={`/profile/${user.id}`}
-                      className="mini-user-main"
-                    >
-                      <strong>{user.fullName}</strong>
-                      <span>{user.reason}</span>
-                    </Link>
-
-                    <form action={followUser}>
-                      <input type="hidden" name="targetId" value={user.id} />
-                      <button className="btn btn-secondary">Follow</button>
-                    </form>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="card" style={{ padding: "0" }}>
-            <div
-              className="old-widget-head"
-              style={{ padding: "8px 8px 0" }}
-            >
-              <h4 className="widget-title" style={{ borderBottom: "none" }}>
-                FOLLOWING
-              </h4>
-              <span className="old-widget-count">
-                {followingSummary.count}
-              </span>
-            </div>
-
-            {followingSummary.users.length === 0 ? (
-              <div className="empty-state-mini" style={{ padding: "8px" }}>
-                <p>You are not following anyone yet.</p>
-              </div>
-            ) : (
-              <div
-                className="mini-user-list"
-                style={{ padding: "0 8px 8px" }}
-              >
-                {followingSummary.users.map((user) => (
-                  <Link
-                    href={`/profile/${user.id}`}
-                    className="mini-user-row mini-user-row-link"
-                    key={user.id}
-                  >
-                    <div className="mini-user-avatar">
-                      {user.image || user.avatarUrl ? (
-                        <img
-                          src={user.image || user.avatarUrl}
-                          alt={user.fullName}
-                        />
-                      ) : (
-                        user.fullName?.[0] || "U"
-                      )}
-                    </div>
-
-                    <div className="mini-user-main">
-                      <strong>{user.fullName}</strong>
-                      <span>
-                        {user.faculty ? getFacultyLabel(user.faculty, lang) : user.username || "Student"}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="uf-birthday-widget">
-            <div className="uf-birthday-head">
-              <div className="uf-birthday-icon">
-                <UiIcon name="cake" size={18} />
+            <div className="card">
+              <div className="old-widget-head">
+                <h4 className="widget-title">You may also know</h4>
+                <Link href="/friends" className="old-widget-link">
+                  View all
+                </Link>
               </div>
 
-              <div>
-                <h4>Birthdays</h4>
-                <p>Today</p>
-              </div>
-            </div>
-
-            {todayBirthdays.length === 0 ? (
-              <div className="uf-birthday-empty">
-                <div className="uf-birthday-empty-icon">
-                  <UiIcon name="calendar" size={20} />
+              {peopleYouMayKnow.length === 0 ? (
+                <div className="empty-state-mini">
+                  <p>No suggestions.</p>
                 </div>
+              ) : (
+                <div className="mini-user-list">
+                  {peopleYouMayKnow.map((user) => (
+                    <div className="mini-user-row" key={user.id}>
+                      <Link
+                        href={`/profile/${user.id}`}
+                        className="mini-user-avatar"
+                        style={{ textDecoration: "none" }}
+                      >
+                        {user.image || user.avatarUrl ? (
+                          <Image
+                            src={user.image || user.avatarUrl}
+                            alt={user.fullName}
+                            width={40}
+                            height={40}
+                          />
+                        ) : (
+                          user.fullName?.[0] || "U"
+                        )}
+                      </Link>
 
-                <p>No birthdays today.</p>
-              </div>
-            ) : (
-              <div className="uf-birthday-list">
-                {todayBirthdays.map((user) => (
-                  <Link
-                    key={user.id}
-                    href={`/profile/${user.id}`}
-                    className="uf-birthday-item"
-                  >
-                    <div className="uf-birthday-avatar">
-                      {user.image ? (
-                        <img src={user.image} alt={user.fullName} />
-                      ) : (
-                        user.fullName?.[0] || "U"
-                      )}
-                    </div>
+                      <Link
+                        href={`/profile/${user.id}`}
+                        className="mini-user-main"
+                      >
+                        <strong>{user.fullName}</strong>
+                        <span>{user.reason}</span>
+                      </Link>
 
-                    <div className="uf-birthday-info">
-                      <strong>{user.fullName}</strong>
-                      <span>🎂 Happy Birthday!</span>
+                      <form action={followUser}>
+                        <input type="hidden" name="targetId" value={user.id} />
+                        <button className="btn btn-secondary">Follow</button>
+                      </form>
                     </div>
-                  </Link>
-                ))}
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="card" style={{ padding: "0" }}>
+              <div
+                className="old-widget-head"
+                style={{ padding: "8px 8px 0" }}
+              >
+                <h4 className="widget-title" style={{ borderBottom: "none" }}>
+                  FOLLOWING
+                </h4>
+                <span className="old-widget-count">
+                  {followingSummary.count}
+                </span>
               </div>
-            )}
-          </div>
-        </aside>
+
+              {followingSummary.users.length === 0 ? (
+                <div className="empty-state-mini" style={{ padding: "8px" }}>
+                  <p>You are not following anyone yet.</p>
+                </div>
+              ) : (
+                <div
+                  className="mini-user-list"
+                  style={{ padding: "0 8px 8px" }}
+                >
+                  {followingSummary.users.map((user) => (
+                    <Link
+                      href={`/profile/${user.id}`}
+                      className="mini-user-row mini-user-row-link"
+                      key={user.id}
+                    >
+                      <div className="mini-user-avatar">
+                        {user.image || user.avatarUrl ? (
+                          <Image
+                            src={user.image || user.avatarUrl}
+                            alt={user.fullName}
+                            width={40}
+                            height={40}
+                          />
+                        ) : (
+                          user.fullName?.[0] || "U"
+                        )}
+                      </div>
+
+                      <div className="mini-user-main">
+                        <strong>{user.fullName}</strong>
+                        <span>
+                          {user.faculty
+                            ? getFacultyLabel(user.faculty, lang)
+                            : user.username || "Student"}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
       </div>
     </>
   );

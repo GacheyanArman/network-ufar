@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
-import { fetchPhotoFeed } from "@/lib/photo-feed";
-import { getUserRole, isStaff } from "@/lib/roles";
-import PhotoFeedCard from "@/components/PhotoFeedCard";
-import UiIcon from "@/components/UiIcon";
+import { getSession } from "@/shared/auth/session";
+import { fetchPhotoFeed } from "@/features/photos/server/queries";
+import { getUserRole, isStaff } from "@/shared/auth/roles";
+import PhotoFeedCard from "@/features/photos/components/PhotoFeedCard";
+import UiIcon from "@/shared/ui/UiIcon";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +57,7 @@ export default async function SavedPhotosPage() {
             gap: 6,
             padding: "8px 14px",
             borderRadius: 999,
-            background: "#fff",
+            background: "var(--bg-card)",
             border: "1px solid var(--border-color-light)",
             color: "var(--text-primary)",
             textDecoration: "none",
@@ -72,7 +72,7 @@ export default async function SavedPhotosPage() {
       {photos.length === 0 ? (
         <div
           style={{
-            background: "#fff",
+            background: "var(--bg-card)",
             border: "1px dashed var(--border-color)",
             borderRadius: 16,
             padding: "40px 16px",

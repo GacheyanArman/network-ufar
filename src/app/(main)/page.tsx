@@ -1,21 +1,24 @@
 import { redirect } from "next/navigation";
-import FeedClient from "@/components/FeedClient";
-import { getRankedFeedPosts } from "@/lib/feed";
-import { getSession } from "@/lib/session";
+import { getSession } from "@/shared/auth/session";
+import { getCachedUserBasicInfo } from "@/shared/cache/cache";
+import TodayDashboard from "@/features/dashboard/components/TodayDashboard";
 
-export default async function Home() {
+export default async function HomePage() {
   const session = await getSession();
-  const userId = session?.userId;
+  const userId = session?.userId as string | undefined;
 
-  if (typeof userId !== "string" || userId.length === 0) {
+  if (!userId) {
     redirect("/login");
   }
 
-  const { currentUser, posts } = await getRankedFeedPosts(userId, 80);
+  // Reuse the cached user info already fetched by the layout — same memo
+  // key, so this is essentially free.
+  const cachedUser = await getCachedUserBasicInfo(userId);
 
-  if (!currentUser) {
-    redirect("/login");
-  }
-
-  return <FeedClient initialPosts={posts} currentUser={currentUser} />;
+  return (
+    <TodayDashboard
+      userId={userId}
+      currentUser={cachedUser}
+    />
+  );
 }

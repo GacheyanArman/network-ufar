@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { groupChats, groupChatMembers } from "@/lib/schema";
-import { getSession } from "@/lib/session";
+import { db } from "@/shared/db/db";
+import { groupChats, groupChatMembers } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 import { eq, or, ilike, sql } from "drizzle-orm";
-import GroupChatsClient from "@/components/GroupChatsClient";
+import GroupChatsClient from "@/features/messages/components/GroupChatsClient";
 
 export default async function GroupChatsPage({ searchParams }) {
   const session = await getSession();

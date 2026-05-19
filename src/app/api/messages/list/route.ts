@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, desc, eq, isNull, lt, or, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db } from "@/shared/db/db";
 import {
   groupChatMembers,
   messageReads,
   messages,
   users,
-} from "@/lib/schema";
-import { getSession } from "@/lib/session";
+} from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 
 export const dynamic = "force-dynamic";
 

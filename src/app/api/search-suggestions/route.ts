@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { users, posts, communities, blockedUsers } from "@/lib/schema";
+import { db } from "@/shared/db/db";
+import { users, posts, communities, blockedUsers } from "@/shared/db/schema";
 import { ilike, or, sql, and, notInArray } from "drizzle-orm";
-import { getSession } from "@/lib/session";
+import { getSession } from "@/shared/auth/session";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();

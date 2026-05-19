@@ -1,15 +1,15 @@
 import { asc, desc, eq, inArray, or, and, ilike, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { messages, users, groupChats, groupChatMembers } from "@/lib/schema";
-import { getSession } from "@/lib/session";
-import MessagesClient from "@/components/MessagesClient";
-import MessagesPageClient from "@/components/MessagesPageClient";
-import MessagesNotificationBridge from "@/components/MessagesNotificationBridge";
-import UiIcon from "@/components/UiIcon";
+import { db } from "@/shared/db/db";
+import { messages, users, groupChats, groupChatMembers } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
+import MessagesClient from "@/features/messages/components/MessagesClient";
+import MessagesPageClient from "@/features/messages/components/MessagesPageClient";
+import MessagesNotificationBridge from "@/features/notifications/components/MessagesNotificationBridge";
+import UiIcon from "@/shared/ui/UiIcon";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { translations } from "@/lib/i18n";
+import { translations } from "@/shared/i18n/i18n";
 
 export default async function MessagesPage({ searchParams }) {
   const session = await getSession();

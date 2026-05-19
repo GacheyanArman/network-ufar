@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { db } from "@/lib/db";
-import { events, users } from "@/lib/schema";
-import { getSession } from "@/lib/session";
+import { db } from "@/shared/db/db";
+import { events, users } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 import { eq } from "drizzle-orm";
-import { checkInWithToken } from "@/app/actions/events";
-import UiIcon from "@/components/UiIcon";
+import { checkInWithToken } from "@/features/events/server/actions";
+import UiIcon from "@/shared/ui/UiIcon";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +69,7 @@ export default async function EventCheckInPage({
     >
       <div
         style={{
-          background: "#fff",
+          background: "var(--bg-card)",
           border: "1px solid var(--border-color)",
           borderRadius: 16,
           padding: 28,
@@ -87,7 +87,7 @@ export default async function EventCheckInPage({
             background: result.success
               ? "rgba(22,163,74,0.1)"
               : "rgba(220,38,38,0.1)",
-            color: result.success ? "#16a34a" : "#dc2626",
+            color: result.success ? "var(--success)" : "var(--danger)",
           }}
         >
           <UiIcon name={result.success ? "check-circle" : "x"} size={34} />
@@ -130,7 +130,7 @@ export default async function EventCheckInPage({
             padding: "10px 18px",
             borderRadius: 10,
             background: "var(--french-blue, #2563eb)",
-            color: "#fff",
+            color: "var(--bg-card)",
             textDecoration: "none",
             fontWeight: 800,
             fontSize: 14,

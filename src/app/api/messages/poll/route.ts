@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { messages } from "@/lib/schema";
-import { getSession } from "@/lib/session";
+import { db } from "@/shared/db/db";
+import { messages } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 import { and, eq, gt, or } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {

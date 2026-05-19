@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { db } from "@/lib/db";
-import { blockedUsers, users } from "@/lib/schema";
-import { getSession } from "@/lib/session";
+import Image from "next/image";
+import { db } from "@/shared/db/db";
+import { blockedUsers, users } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 import { eq } from "drizzle-orm";
-import BlockButton from "@/components/BlockButton";
+import BlockButton from "@/features/profile/components/BlockButton";
 
 export default async function BlockedUsersPage() {
   const session = await getSession();
@@ -34,7 +35,7 @@ export default async function BlockedUsersPage() {
           Blocked Users
         </h1>
         <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "14px" }}>
-          Manage users you've blocked. They can't see your content or interact with you.
+          Manage users you&apos;ve blocked. They can&apos;t see your content or interact with you.
         </p>
       </div>
 
@@ -47,7 +48,7 @@ export default async function BlockedUsersPage() {
             No blocked users
           </h3>
           <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "14px" }}>
-            You haven't blocked anyone yet.
+            You haven&apos;t blocked anyone yet.
           </p>
         </div>
       ) : (
@@ -73,9 +74,11 @@ export default async function BlockedUsersPage() {
                   style={{ textDecoration: "none" }}
                 >
                   {block.blockedUserImage ? (
-                    <img
+                    <Image
                       src={block.blockedUserImage}
                       alt={block.blockedUserName}
+                      width={48}
+                      height={48}
                       style={{
                         width: "48px",
                         height: "48px",

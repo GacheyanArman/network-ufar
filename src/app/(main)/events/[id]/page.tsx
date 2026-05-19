@@ -1,19 +1,20 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect, notFound } from "next/navigation";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { photoAlbums, photos } from "@/lib/schema";
-import { getSession } from "@/lib/session";
-import { fetchPhotoFeed } from "@/lib/photo-feed";
-import { getUserRole, isStaff } from "@/lib/roles";
+import { db } from "@/shared/db/db";
+import { photoAlbums, photos } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
+import { fetchPhotoFeed } from "@/features/photos/server/queries";
+import { getUserRole, isStaff } from "@/shared/auth/roles";
 import {
   getEventDetail,
   getEventAttendees,
   getEventComments,
-} from "@/app/actions/events";
-import UiIcon from "@/components/UiIcon";
-import PhotoFeedCard from "@/components/PhotoFeedCard";
-import EventDetailClient from "@/components/EventDetailClient";
+} from "@/features/events/server/actions";
+import UiIcon from "@/shared/ui/UiIcon";
+import PhotoFeedCard from "@/features/photos/components/PhotoFeedCard";
+import EventDetailClient from "@/features/events/components/EventDetailClient";
 
 export const dynamic = "force-dynamic";
 
@@ -92,7 +93,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
           gap: 6,
           padding: "6px 12px",
           borderRadius: 999,
-          background: "#fff",
+          background: "var(--bg-card)",
           border: "1px solid var(--border-color-light)",
           color: "var(--text-secondary)",
           textDecoration: "none",
@@ -143,18 +144,18 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                   borderRadius: 12,
                   overflow: "hidden",
                   textDecoration: "none",
-                  color: "#fff",
+                  color: "var(--bg-card)",
                   position: "relative",
                   height: 160,
                 }}
               >
                 {a.coverPhotoUrl && (
-                  <img
+                  <Image
                     src={a.coverPhotoUrl}
                     alt=""
+                    fill
+                    sizes="(max-width: 700px) 100vw, 400px"
                     style={{
-                      width: "100%",
-                      height: "100%",
                       objectFit: "cover",
                       opacity: 0.85,
                     }}
@@ -204,7 +205,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
         {eventPhotos.length === 0 ? (
           <div
             style={{
-              background: "#fff",
+              background: "var(--bg-card)",
               border: "1px dashed var(--border-color)",
               borderRadius: 12,
               padding: 20,

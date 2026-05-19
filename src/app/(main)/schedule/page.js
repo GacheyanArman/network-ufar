@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { schedule, users } from "@/lib/schema";
-import { getSession } from "@/lib/session";
+import { db } from "@/shared/db/db";
+import { schedule, users } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 import { eq, or } from "drizzle-orm";
-import ScheduleClient from "@/components/ScheduleClient";
+import { PageShell } from "@/shared/ui/Layout";
+import ScheduleClient from "@/features/courses/components/ScheduleClient";
 
 export default async function SchedulePage() {
   const session = await getSession();
@@ -40,5 +41,9 @@ export default async function SchedulePage() {
     )
     .orderBy(schedule.dayOfWeek, schedule.startTime);
 
-  return <ScheduleClient entries={entries} currentUserId={session.userId} />;
+  return (
+    <PageShell>
+      <ScheduleClient entries={entries} currentUserId={session.userId} />
+    </PageShell>
+  );
 }

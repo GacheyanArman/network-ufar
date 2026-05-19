@@ -1,9 +1,9 @@
 import { desc, eq, and, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { photoAlbums, photos, users, photoLikes, photoSaves, photoComments } from "@/lib/schema";
-import { getSession } from "@/lib/session";
+import { db } from "@/shared/db/db";
+import { photoAlbums, photos, users, photoLikes, photoSaves, photoComments } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 import { redirect, notFound } from "next/navigation";
-import AlbumPageClient from "@/components/AlbumPageClient";
+import AlbumPageClient from "@/features/photos/components/AlbumPageClient";
 
 export default async function AlbumPage({ params }) {
   const session = await getSession();
@@ -46,6 +46,10 @@ export default async function AlbumPage({ params }) {
     .select({
       id: photos.id,
       imageUrl: photos.imageUrl,
+      thumbnailUrl: photos.thumbnailUrl,
+      mediumUrl: photos.mediumUrl,
+      width: photos.width,
+      height: photos.height,
       caption: photos.caption,
       isPrivate: photos.isPrivate,
       viewCount: photos.viewCount,

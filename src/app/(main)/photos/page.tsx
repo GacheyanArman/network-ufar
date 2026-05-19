@@ -1,16 +1,17 @@
 import { redirect } from "next/navigation";
 import { and, eq, gt, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db } from "@/shared/db/db";
 import {
   photoAlbums,
   stories,
   users,
-} from "@/lib/schema";
-import { getSession } from "@/lib/session";
-import { fetchPhotoFeed } from "@/lib/photo-feed";
-import { getActiveStoryAuthors } from "@/app/actions/story";
-import { getUserRole, isStaff } from "@/lib/roles";
-import CampusMomentsFeed from "@/components/CampusMomentsFeed";
+} from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
+import { fetchPhotoFeed } from "@/features/photos/server/queries";
+import { getActiveStoryAuthors } from "@/features/feed/server/story";
+import { getUserRole, isStaff } from "@/shared/auth/roles";
+import CampusMomentsFeed from "@/features/feed/components/CampusMomentsFeed";
+import { PageShell } from "@/shared/ui/Layout";
 
 export const dynamic = "force-dynamic";
 
@@ -55,15 +56,17 @@ export default async function PhotosPage() {
     .where(eq(photoAlbums.ownerId, userId));
 
   return (
-    <CampusMomentsFeed
-      photos={feed}
-      storyAuthors={storyAuthors}
-      hasOwnStory={hasOwnStory}
-      currentUserId={userId}
-      currentUserName={me?.fullName ?? "You"}
-      currentUserAvatar={me?.image ?? null}
-      userAlbums={userAlbums}
-      isStaff={isStaff(role)}
-    />
+    <PageShell variant="narrow">
+      <CampusMomentsFeed
+        photos={feed}
+        storyAuthors={storyAuthors}
+        hasOwnStory={hasOwnStory}
+        currentUserId={userId}
+        currentUserName={me?.fullName ?? "You"}
+        currentUserAvatar={me?.image ?? null}
+        userAlbums={userAlbums}
+        isStaff={isStaff(role)}
+      />
+    </PageShell>
   );
 }

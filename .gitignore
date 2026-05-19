@@ -54,8 +54,10 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
-public/uploads
+public/uploads/**
+!public/uploads/.gitkeep
 .next
 node_modules
 
+.claude/settings.local.json
 .claude

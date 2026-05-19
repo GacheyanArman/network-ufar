@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { desc, eq, or, sql, and, inArray, ilike } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db } from "@/shared/db/db";
 import {
   communities,
   communityMembers,
   communityJoinRequests,
   users,
-} from "@/lib/schema";
-import { getSession } from "@/lib/session";
-import { scoreCommunity } from "@/lib/community";
-import CommunityCard from "@/components/CommunityCard";
-import UiIcon from "@/components/UiIcon";
+} from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
+import { scoreCommunity } from "@/features/communities/server/queries";
+import CommunityCard from "@/features/communities/components/CommunityCard";
+import UiIcon from "@/shared/ui/UiIcon";
 
 export default async function CommunitiesPage({ searchParams }) {
   const session = await getSession();
@@ -71,8 +71,8 @@ export default async function CommunitiesPage({ searchParams }) {
   const joinedArr = Array.from(joinedIds);
 
   const baseWhereClauses = joinedArr.length
-    ? or(eq(communities.isPrivate, false), inArray(communities.id, joinedArr))
-    : eq(communities.isPrivate, false);
+    ? and(or(eq(communities.isPrivate, false), inArray(communities.id, joinedArr)), eq(communities.status, "approved"))
+    : and(eq(communities.isPrivate, false), eq(communities.status, "approved"));
 
   const searchPattern = query ? `%${query}%` : null;
   const whereClause = searchPattern
@@ -206,7 +206,7 @@ export default async function CommunitiesPage({ searchParams }) {
                 border: "1px solid var(--border-color)",
                 borderRadius: 12,
                 fontSize: 15,
-                background: "#ffffff",
+                background: "var(--bg-card)",
               }}
             />
           </div>
@@ -380,7 +380,7 @@ function CategorySection({ title, icon, communities, joinStateFor }) {
         <h3
           style={{
             margin: 0,
-            color: "#ffffff",
+            color: "var(--bg-card)",
             fontSize: 16,
             fontWeight: 900,
           }}
@@ -394,7 +394,7 @@ function CategorySection({ title, icon, communities, joinStateFor }) {
           gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
           gap: 16,
           padding: 20,
-          background: "#ffffff",
+          background: "var(--bg-card)",
           border: "1px solid var(--border-color)",
           borderTop: "none",
           borderRadius: "0 0 16px 16px",

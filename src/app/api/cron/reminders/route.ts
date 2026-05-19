@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@/shared/db/db";
 import {
   academicCalendar,
   eventRsvps,
   events,
   notifications,
   users,
-} from "@/lib/schema";
+} from "@/shared/db/schema";
 import { and, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
-import { sendEmail } from "@/lib/mail";
+import { sendEmail } from "@/shared/mail/mail";
 
 export const dynamic = "force-dynamic";
 

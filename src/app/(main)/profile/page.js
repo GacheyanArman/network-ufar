@@ -1,20 +1,21 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, desc, eq, or, count } from "drizzle-orm";
 
-import { db } from "@/lib/db";
-import { getSession } from "@/lib/session";
-import { users, posts, photos, photoTags, photoSaves, friendships, communities, userFollows } from "@/lib/schema";
-import { deletePost } from "@/app/actions/post";
-import PostComposer from "@/components/PostComposer";
-import ProfilePostsClient from "@/components/ProfilePostsClient";
-import ProfilePhotoTabs from "@/components/ProfilePhotoTabs";
-import UiIcon from "@/components/UiIcon";
-import ProfileInfo from "@/components/ProfileInfo";
-import ProfileAboutInfo from "@/components/ProfileAboutInfo";
-import { getFacultyLabel } from "@/lib/profile-utils";
-import { translations } from "@/lib/i18n";
+import { db } from "@/shared/db/db";
+import { getSession } from "@/shared/auth/session";
+import { users, posts, photos, photoTags, photoSaves, friendships, communities, userFollows } from "@/shared/db/schema";
+import { deletePost } from "@/features/feed/server/actions";
+import PostComposer from "@/features/feed/components/PostComposer";
+import ProfilePostsClient from "@/features/profile/components/ProfilePostsClient";
+import ProfilePhotoTabs from "@/features/profile/components/ProfilePhotoTabs";
+import UiIcon from "@/shared/ui/UiIcon";
+import ProfileInfo from "@/features/profile/components/ProfileInfo";
+import ProfileAboutInfo from "@/features/profile/components/ProfileAboutInfo";
+import { getFacultyLabel } from "@/features/profile/server/utils";
+import { translations } from "@/shared/i18n/i18n";
 
 export default async function ProfilePage({ searchParams }) {
   const session = await getSession();
@@ -45,9 +46,11 @@ export default async function ProfilePage({ searchParams }) {
       bio: users.bio,
       image: users.image,
       coverImage: users.coverImage,
-      gender: users.gender,
-      relationshipStatus: users.relationshipStatus,
-      birthDate: users.birthDate,
+      year: users.year,
+      studyGroup: users.studyGroup,
+      interests: users.interests,
+      languages: users.languages,
+      lookingFor: users.lookingFor,
       createdAt: users.createdAt,
     })
     .from(users)
@@ -100,6 +103,10 @@ export default async function ProfilePage({ searchParams }) {
     .select({
       id: photos.id,
       imageUrl: photos.imageUrl,
+      thumbnailUrl: photos.thumbnailUrl,
+      mediumUrl: photos.mediumUrl,
+      width: photos.width,
+      height: photos.height,
       caption: photos.caption,
       ownerId: photos.ownerId,
       createdAt: photos.createdAt,
@@ -112,6 +119,10 @@ export default async function ProfilePage({ searchParams }) {
     .select({
       id: photos.id,
       imageUrl: photos.imageUrl,
+      thumbnailUrl: photos.thumbnailUrl,
+      mediumUrl: photos.mediumUrl,
+      width: photos.width,
+      height: photos.height,
       caption: photos.caption,
       ownerId: photos.ownerId,
       ownerName: users.fullName,
@@ -215,7 +226,7 @@ export default async function ProfilePage({ searchParams }) {
             <section className="uf-card uf-profile-card">
               <div className="uf-profile-avatar">
                 {avatarImage ? (
-                  <img src={avatarImage} alt={safeName} />
+                  <Image src={avatarImage} alt={safeName} width={106} height={106} />
                 ) : (
                   <span>{safeInitial}</span>
                 )}
@@ -247,9 +258,6 @@ export default async function ProfilePage({ searchParams }) {
               <div className="uf-profile-info">
                 <ProfileInfo
                   email={safeEmail}
-                  gender={currentUser.gender}
-                  relationshipStatus={currentUser.relationshipStatus}
-                  birthDate={currentUser.birthDate}
                   friendsCount={friendsCount}
                   followingCount={followingCount}
                 />
@@ -329,10 +337,11 @@ export default async function ProfilePage({ searchParams }) {
                   <InfoBlock label="Username" value={safeUsername} />
                   <InfoBlock label="Email" value={safeEmail || "No email"} />
                   <InfoBlock label="Faculty" value={safeFaculty} />
-                  <ProfileAboutInfo
-                    gender={currentUser.gender}
-                    relationshipStatus={currentUser.relationshipStatus}
-                  />
+                  {currentUser.year && <InfoBlock label="Year" value={currentUser.year} />}
+                  {currentUser.studyGroup && <InfoBlock label="Study Group" value={currentUser.studyGroup} />}
+                  {currentUser.languages && <InfoBlock label="Languages" value={currentUser.languages} />}
+                  {currentUser.interests && <InfoBlock label="Interests" value={currentUser.interests} />}
+                  {currentUser.lookingFor && <InfoBlock label="Looking For" value={currentUser.lookingFor} />}
                   <InfoBlock label="Joined" value={joinedAt} />
                 </div>
               </section>

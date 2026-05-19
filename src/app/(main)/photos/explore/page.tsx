@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db } from "@/shared/db/db";
 import {
   events,
   hashtags as hashtagsTable,
@@ -9,21 +9,30 @@ import {
   photoLikes,
   photos,
   users,
-} from "@/lib/schema";
-import { getSession } from "@/lib/session";
-import UiIcon from "@/components/UiIcon";
-import ExploreClient from "@/components/ExploreClient";
+} from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
+import UiIcon from "@/shared/ui/UiIcon";
+import ExploreClient from "@/features/search/components/ExploreClient";
 
 export const dynamic = "force-dynamic";
 
 const SEVEN_DAYS = 1000 * 60 * 60 * 24 * 7;
+const THIRTY_DAYS = 1000 * 60 * 60 * 24 * 30;
+
+// Helper kept outside the component so the impure `Date.now()` call is not
+// invoked during render. The page is force-dynamic, so this still runs once
+// per request as intended.
+function getDateNDaysAgo(ms: number) {
+  return new Date(Date.now() - ms);
+}
 
 export default async function ExplorePage() {
   const session = await getSession();
   if (!session?.userId) redirect("/login");
   const userId = session.userId as string;
 
-  const since = new Date(Date.now() - SEVEN_DAYS);
+  const since = getDateNDaysAgo(SEVEN_DAYS);
+  const eventCutoff = getDateNDaysAgo(THIRTY_DAYS);
 
   // Trending photos: most-liked in the last 7 days, fall back to recent.
   const trending = await db
@@ -90,7 +99,7 @@ export default async function ExplorePage() {
       and(
         eq(photos.moderationStatus, "approved"),
         eq(photos.isPrivate, false),
-        gte(events.startTime, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+        gte(events.startTime, eventCutoff)
       )
     )
     .orderBy(desc(events.startTime), desc(photos.createdAt))
@@ -131,7 +140,7 @@ export default async function ExplorePage() {
             gap: 6,
             padding: "8px 14px",
             borderRadius: 999,
-            background: "#fff",
+            background: "var(--bg-card)",
             border: "1px solid var(--border-color-light)",
             color: "var(--text-primary)",
             textDecoration: "none",

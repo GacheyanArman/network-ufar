@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
-import { getMaterials, getOpenMaterialRequests } from "@/app/actions/materials";
-import MaterialsPageClient from "@/components/MaterialsPageClient";
+import { getSession } from "@/shared/auth/session";
+import { getMaterials, getOpenMaterialRequests } from "@/features/materials/server/actions";
+import { PageShell } from "@/shared/ui/Layout";
+import MaterialsPageClient from "@/features/materials/components/MaterialsPageClient";
 
 export const metadata = {
   title: "Study Materials | UFAR Network",
@@ -23,10 +24,12 @@ export default async function MaterialsPage() {
   ]);
 
   return (
-    <MaterialsPageClient
-      materials={materials}
-      openRequests={openRequests}
-      currentUserId={session.userId as string}
-    />
+    <PageShell>
+      <MaterialsPageClient
+        materials={materials}
+        openRequests={openRequests}
+        currentUserId={session.userId as string}
+      />
+    </PageShell>
   );
 }

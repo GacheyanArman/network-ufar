@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
-import { getSession } from "@/lib/session";
-import { markOnline, getOnlineUsers, isOnlineNow } from "@/lib/realtime";
+import { db } from "@/shared/db/db";
+import { users } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
+import { markOnline, getOnlineUsers, isOnlineNow } from "@/shared/realtime/realtime";
 
 export const dynamic = "force-dynamic";
 

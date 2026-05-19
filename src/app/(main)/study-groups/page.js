@@ -1,18 +1,19 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { desc, eq, sql, and, ilike, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { studyGroups, studyGroupMembers, users } from "@/lib/schema";
-import { getSession } from "@/lib/session";
-import { translations } from "@/lib/i18n";
-import { getFacultyLabel } from "@/lib/profile-utils";
+import { db } from "@/shared/db/db";
+import { studyGroups, studyGroupMembers, users } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
+import { translations } from "@/shared/i18n/i18n";
+import { getFacultyLabel } from "@/features/profile/server/utils";
 import {
   joinStudyGroup,
   leaveStudyGroup,
   deleteStudyGroup,
-} from "@/app/actions/study-groups";
-import UiIcon from "@/components/UiIcon";
+} from "@/features/study-groups/server/actions";
+import UiIcon from "@/shared/ui/UiIcon";
 
 export default async function StudyGroupsPage({ searchParams }) {
   const session = await getSession();
@@ -164,7 +165,7 @@ export default async function StudyGroupsPage({ searchParams }) {
                 <div className="uf-sg-card-footer">
                   <div className="uf-sg-card-owner">
                     {g.ownerImage ? (
-                      <img src={g.ownerImage} alt={g.ownerName} className="uf-sg-owner-avatar" />
+                      <Image src={g.ownerImage} alt={g.ownerName} width={24} height={24} className="uf-sg-owner-avatar" />
                     ) : (
                       <span className="uf-sg-owner-avatar uf-sg-owner-avatar--fallback">
                         {g.ownerName?.[0] || "U"}

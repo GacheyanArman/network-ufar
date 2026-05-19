@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { db } from "@/shared/db/db";
 import { 
   libraryResources, 
   libraryReadingLists, 
   libraryReadingListItems,
   librarySavedResources,
   users 
-} from "@/lib/schema";
-import { getSession } from "@/lib/session";
+} from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 import { eq, desc } from "drizzle-orm";
-import LibraryPageClient from "@/components/LibraryPageClient";
+import LibraryPageClient from "@/features/library/components/LibraryPageClient";
 
 export const metadata = {
   title: "UFAR Library | Network",

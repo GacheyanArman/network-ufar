@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { groupChatMembers } from "@/lib/schema";
-import { getSession } from "@/lib/session";
+import { db } from "@/shared/db/db";
+import { groupChatMembers } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
 import {
   RealtimeEvent,
   dmChannel,
@@ -10,7 +10,7 @@ import {
   markOnline,
   subscribe,
   userChannel,
-} from "@/lib/realtime";
+} from "@/shared/realtime/realtime";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

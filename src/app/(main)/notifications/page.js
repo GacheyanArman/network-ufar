@@ -1,18 +1,19 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { desc, eq, and } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { notifications, users } from "@/lib/schema";
-import { getSession } from "@/lib/session";
-import { getNotificationPreferences } from "@/lib/notifications";
-import { translations } from "@/lib/i18n";
+import { db } from "@/shared/db/db";
+import { notifications, users } from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
+import { getNotificationPreferences } from "@/features/notifications/server/queries";
+import { translations } from "@/shared/i18n/i18n";
 import {
   markAllNotificationsRead,
   markNotificationRead,
-} from "@/app/actions/notifications";
-import NotificationControls from "@/components/NotificationControls";
-import UiIcon from "@/components/UiIcon";
+} from "@/features/notifications/server/actions";
+import NotificationControls from "@/features/notifications/components/NotificationControls";
+import UiIcon from "@/shared/ui/UiIcon";
 
 const TYPE_ICON = {
   like: "heart",
@@ -29,17 +30,17 @@ const TYPE_ICON = {
 };
 
 const TYPE_COLOR = {
-  like: "#e11d48",
-  comment: "#0b3aa8",
-  friend_request: "#7c3aed",
-  friend_accept: "#059669",
-  message: "#0b3aa8",
-  reminder: "#d97706",
-  material_approved: "#059669",
-  photo_approved: "#059669",
-  event_new: "#7c3aed",
-  deadline: "#dc2626",
-  group_join: "#0b3aa8",
+  like: "var(--danger)",
+  comment: "var(--french-blue-deep)",
+  friend_request: "var(--purple)",
+  friend_accept: "var(--success)",
+  message: "var(--french-blue-deep)",
+  reminder: "var(--warning)",
+  material_approved: "var(--success)",
+  photo_approved: "var(--success)",
+  event_new: "var(--purple)",
+  deadline: "var(--danger)",
+  group_join: "var(--french-blue-deep)",
 };
 
 function formatTime(value) {
@@ -165,7 +166,7 @@ function NotificationItem({ item, t, lang }) {
   const actorInitial = actorName.charAt(0).toUpperCase() || "S";
   const actorHref = item.actorId ? `/profile/${item.actorId}` : null;
   const iconName = TYPE_ICON[item.type] || "bell";
-  const iconColor = TYPE_COLOR[item.type] || "#64748b";
+  const iconColor = TYPE_COLOR[item.type] || "var(--text-secondary)";
   const label = t.types?.[item.type] || item.type;
   const isSystem = !item.actorId;
 
@@ -248,7 +249,7 @@ function NotificationAvatar({ image, initial, iconName, iconColor, isSystem }) {
   return (
     <div className="uf-notification-avatar-wrap">
       {image ? (
-        <img src={image} alt="" className="uf-notification-avatar" />
+        <Image src={image} alt="" width={48} height={48} className="uf-notification-avatar" />
       ) : (
         <div
           className={`uf-notification-avatar uf-notification-avatar-fallback ${isSystem ? "is-system" : ""}`}
@@ -262,7 +263,7 @@ function NotificationAvatar({ image, initial, iconName, iconColor, isSystem }) {
       )}
       <span
         className="uf-notification-type-icon"
-        style={{ color: iconColor, background: "#fff" }}
+        style={{ color: iconColor, background: "var(--bg-card)" }}
       >
         <UiIcon name={iconName} size={11} />
       </span>

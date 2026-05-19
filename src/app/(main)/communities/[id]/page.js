@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { db } from "@/lib/db";
+import Image from "next/image";
+import { db } from "@/shared/db/db";
 import {
   communities,
   communityMembers,
@@ -9,16 +10,16 @@ import {
   postLikes,
   comments,
   users,
-} from "@/lib/schema";
-import { getSession } from "@/lib/session";
-import { getCommunityContext, COMMUNITY_TABS, resolveTab } from "@/lib/community";
+} from "@/shared/db/schema";
+import { getSession } from "@/shared/auth/session";
+import { getCommunityContext, COMMUNITY_TABS, resolveTab } from "@/features/communities/server/queries";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import CommunityPostComposer from "@/components/CommunityPostComposer";
-import CommunityPostCard from "@/components/CommunityPostCard";
-import CommunityTabs from "@/components/CommunityTabs";
-import CommunityJoinButton from "@/components/CommunityJoinButton";
-import CommunityMembersPanel from "@/components/CommunityMembersPanel";
-import UiIcon from "@/components/UiIcon";
+import CommunityPostComposer from "@/features/communities/components/CommunityPostComposer";
+import CommunityPostCard from "@/features/communities/components/CommunityPostCard";
+import CommunityTabs from "@/features/communities/components/CommunityTabs";
+import CommunityJoinButton from "@/features/communities/components/CommunityJoinButton";
+import CommunityMembersPanel from "@/features/communities/components/CommunityMembersPanel";
+import UiIcon from "@/shared/ui/UiIcon";
 
 export default async function CommunityDetailPage({ params, searchParams }) {
   const session = await getSession();
@@ -47,7 +48,7 @@ export default async function CommunityDetailPage({ params, searchParams }) {
     })
     .from(communities)
     .leftJoin(communityMembers, eq(communities.id, communityMembers.communityId))
-    .where(eq(communities.id, id))
+    .where(and(eq(communities.id, id), eq(communities.status, "approved")))
     .groupBy(communities.id)
     .limit(1);
 
@@ -265,7 +266,7 @@ export default async function CommunityDetailPage({ params, searchParams }) {
         <div className="uf-community-top">
           <div className="uf-community-avatar">
             {communityRow.avatar ? (
-              <img src={communityRow.avatar} alt={communityRow.name} />
+              <Image src={communityRow.avatar} alt={communityRow.name} width={96} height={96} />
             ) : (
               initial
             )}
@@ -528,9 +529,11 @@ function Avatar({ name, src }) {
       style={{ borderRadius: 999 }}
     >
       {src ? (
-        <img
+        <Image
           src={src}
           alt={name || ""}
+          width={40}
+          height={40}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       ) : (

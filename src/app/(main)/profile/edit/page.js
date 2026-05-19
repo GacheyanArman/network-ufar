@@ -1,9 +1,9 @@
-import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
+import { db } from "@/shared/db/db";
+import { users } from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
-import { getSession } from "@/lib/session";
+import { getSession } from "@/shared/auth/session";
 import { redirect } from "next/navigation";
-import ProfileEditForm from "@/components/ProfileEditForm";
+import ProfileEditForm from "@/features/profile/components/ProfileEditForm";
 
 export default async function EditProfilePage({ searchParams }) {
   const session = await getSession();

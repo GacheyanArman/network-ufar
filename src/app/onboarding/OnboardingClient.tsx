@@ -2,8 +2,8 @@
 
 import { useState, useActionState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import UiIcon from "@/components/UiIcon";
-import { completeOnboarding } from "@/app/actions/onboarding";
+import UiIcon from "@/shared/ui/UiIcon";
+import { completeOnboarding } from "@/features/auth/server/onboarding";
 
 function interpolate(
   template: string,
@@ -27,7 +27,7 @@ type Props = {
   initialLookingFor: string;
 };
 
-const STEPS = ["faculty", "year", "group", "gender", "relationshipStatus", "birthDate", "interests", "languages", "lookingFor"] as const;
+const STEPS = ["faculty", "program", "year", "courses", "group", "interests", "languages", "lookingFor"] as const;
 
 export default function OnboardingClient({
   initialFaculty,
@@ -43,7 +43,9 @@ export default function OnboardingClient({
   const { t } = useLanguage();
   const [step, setStep] = useState(0);
   const [faculty, setFaculty] = useState(initialFaculty);
+  const [program, setProgram] = useState("");
   const [year, setYear] = useState(initialYear);
+  const [courses, setCourses] = useState("");
   const [studyGroup, setStudyGroup] = useState(initialGroup);
   const [gender, setGender] = useState(initialGender);
   const [relationshipStatus, setRelationshipStatus] = useState(initialRelationshipStatus);
@@ -66,10 +68,9 @@ export default function OnboardingClient({
 
   const canNext = () => {
     if (currentKey === "faculty") return faculty.length > 0;
+    if (currentKey === "program") return program.length > 0;
     if (currentKey === "year") return year.length > 0;
-    if (currentKey === "gender") return gender.length > 0;
-    if (currentKey === "relationshipStatus") return relationshipStatus.length > 0;
-    if (currentKey === "birthDate") return birthDate.length > 0;
+    if (currentKey === "courses") return courses.length > 0;
     return true;
   };
 
@@ -83,7 +84,9 @@ export default function OnboardingClient({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     const fd = new FormData(e.currentTarget);
     fd.set("faculty", faculty);
+    fd.set("program", program);
     fd.set("year", year);
+    fd.set("courses", courses);
     fd.set("studyGroup", studyGroup);
     fd.set("interests", Array.from(interestsSet).join(","));
     fd.set("languages", Array.from(langsSet).join(","));
@@ -121,7 +124,7 @@ export default function OnboardingClient({
               width: 56,
               height: 56,
               borderRadius: 16,
-              background: "#0b3aa8",
+              background: "var(--french-blue-deep)",
               color: "white",
               display: "flex",
               alignItems: "center",
@@ -139,7 +142,7 @@ export default function OnboardingClient({
               margin: 0,
               fontSize: "1.5rem",
               fontWeight: 900,
-              color: "#0f172a",
+              color: "var(--text-primary)",
             }}
           >
             {t("onboarding.welcome")}
@@ -147,7 +150,7 @@ export default function OnboardingClient({
           <p
             style={{
               margin: "6px 0 0",
-              color: "#64748b",
+              color: "var(--text-secondary)",
               fontSize: "0.92rem",
             }}
           >
@@ -159,7 +162,7 @@ export default function OnboardingClient({
         <div
           style={{
             height: 4,
-            background: "#e2e8f0",
+            background: "var(--border-color)",
             borderRadius: 4,
             marginBottom: 24,
             overflow: "hidden",
@@ -169,7 +172,7 @@ export default function OnboardingClient({
             style={{
               width: `${progress}%`,
               height: "100%",
-              background: "#0b3aa8",
+              background: "var(--french-blue-deep)",
               borderRadius: 4,
               transition: "width 0.3s ease",
             }}
@@ -181,7 +184,7 @@ export default function OnboardingClient({
           style={{
             fontSize: "0.78rem",
             fontWeight: 800,
-            color: "#64748b",
+            color: "var(--text-secondary)",
             textAlign: "center",
             marginBottom: 16,
           }}
@@ -194,7 +197,7 @@ export default function OnboardingClient({
           onSubmit={handleSubmit}
           action={formAction}
           style={{
-            background: "#ffffff",
+            background: "var(--bg-card)",
             border: "1px solid #e5e7eb",
             borderRadius: 22,
             padding: "28px 26px",
@@ -207,7 +210,7 @@ export default function OnboardingClient({
                 color: "#b42318",
                 fontSize: "0.85rem",
                 textAlign: "center",
-                background: "#fef3f2",
+                background: "var(--danger-soft)",
                 border: "1px solid #fecdca",
                 padding: 10,
                 borderRadius: 12,
@@ -220,7 +223,9 @@ export default function OnboardingClient({
 
           {/* Hidden fields for all data */}
           <input type="hidden" name="faculty" value={faculty} />
+          <input type="hidden" name="program" value={program} />
           <input type="hidden" name="year" value={year} />
+          <input type="hidden" name="courses" value={courses} />
           <input type="hidden" name="studyGroup" value={studyGroup} />
           <input type="hidden" name="gender" value={gender} />
           <input type="hidden" name="relationshipStatus" value={relationshipStatus} />
@@ -232,21 +237,19 @@ export default function OnboardingClient({
           {currentKey === "faculty" && (
             <StepFaculty faculty={faculty} setFaculty={setFaculty} />
           )}
+          {currentKey === "program" && (
+            <StepProgram program={program} setProgram={setProgram} />
+          )}
           {currentKey === "year" && (
             <StepYear year={year} setYear={setYear} />
+          )}
+          {currentKey === "courses" && (
+            <StepCourses courses={courses} setCourses={setCourses} />
           )}
           {currentKey === "group" && (
             <StepGroup group={studyGroup} setGroup={setStudyGroup} />
           )}
-          {currentKey === "gender" && (
-            <StepGender gender={gender} setGender={setGender} />
-          )}
-          {currentKey === "relationshipStatus" && (
-            <StepRelationship value={relationshipStatus} setValue={setRelationshipStatus} />
-          )}
-          {currentKey === "birthDate" && (
-            <StepBirthDate value={birthDate} setValue={setBirthDate} />
-          )}
+
           {currentKey === "interests" && (
             <StepChips
               title={t("onboarding.interests.title")}
@@ -305,8 +308,8 @@ export default function OnboardingClient({
                   padding: "12px 20px",
                   borderRadius: 12,
                   border: "1px solid #e2e8f0",
-                  background: "#fff",
-                  color: "#334155",
+                  background: "var(--bg-card)",
+                  color: "var(--text-primary)",
                   fontWeight: 800,
                   fontSize: "0.9rem",
                   cursor: "pointer",
@@ -324,7 +327,7 @@ export default function OnboardingClient({
                   padding: "12px 24px",
                   borderRadius: 12,
                   border: "none",
-                  background: canNext() ? "#0b3aa8" : "#94a3b8",
+                  background: canNext() ? "var(--french-blue-deep)" : "var(--text-muted)",
                   color: "white",
                   fontWeight: 800,
                   fontSize: "0.9rem",
@@ -344,7 +347,7 @@ export default function OnboardingClient({
                   padding: "12px 24px",
                   borderRadius: 12,
                   border: "none",
-                  background: isPending ? "#94a3b8" : "#0b3aa8",
+                  background: isPending ? "var(--text-muted)" : "var(--french-blue-deep)",
                   color: "white",
                   fontWeight: 800,
                   fontSize: "0.9rem",
@@ -383,14 +386,14 @@ function StepFaculty({
           margin: "0 0 6px",
           fontSize: "1.15rem",
           fontWeight: 900,
-          color: "#0f172a",
+          color: "var(--text-primary)",
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <UiIcon name="graduation" size={20} /> {t("onboarding.faculty.title")}
         </span>
       </h2>
-      <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: "0.88rem" }}>
+      <p style={{ margin: "0 0 14px", color: "var(--text-secondary)", fontSize: "0.88rem" }}>
         {t("onboarding.faculty.placeholder")}
       </p>
       <div
@@ -410,9 +413,9 @@ function StepFaculty({
               style={{
                 borderRadius: 10,
                 padding: "10px 12px",
-                border: `1px solid ${active ? "#0b3aa8" : "#e2e8f0"}`,
-                background: active ? "#eef3ff" : "#fff",
-                color: active ? "#0b3aa8" : "#334155",
+                border: `1px solid ${active ? "var(--french-blue-deep)" : "var(--border-color)"}`,
+                background: active ? "var(--french-blue-soft)" : "var(--bg-card)",
+                color: active ? "var(--french-blue-deep)" : "var(--text-primary)",
                 fontWeight: 700,
                 cursor: "pointer",
                 fontSize: "0.85rem",
@@ -420,6 +423,67 @@ function StepFaculty({
               }}
             >
               {t(`onboarding.faculty.${opt}`)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StepProgram({
+  program,
+  setProgram,
+}: {
+  program: string;
+  setProgram: (v: string) => void;
+}) {
+  const { t } = useLanguage();
+  const options = ["Bachelor", "Master", "PhD", "Exchange"];
+  return (
+    <div>
+      <h2
+        style={{
+          margin: "0 0 6px",
+          fontSize: "1.15rem",
+          fontWeight: 900,
+          color: "var(--text-primary)",
+        }}
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <UiIcon name="book" size={20} /> Program / Degree
+        </span>
+      </h2>
+      <p style={{ margin: "0 0 14px", color: "var(--text-secondary)", fontSize: "0.88rem" }}>
+        Select your degree level.
+      </p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+          gap: 6,
+        }}
+      >
+        {options.map((opt) => {
+          const active = program === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => setProgram(opt)}
+              style={{
+                borderRadius: 10,
+                padding: "10px 12px",
+                border: `1px solid ${active ? "var(--french-blue-deep)" : "var(--border-color)"}`,
+                background: active ? "var(--french-blue-soft)" : "var(--bg-card)",
+                color: active ? "var(--french-blue-deep)" : "var(--text-primary)",
+                fontWeight: 700,
+                cursor: "pointer",
+                fontSize: "0.85rem",
+                textAlign: "left",
+              }}
+            >
+              {opt}
             </button>
           );
         })}
@@ -444,7 +508,7 @@ function StepYear({
           margin: "0 0 6px",
           fontSize: "1.15rem",
           fontWeight: 900,
-          color: "#0f172a",
+          color: "var(--text-primary)",
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -469,9 +533,9 @@ function StepYear({
               style={{
                 borderRadius: 10,
                 padding: "12px 10px",
-                border: `1px solid ${active ? "#0b3aa8" : "#e2e8f0"}`,
-                background: active ? "#eef3ff" : "#fff",
-                color: active ? "#0b3aa8" : "#334155",
+                border: `1px solid ${active ? "var(--french-blue-deep)" : "var(--border-color)"}`,
+                background: active ? "var(--french-blue-soft)" : "var(--bg-card)",
+                color: active ? "var(--french-blue-deep)" : "var(--text-primary)",
                 fontWeight: 700,
                 cursor: "pointer",
                 fontSize: "0.85rem",
@@ -483,6 +547,52 @@ function StepYear({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function StepCourses({
+  courses,
+  setCourses,
+}: {
+  courses: string;
+  setCourses: (v: string) => void;
+}) {
+  const { t } = useLanguage();
+  return (
+    <div>
+      <h2
+        style={{
+          margin: "0 0 6px",
+          fontSize: "1.15rem",
+          fontWeight: 900,
+          color: "var(--text-primary)",
+        }}
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <UiIcon name="layers" size={20} /> Enrolled Courses
+        </span>
+      </h2>
+      <p style={{ margin: "0 0 14px", color: "var(--text-secondary)", fontSize: "0.82rem" }}>
+        Enter the names or codes of the courses you are taking this semester (comma-separated).
+      </p>
+      <input
+        value={courses}
+        onChange={(e) => setCourses(e.target.value)}
+        placeholder="e.g. Intro to CS, Math 101, Physics"
+        style={{
+          width: "100%",
+          height: 46,
+          boxSizing: "border-box",
+          border: "1px solid #cbd5e1",
+          borderRadius: 12,
+          padding: "0 14px",
+          fontSize: "0.95rem",
+          outline: "none",
+          background: "var(--bg-soft)",
+          color: "var(--text-primary)",
+        }}
+      />
     </div>
   );
 }
@@ -502,14 +612,14 @@ function StepGroup({
           margin: "0 0 6px",
           fontSize: "1.15rem",
           fontWeight: 900,
-          color: "#0f172a",
+          color: "var(--text-primary)",
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <UiIcon name="users" size={20} /> {t("onboarding.group.title")}
         </span>
       </h2>
-      <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: "0.82rem" }}>
+      <p style={{ margin: "0 0 14px", color: "var(--text-secondary)", fontSize: "0.82rem" }}>
         {t("onboarding.group.hint")}
       </p>
       <input
@@ -525,8 +635,8 @@ function StepGroup({
           padding: "0 14px",
           fontSize: "0.95rem",
           outline: "none",
-          background: "#f8fafc",
-          color: "#0f172a",
+          background: "var(--bg-soft)",
+          color: "var(--text-primary)",
         }}
       />
     </div>
@@ -544,7 +654,7 @@ function StepGender({
   const options = ["male", "female", "other", "prefer_not_to_say"];
   return (
     <div>
-      <h2 style={{ margin: "0 0 6px", fontSize: "1.15rem", fontWeight: 900, color: "#0f172a" }}>
+      <h2 style={{ margin: "0 0 6px", fontSize: "1.15rem", fontWeight: 900, color: "var(--text-primary)" }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <UiIcon name="user" size={20} /> {t("onboarding.gender.title")}
         </span>
@@ -560,9 +670,9 @@ function StepGender({
               style={{
                 borderRadius: 10,
                 padding: "12px 10px",
-                border: `1px solid ${active ? "#0b3aa8" : "#e2e8f0"}`,
-                background: active ? "#eef3ff" : "#fff",
-                color: active ? "#0b3aa8" : "#334155",
+                border: `1px solid ${active ? "var(--french-blue-deep)" : "var(--border-color)"}`,
+                background: active ? "var(--french-blue-soft)" : "var(--bg-card)",
+                color: active ? "var(--french-blue-deep)" : "var(--text-primary)",
                 fontWeight: 700,
                 cursor: "pointer",
                 fontSize: "0.85rem",
@@ -589,7 +699,7 @@ function StepRelationship({
   const options = ["single", "in_relationship", "complicated", "prefer_not_to_say"];
   return (
     <div>
-      <h2 style={{ margin: "0 0 6px", fontSize: "1.15rem", fontWeight: 900, color: "#0f172a" }}>
+      <h2 style={{ margin: "0 0 6px", fontSize: "1.15rem", fontWeight: 900, color: "var(--text-primary)" }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <UiIcon name="heart" size={20} /> {t("onboarding.relationship.title")}
         </span>
@@ -605,9 +715,9 @@ function StepRelationship({
               style={{
                 borderRadius: 10,
                 padding: "12px 10px",
-                border: `1px solid ${active ? "#0b3aa8" : "#e2e8f0"}`,
-                background: active ? "#eef3ff" : "#fff",
-                color: active ? "#0b3aa8" : "#334155",
+                border: `1px solid ${active ? "var(--french-blue-deep)" : "var(--border-color)"}`,
+                background: active ? "var(--french-blue-soft)" : "var(--bg-card)",
+                color: active ? "var(--french-blue-deep)" : "var(--text-primary)",
                 fontWeight: 700,
                 cursor: "pointer",
                 fontSize: "0.85rem",
@@ -633,12 +743,12 @@ function StepBirthDate({
   const { t } = useLanguage();
   return (
     <div>
-      <h2 style={{ margin: "0 0 6px", fontSize: "1.15rem", fontWeight: 900, color: "#0f172a" }}>
+      <h2 style={{ margin: "0 0 6px", fontSize: "1.15rem", fontWeight: 900, color: "var(--text-primary)" }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <UiIcon name="calendar" size={20} /> {t("onboarding.birthDate.title")}
         </span>
       </h2>
-      <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: "0.82rem" }}>
+      <p style={{ margin: "0 0 14px", color: "var(--text-secondary)", fontSize: "0.82rem" }}>
         {t("onboarding.birthDate.hint")}
       </p>
       <input
@@ -656,8 +766,8 @@ function StepBirthDate({
           padding: "0 14px",
           fontSize: "0.95rem",
           outline: "none",
-          background: "#f8fafc",
-          color: "#0f172a",
+          background: "var(--bg-soft)",
+          color: "var(--text-primary)",
         }}
       />
     </div>
@@ -687,12 +797,12 @@ function StepChips({
           margin: "0 0 4px",
           fontSize: "1.15rem",
           fontWeight: 900,
-          color: "#0f172a",
+          color: "var(--text-primary)",
         }}
       >
         {title}
       </h2>
-      <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: "0.82rem" }}>
+      <p style={{ margin: "0 0 14px", color: "var(--text-secondary)", fontSize: "0.82rem" }}>
         {hint}
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -706,9 +816,9 @@ function StepChips({
               style={{
                 borderRadius: 999,
                 padding: "8px 14px",
-                border: `1px solid ${active ? "#0b3aa8" : "#e2e8f0"}`,
-                background: active ? "#eef3ff" : "#fff",
-                color: active ? "#0b3aa8" : "#334155",
+                border: `1px solid ${active ? "var(--french-blue-deep)" : "var(--border-color)"}`,
+                background: active ? "var(--french-blue-soft)" : "var(--bg-card)",
+                color: active ? "var(--french-blue-deep)" : "var(--text-primary)",
                 fontWeight: 700,
                 cursor: "pointer",
                 fontSize: "0.85rem",

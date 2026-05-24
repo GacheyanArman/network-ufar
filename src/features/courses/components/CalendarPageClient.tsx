@@ -415,9 +415,10 @@ export default function CalendarPageClient({
                 setEditing(null);
                 setCreating(true);
               }}
-              style={btnStyle()}
+              style={btnStyle({ display: "inline-flex", alignItems: "center", gap: 6 })}
             >
-              + New entry
+              <UiIcon name="plus" size={14} />
+              New entry
             </button>
             <button
               type="button"

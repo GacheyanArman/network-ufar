@@ -162,10 +162,10 @@ export default function LibraryPageClient({
         </div>
 
         {/* Quick Access */}
-        <div style={{ display: "flex", gap: "10px", marginTop: "20px", overflowX: "auto", paddingBottom: "4px" }}>
+        <div className="library-quick-access" style={{ display: "flex", gap: "10px", marginTop: "20px", overflowX: "auto", paddingBottom: "16px" }}>
           {["Library Hours", "Library Rules", "Digital Resources", "Research Help", "Erasmus Resources"].map(link => (
-            <div key={link} style={{ 
-              background: "var(--french-blue-soft)", color: "var(--french-navy)", 
+            <div key={link} style={{
+              background: "var(--french-blue-soft)", color: "var(--french-navy)",
               padding: "8px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: 800,
               whiteSpace: "nowrap", cursor: "pointer"
             }}>
@@ -173,6 +173,22 @@ export default function LibraryPageClient({
             </div>
           ))}
         </div>
+        <style jsx>{`
+          .library-quick-access::-webkit-scrollbar {
+            height: 6px;
+          }
+          .library-quick-access::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 999px;
+          }
+          .library-quick-access::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .library-quick-access {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+          }
+        `}</style>
 
         {/* Search & Filters */}
         <div style={{ display: "flex", gap: "10px", marginTop: "18px", flexWrap: "wrap" }}>

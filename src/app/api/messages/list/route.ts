@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
   // "seen by N" tooltips.
   let receipts: Record<string, string[]> = {};
   if (groupId && page.length > 0) {
-    const ids = page.map((m) => m.id);
+    const ids = page.map((m: any) => m.id);
     const reads = await db
       .select({
         messageId: messageReads.messageId,
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    messages: page.map((m) => ({
+    messages: page.map((m: any) => ({
       ...m,
       createdAt: m.createdAt.toISOString(),
       editedAt: m.editedAt ? m.editedAt.toISOString() : null,

@@ -63,9 +63,9 @@ export async function GET(req: Request) {
     if (!entry.reminderOffsets) continue;
     const offsets = entry.reminderOffsets
       .split(",")
-      .map((x) => Number(x.trim()))
-      .filter((n) => Number.isFinite(n) && n >= 0)
-      .sort((a, b) => b - a); // largest offset first
+      .map((x: string) => Number(x.trim()))
+      .filter((n: number) => Number.isFinite(n) && n >= 0)
+      .sort((a: number, b: number) => b - a); // largest offset first
 
     const minutesUntil = Math.floor(
       (entry.dueDate.getTime() - now.getTime()) / 60000,
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
     // the 30-min reminder we shouldn't go back to 1d.)
     const lastSent = entry.lastReminderSentMinutes;
     const eligible = offsets.find(
-      (off) =>
+      (off: number) =>
         minutesUntil <= off &&
         (lastSent === null || lastSent === undefined || off < lastSent),
     );
@@ -147,16 +147,16 @@ ${entry.description || ""}
     if (!event.reminderOffsets) continue;
     const offsets = event.reminderOffsets
       .split(",")
-      .map((x) => Number(x.trim()))
-      .filter((n) => Number.isFinite(n) && n >= 0)
-      .sort((a, b) => b - a);
+      .map((x: string) => Number(x.trim()))
+      .filter((n: number) => Number.isFinite(n) && n >= 0)
+      .sort((a: number, b: number) => b - a);
 
     const minutesUntil = Math.floor(
       (event.startTime.getTime() - now.getTime()) / 60000,
     );
     const lastSent = event.lastReminderSentMinutes;
     const eligible = offsets.find(
-      (off) =>
+      (off: number) =>
         minutesUntil <= off &&
         (lastSent === null || lastSent === undefined || off < lastSent),
     );
@@ -169,7 +169,7 @@ ${entry.description || ""}
         and(eq(eventRsvps.eventId, event.id), eq(eventRsvps.status, "going")),
       );
     const recipientIds = Array.from(
-      new Set([event.organizerId, ...goingRows.map((r) => r.userId)]),
+      new Set([event.organizerId, ...goingRows.map((r: { userId: string }) => r.userId)]),
     );
     if (recipientIds.length === 0) continue;
 

@@ -11,7 +11,7 @@ import { randomInt, randomBytes } from "crypto";
 import { sendVerificationEmail, sendPasswordResetEmail } from "@/shared/mail/mail";
 import { registerSchema, loginSchema, verifyEmailSchema, forgotPasswordSchema, resetPasswordSchema } from "@/shared/validations/validations";
 import { checkRateLimitAsync, getRateLimitError } from "@/shared/utils/rate-limit";
-import { getAllowedEmailDomains, getInviteCode } from "@/shared/auth/config";
+import { getAllowedEmailDomains, getInviteCode, getAllowedEmails } from "@/shared/auth/config";
 
 // --- CONFIGURATION ---
 const MAX_VERIFICATION_ATTEMPTS = 5;
@@ -24,6 +24,10 @@ function normalizeEmail(value: string | FormDataEntryValue | null) {
 }
 
 function isAllowedEmail(email: string) {
+  const allowedEmails = getAllowedEmails();
+  if (allowedEmails.includes(email.toLowerCase())) {
+    return true;
+  }
   const domains = getAllowedEmailDomains();
   return domains.some(domain => email.endsWith(`@${domain}`));
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createScheduleEntry, deleteScheduleEntry } from "@/features/courses/server/schedule";
 import { useRouter } from "next/navigation";
+import UiIcon from "@/shared/ui/UiIcon";
 
 const DAYS_OF_WEEK = [
   { id: 0, name: "Monday", short: "Mon" },
@@ -83,8 +84,8 @@ export default function ScheduleClient({ entries, currentUserId }: ScheduleClien
 
       {entries.length === 0 ? (
         <div style={{ padding: "60px 20px", textAlign: "center" }}>
-          <div style={{ fontSize: "48px", marginBottom: "16px", opacity: 0.3 }}>
-            📚
+          <div style={{ marginBottom: "16px", opacity: 0.4, display: "flex", justifyContent: "center", color: "var(--text-muted)" }}>
+            <UiIcon name="book-open" size={48} />
           </div>
           <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 800 }}>
             No classes scheduled
@@ -163,40 +164,47 @@ export default function ScheduleClient({ entries, currentUserId }: ScheduleClien
                                     <input type="hidden" name="entryId" value={entry.id} />
                                     <button
                                       type="submit"
+                                      aria-label="Delete class"
                                       style={{
                                         background: "none",
                                         border: "none",
-                                        color: "var(--error-color)",
+                                        color: "var(--error-color, var(--danger))",
                                         cursor: "pointer",
-                                        fontSize: "12px",
                                         padding: "4px",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
                                       }}
                                     >
-                                      ✕
+                                      <UiIcon name="x" size={14} />
                                     </button>
                                   </form>
                                 )}
                               </div>
 
-                              <div style={{ fontSize: "13px", color: "var(--text-primary)", marginBottom: "4px" }}>
-                                ⏰ {entry.startTime} - {entry.endTime}
+                              <div style={{ fontSize: "13px", color: "var(--text-primary)", marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                <UiIcon name="clock" size={14} color="var(--french-gold)" />
+                                {entry.startTime} - {entry.endTime}
                               </div>
 
                               {entry.instructor && (
-                                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "2px" }}>
-                                  👤 {entry.instructor}
+                                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "2px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <UiIcon name="user" size={13} />
+                                  {entry.instructor}
                                 </div>
                               )}
 
                               {entry.room && (
-                                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "2px" }}>
-                                  📍 {entry.room}
+                                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "2px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <UiIcon name="map-pin" size={13} />
+                                  {entry.room}
                                 </div>
                               )}
 
                               {entry.faculty && (
-                                <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                                  🏛️ {entry.faculty}
+                                <div style={{ fontSize: "12px", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <UiIcon name="building" size={13} />
+                                  {entry.faculty}
                                 </div>
                               )}
                             </div>

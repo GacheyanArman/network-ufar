@@ -7,6 +7,7 @@ import {
   deleteCalendarEntry,
 } from "@/features/courses/server/calendar";
 import { translations } from "@/shared/i18n/i18n";
+import UiIcon from "@/shared/ui/UiIcon";
 
 // ---------------------------------------------------------------------------
 // Types & constants
@@ -52,17 +53,17 @@ const CATEGORY_META: Record<
   string,
   { color: string; bg: string; icon: string; label: string }
 > = {
-  exam:        { color: "var(--danger)", bg: "var(--danger-soft)", icon: "📝", label: "Exam" },
-  homework:    { color: "var(--french-blue)", bg: "var(--french-blue-soft)", icon: "📚", label: "Homework" },
-  assignment:  { color: "var(--french-blue)", bg: "var(--french-blue-soft)", icon: "📚", label: "Homework" },
-  project:     { color: "var(--purple)", bg: "var(--purple-soft)", icon: "💡", label: "Project" },
-  event:       { color: "#0891b2", bg: "#ecfeff", icon: "🎪", label: "Event" },
-  personal:    { color: "var(--text-secondary)", bg: "var(--bg-soft)", icon: "🔖", label: "Personal" },
-  community:   { color: "var(--success)", bg: "var(--success-soft)", icon: "👥", label: "Community" },
-  lecture:     { color: "var(--purple)", bg: "var(--purple-soft)", icon: "🎓", label: "Lecture" },
-  deadline:    { color: "#ea580c", bg: "#fff7ed", icon: "⏰", label: "Deadline" },
-  holiday:     { color: "var(--success)", bg: "var(--success-soft)", icon: "🎉", label: "Holiday" },
-  other:       { color: "var(--text-secondary)", bg: "var(--bg-soft)", icon: "📌", label: "Other" },
+  exam:        { color: "var(--danger)", bg: "var(--danger-soft)", icon: "file-text", label: "Exam" },
+  homework:    { color: "var(--french-blue)", bg: "var(--french-blue-soft)", icon: "book-open", label: "Homework" },
+  assignment:  { color: "var(--french-blue)", bg: "var(--french-blue-soft)", icon: "book-open", label: "Homework" },
+  project:     { color: "var(--purple)", bg: "var(--purple-soft)", icon: "lightbulb", label: "Project" },
+  event:       { color: "#0891b2", bg: "#ecfeff", icon: "party", label: "Event" },
+  personal:    { color: "var(--text-secondary)", bg: "var(--bg-soft)", icon: "bookmark", label: "Personal" },
+  community:   { color: "var(--success)", bg: "var(--success-soft)", icon: "users", label: "Community" },
+  lecture:     { color: "var(--purple)", bg: "var(--purple-soft)", icon: "graduation", label: "Lecture" },
+  deadline:    { color: "#ea580c", bg: "#fff7ed", icon: "clock", label: "Deadline" },
+  holiday:     { color: "var(--success)", bg: "var(--success-soft)", icon: "party", label: "Holiday" },
+  other:       { color: "var(--text-secondary)", bg: "var(--bg-soft)", icon: "flag", label: "Other" },
 };
 
 const PRIMARY_CATEGORIES = [
@@ -388,9 +389,13 @@ export default function CalendarPageClient({
                 fontSize: "clamp(1.4rem, 3vw, 1.9rem)",
                 fontWeight: 950,
                 color: "var(--text-primary)",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
               }}
             >
-              📅 Calendar
+              <UiIcon name="calendar" size={28} color="var(--french-navy)" />
+              Calendar
             </h1>
             <p
               style={{
@@ -418,9 +423,10 @@ export default function CalendarPageClient({
               type="button"
               className="btn btn-secondary"
               onClick={() => downloadIcs(filtered)}
-              style={btnStyle()}
+              style={btnStyle({ display: "inline-flex", alignItems: "center", gap: 6 })}
             >
-              📥 Export .ics
+              <UiIcon name="download" size={14} />
+              Export .ics
             </button>
           </div>
         </div>
@@ -472,7 +478,7 @@ export default function CalendarPageClient({
               <option value="all">All categories</option>
               {Object.entries(CATEGORY_META).map(([k, v]) => (
                 <option key={k} value={k}>
-                  {v.icon} {v.label}
+                  {v.label}
                 </option>
               ))}
             </select>
@@ -683,7 +689,9 @@ function UpcomingDeadlinesBanner({ deadlines }: { deadlines: CalEntry[] }) {
         flexWrap: "wrap",
       }}
     >
-      <div style={{ fontSize: 22 }}>⏳</div>
+      <div style={{ color: "var(--danger)", display: "flex", alignItems: "center" }}>
+        <UiIcon name="clock" size={22} />
+      </div>
       <div style={{ flex: 1, minWidth: 200 }}>
         <div style={{ fontWeight: 800, marginBottom: 4 }}>
           {deadlines.length} deadline{deadlines.length === 1 ? "" : "s"} in the next 72 hours
@@ -743,8 +751,9 @@ function MyDeadlinesSection({
           flexWrap: "wrap",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900 }}>
-          📌 My deadlines this week
+        <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <UiIcon name="flag" size={18} color="var(--french-gold)" />
+          My deadlines this week
           <span
             style={{
               marginLeft: 8,
@@ -963,7 +972,11 @@ function DayChip({
       }}
       title={entry.title}
     >
-      {fmtTime(entry.dueDate)} · {meta.icon} {entry.title}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        {fmtTime(entry.dueDate)} ·
+        <UiIcon name={meta.icon} size={12} />
+        {entry.title}
+      </span>
     </button>
   );
 }
@@ -997,7 +1010,9 @@ function DayView({
             color: "var(--text-secondary)",
           }}
         >
-          <div style={{ fontSize: 28, opacity: 0.5, marginBottom: 6 }}>📭</div>
+          <div style={{ opacity: 0.5, marginBottom: 6, display: "flex", justifyContent: "center", color: "var(--text-muted)" }}>
+            <UiIcon name="calendar-x" size={28} />
+          </div>
           <p style={{ margin: 0 }}>{es.calendar.noDayEvents}</p>
           <p style={{ margin: "4px 0 0", fontSize: "0.85rem", opacity: 0.7 }}>{es.calendar.noDayEventsHint}</p>
           <button className="btn btn-primary" style={{ marginTop: 8, fontSize: "0.85rem" }} onClick={onCreate}>
@@ -1146,9 +1161,13 @@ function MonthView({
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 3,
                     }}
                   >
-                    {meta.icon} {e.title}
+                    <UiIcon name={meta.icon} size={10} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.title}</span>
                   </div>
                 );
               })}
@@ -1201,7 +1220,9 @@ function ListView({
           gap: 6,
         }}
       >
-        <div style={{ fontSize: 32, opacity: 0.4, marginBottom: 6 }}>🗓️</div>
+        <div style={{ opacity: 0.4, marginBottom: 6, display: "flex", justifyContent: "center", color: "var(--text-muted)" }}>
+          <UiIcon name="calendar" size={32} />
+        </div>
         <p style={{ margin: 0 }}>{es.calendar.noFilterMatch}</p>
         <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.7 }}>{es.calendar.noFilterMatchHint}</p>
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
@@ -1352,9 +1373,13 @@ function EntryCard({
               padding: "2px 8px",
               textTransform: "uppercase",
               letterSpacing: 0.4,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
             }}
           >
-            {meta.icon} {meta.label}
+            <UiIcon name={meta.icon} size={11} />
+            {meta.label}
           </span>
           {today && (
             <span
@@ -1376,9 +1401,13 @@ function EntryCard({
                 fontSize: "0.65rem",
                 color: "var(--text-secondary)",
                 fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
               }}
             >
-              🔁 {entry.recurrence}
+              <UiIcon name="repeat" size={11} />
+              {entry.recurrence}
             </span>
           )}
           {!entry.isPublic && (
@@ -1387,9 +1416,13 @@ function EntryCard({
                 fontSize: "0.7rem",
                 color: "var(--text-muted)",
                 fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
               }}
             >
-              🔒 Private
+              <UiIcon name="lock" size={11} />
+              Private
             </span>
           )}
           {entry.source === "rsvp" && (
@@ -1398,9 +1431,13 @@ function EntryCard({
                 fontSize: "0.7rem",
                 color: "var(--text-secondary)",
                 fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
               }}
             >
-              ✓ RSVP
+              <UiIcon name="check" size={11} />
+              RSVP
             </span>
           )}
         </div>
@@ -1421,15 +1458,34 @@ function EntryCard({
             fontSize: "0.78rem",
             color: "var(--text-secondary)",
             display: "flex",
-            gap: 8,
+            gap: 10,
             flexWrap: "wrap",
+            alignItems: "center",
           }}
         >
-          <span>🕐 {fmtTime(entry.dueDate)}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <UiIcon name="clock" size={12} />
+            {fmtTime(entry.dueDate)}
+          </span>
           {entry.endDate && <span>– {fmtTime(entry.endDate)}</span>}
-          {entry.course && <span>📖 {entry.course}</span>}
-          {entry.location && <span>📍 {entry.location}</span>}
-          {entry.communityName && <span>👥 {entry.communityName}</span>}
+          {entry.course && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <UiIcon name="book" size={12} />
+              {entry.course}
+            </span>
+          )}
+          {entry.location && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <UiIcon name="map-pin" size={12} />
+              {entry.location}
+            </span>
+          )}
+          {entry.communityName && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <UiIcon name="users" size={12} />
+              {entry.communityName}
+            </span>
+          )}
         </div>
         {entry.description && (
           <p
@@ -1454,8 +1510,9 @@ function EntryCard({
             onClick={() => onEdit(entry)}
             style={iconBtnStyle()}
             title="Edit"
+            aria-label="Edit"
           >
-            ✏️
+            <UiIcon name="edit" size={14} />
           </button>
           <form action={deleteAction}>
             <input type="hidden" name="entryId" value={entry.masterId} />
@@ -1463,11 +1520,12 @@ function EntryCard({
               type="submit"
               style={iconBtnStyle()}
               title="Delete"
+              aria-label="Delete"
               onClick={(e) => {
                 if (!confirm("Delete this entry?")) e.preventDefault();
               }}
             >
-              🗑️
+              <UiIcon name="trash" size={14} />
             </button>
           </form>
         </div>
@@ -1598,9 +1656,10 @@ function EntryModal({
             type="button"
             onClick={onClose}
             className="btn btn-secondary"
-            style={btnStyle({ minHeight: 32, padding: "0 10px" })}
+            aria-label="Close"
+            style={btnStyle({ minHeight: 32, padding: "0 10px", display: "inline-flex", alignItems: "center", justifyContent: "center" })}
           >
-            ×
+            <UiIcon name="x" size={14} />
           </button>
         </div>
 
@@ -1673,7 +1732,7 @@ function EntryModal({
                       justifyContent: "center",
                     }}
                   >
-                    <span>{m.icon}</span>
+                    <UiIcon name={m.icon} size={14} />
                     {m.label}
                   </button>
                 );
@@ -1867,9 +1926,13 @@ function EntryModal({
                       fontWeight: 700,
                       cursor: "pointer",
                       fontSize: "0.8rem",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
-                    🔔 {opt.label}
+                    <UiIcon name="bell" size={12} />
+                    {opt.label}
                   </button>
                 );
               })}

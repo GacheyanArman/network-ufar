@@ -44,7 +44,7 @@ function VerifyEmailForm() {
             height: "68px",
             background: "rgba(255, 255, 255, 0.06)",
             border: "none",
-            borderBottom: "2px solid rgba(212, 175, 55, 0.30)",
+            borderBottom: "2px solid rgba(44, 90, 160, 0.30)",
             borderRadius: "10px 10px 0 0",
             color: "var(--bg-card)",
             textAlign: "center",
@@ -56,11 +56,11 @@ function VerifyEmailForm() {
           }}
           placeholder="\u2022\u2022\u2022\u2022\u2022\u2022"
           onFocus={(e) => {
-            e.target.style.borderBottomColor = "var(--french-gold)";
-            e.target.style.boxShadow = "0 2px 0 0 #d4af37";
+            e.target.style.borderBottomColor = "var(--french-blue)";
+            e.target.style.boxShadow = "0 2px 0 0 #2c5aa0";
           }}
           onBlur={(e) => {
-            e.target.style.borderBottomColor = "rgba(212, 175, 55, 0.30)";
+            e.target.style.borderBottomColor = "rgba(44, 90, 160, 0.30)";
             e.target.style.boxShadow = "none";
           }}
         />

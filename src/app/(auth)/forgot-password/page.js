@@ -47,8 +47,8 @@ export default function ForgotPasswordPage() {
               required
               style={authInputStyle}
               onFocus={(e) => {
-                e.target.style.borderBottomColor = "var(--french-gold)";
-                e.target.style.boxShadow = "0 2px 0 0 #d4af37";
+                e.target.style.borderBottomColor = "var(--french-blue)";
+                e.target.style.boxShadow = "0 2px 0 0 #2c5aa0";
               }}
               onBlur={(e) => {
                 e.target.style.borderBottomColor = "rgba(255,255,255,0.18)";

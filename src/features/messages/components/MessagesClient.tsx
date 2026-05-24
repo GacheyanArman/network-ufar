@@ -58,6 +58,10 @@ export default function MessagesClient({
   const [messages, setMessages] = useState<MessageType[]>(
     initialHistory.map(normalizeMessage)
   );
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   const [hasMore, setHasMore] = useState(initialHistory.length >= 30);
   const [loadingMore, setLoadingMore] = useState(false);
   const [text, setText] = useState("");
@@ -476,14 +480,14 @@ export default function MessagesClient({
         {selectedUserId && !selectedGroupId && (
           <div
             className="tg-chat-presence"
-            title={otherLastSeen ? `Last seen ${formatLastSeen(otherLastSeen)}` : undefined}
+            title={otherLastSeen && isClient ? `Last seen ${formatLastSeen(otherLastSeen)}` : undefined}
           >
             <span
               className={otherOnline ? "tg-presence-dot online" : "tg-presence-dot offline"}
             />
             {otherOnline
               ? "Online"
-              : otherLastSeen
+              : otherLastSeen && isClient
               ? `Last seen ${formatLastSeen(otherLastSeen)}`
               : "Offline"}
           </div>
@@ -542,6 +546,7 @@ export default function MessagesClient({
                   onBeginEdit={() => beginEdit(m)}
                   onDelete={(forEveryone) => onDelete(m, forEveryone)}
                   showSenderName={!isOwn && !!selectedGroupId}
+                  isClient={isClient}
                 />
               </div>
             );
@@ -598,6 +603,7 @@ function MessageBubble({
   onBeginEdit,
   onDelete,
   showSenderName,
+  isClient,
 }: {
   m: MessageType;
   isOwn: boolean;
@@ -610,6 +616,7 @@ function MessageBubble({
   onBeginEdit: () => void;
   onDelete: (forEveryone: boolean) => void;
   showSenderName: boolean;
+  isClient: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
@@ -694,7 +701,7 @@ function MessageBubble({
 
       <span className="tg-message-time">
         {m.editedAt && !tombstone && <span className="tg-msg-edited">edited · </span>}
-        {formatTime(m.createdAt)}
+        {isClient ? formatTime(m.createdAt) : ""}
         {isOwn && !tombstone && (
           <ReadIndicator status={isPending ? "sent" : m.status ?? "sent"} pending={isPending} />
         )}

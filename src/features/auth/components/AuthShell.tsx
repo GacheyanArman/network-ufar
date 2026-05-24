@@ -29,7 +29,7 @@ const radialOverlay = {
   right: "-10%",
   width: "600px",
   height: "600px",
-  background: `radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%)`,
+  background: `radial-gradient(circle, rgba(44,90,160,0.06) 0%, transparent 70%)`,
   pointerEvents: "none" as const,
 };
 
@@ -49,10 +49,10 @@ const cardStyle = {
   background: "rgba(255, 255, 255, 0.04)",
   backdropFilter: "blur(24px)",
   WebkitBackdropFilter: "blur(24px)",
-  border: `1px solid rgba(212, 175, 55, 0.12)`,
+  border: `1px solid rgba(44, 90, 160, 0.12)`,
   borderRadius: "24px",
   padding: "40px 36px",
-  boxShadow: "0 32px 80px rgba(0, 0, 0, 0.4), 0 0 1px rgba(212, 175, 55, 0.1)",
+  boxShadow: "0 32px 80px rgba(0, 0, 0, 0.4), 0 0 1px rgba(44, 90, 160, 0.1)",
   position: "relative" as const,
   zIndex: 1,
 };
@@ -70,7 +70,7 @@ const logoStyle = {
   fontSize: "1.8rem",
   fontWeight: 800,
   margin: "0 auto 20px",
-  boxShadow: `0 0 24px rgba(212, 175, 55, 0.12)`,
+  boxShadow: `0 0 24px rgba(44, 90, 160, 0.12)`,
   letterSpacing: "-0.02em",
 };
 
@@ -128,7 +128,7 @@ export const authLabelStyle = {
 export const authButtonStyle = (disabled = false) => ({
   width: "100%",
   height: "50px",
-  border: `1px solid rgba(212, 175, 55, ${disabled ? "0.10" : "0.25"})`,
+  border: `1px solid rgba(44, 90, 160, ${disabled ? "0.10" : "0.25"})`,
   borderRadius: "12px",
   background: disabled
     ? "rgba(255,255,255,0.08)"

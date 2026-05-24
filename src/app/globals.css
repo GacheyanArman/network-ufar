@@ -14,8 +14,8 @@
     --french-blue-soft: #f0f4fb;
     --french-blue-line: rgba(44, 90, 160, 0.14);
 
-    --french-gold: #d4af37;
-    --french-gold-soft: #fef9e7;
+    --french-gold: #2c5aa0;
+    --french-gold-soft: #f0f4fb;
     --french-rose: #e8b4b8;
     --french-lavender: #9b9fce;
     --french-cream: #faf8f3;
@@ -256,6 +256,20 @@ button {
         0 16px 40px rgba(30, 58, 95, 0.1) !important;
 }
 
+button,
+.btn,
+.btn-primary,
+.btn-primary-old,
+.btn-secondary,
+.btn-outline,
+.btn-ghost,
+.btn-danger,
+.btn-base,
+button[type="submit"] {
+    position: relative !important;
+    overflow: hidden !important;
+}
+
 .btn,
 .btn-primary,
 .btn-primary-old,
@@ -288,12 +302,19 @@ button[type="submit"] {
     color: #ffffff !important;
     border: 1px solid transparent !important;
     box-shadow: var(--shadow-elegant) !important;
-    position: relative !important;
-    overflow: hidden !important;
 }
 
-.btn-primary::before,
-.btn-primary-old::before {
+button::after,
+.btn::after,
+.btn-primary::after,
+.btn-primary-old::after,
+.btn-secondary::after,
+.btn-outline::after,
+.btn-ghost::after,
+.btn-danger::after,
+.btn-base::after,
+button[type="submit"]::after,
+.nav-item::after {
     content: "" !important;
     position: absolute !important;
     top: 0 !important;
@@ -307,10 +328,20 @@ button[type="submit"] {
         transparent
     ) !important;
     transition: left 0.5s ease !important;
+    pointer-events: none !important;
 }
 
-.btn-primary:hover::before,
-.btn-primary-old:hover::before {
+button:hover::after,
+.btn:hover::after,
+.btn-primary:hover::after,
+.btn-primary-old:hover::after,
+.btn-secondary:hover::after,
+.btn-outline:hover::after,
+.btn-ghost:hover::after,
+.btn-danger:hover::after,
+.btn-base:hover::after,
+button[type="submit"]:hover::after,
+.nav-item:hover::after {
     left: 100% !important;
 }
 
@@ -599,6 +630,16 @@ select:focus {
     align-items: start !important;
 }
 
+.app-container:has(.tg-messenger) .sidebar-right {
+    display: none !important;
+}
+
+.app-container:has(.tg-messenger),
+.simple-layout:has(.tg-messenger),
+.old-social-grid:has(.tg-messenger) {
+    grid-template-columns: var(--left-col) minmax(0, 1fr) !important;
+}
+
 .main-content,
 .simple-main {
     min-width: 0 !important;
@@ -654,6 +695,8 @@ select:focus {
     text-decoration: none !important;
     font-size: 14px !important;
     font-weight: var(--fw-extrabold) !important;
+    position: relative !important;
+    overflow: hidden !important;
     transition:
         background-color 0.16s ease,
         color 0.16s ease,

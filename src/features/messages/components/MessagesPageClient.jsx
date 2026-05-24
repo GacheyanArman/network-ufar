@@ -22,6 +22,11 @@ export default function MessagesPageClient({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { language } = useLanguage();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Live search state. Initial value comes from the server-rendered ?q= so
   // direct links keep working.
@@ -189,7 +194,7 @@ export default function MessagesPageClient({
                         <div className="tg-chat-top">
                           <h3 className="tg-chat-name">{group.name}</h3>
                           <span className="tg-chat-time">
-                            {new Date(group.createdAt).toLocaleDateString()}
+                            {isClient ? new Date(group.createdAt).toLocaleDateString() : ""}
                           </span>
                         </div>
                         <div className="tg-chat-bottom">
@@ -230,10 +235,10 @@ export default function MessagesPageClient({
                         <div className="tg-chat-top">
                           <h3 className="tg-chat-name">{user.fullName}</h3>
                           <span className="tg-chat-time">
-                            {new Date(lastMessage.createdAt).toLocaleTimeString([], {
+                            {isClient ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
-                            })}
+                            }) : ""}
                           </span>
                         </div>
                         <div className="tg-chat-bottom">

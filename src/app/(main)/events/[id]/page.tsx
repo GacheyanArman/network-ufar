@@ -65,14 +65,14 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   const role = await getUserRole(userId);
 
   // Serialise dates to strings for the client component.
-  const serialisedComments = comments.map((c) => ({
+  const serialisedComments = comments.map((c: any) => ({
     ...c,
     createdAt: c.createdAt.toISOString(),
   }));
   const serialisedAttendees = {
-    going: attendees.going.map((a) => ({ ...a })),
-    interested: attendees.interested.map((a) => ({ ...a })),
-    waitlisted: attendees.waitlisted.map((a) => ({ ...a })),
+    going: attendees.going.map((a: any) => ({ ...a })),
+    interested: attendees.interested.map((a: any) => ({ ...a })),
+    waitlisted: attendees.waitlisted.map((a: any) => ({ ...a })),
   };
 
   // Server component: rendered once per request, so calling Date.now() at the
@@ -134,7 +134,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               gap: 12,
             }}
           >
-            {albums.map((a) => (
+            {albums.map((a: any) => (
               <Link
                 key={a.id}
                 href={`/photos/albums/${a.id}`}
@@ -227,7 +227,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               alignItems: "start",
             }}
           >
-            {eventPhotos.map((p) => (
+            {eventPhotos.map((p: any) => (
               <PhotoFeedCard
                 key={p.id}
                 photo={p}

@@ -20,8 +20,8 @@
   font-family: var(--font-main);
 }
 .auth-input:focus {
-  border-bottom-color: #d4af37;
-  box-shadow: 0 2px 0 0 #d4af37;
+  border-bottom-color: var(--french-blue);
+  box-shadow: 0 2px 0 0 var(--french-blue);
 }
 .auth-input::placeholder {
   color: rgba(255, 255, 255, 0.35);
@@ -58,14 +58,14 @@
 }
 
 .auth-link {
-  color: #d4af37;
+  color: var(--french-blue);
   font-weight: var(--fw-bold);
   text-decoration: none;
   font-size: 0.86rem;
   transition: text-shadow 0.2s ease;
 }
 .auth-link:hover {
-  text-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+  text-shadow: 0 0 8px rgba(44, 90, 160, 0.5);
 }
 
 /* ─── Dashboard Section Heading ─────────────────────────── */
@@ -231,8 +231,8 @@
 }
 .input-base:focus {
   outline: none;
-  border-color: #E5A93C;
-  box-shadow: 0 0 0 3px rgba(229, 169, 60, 0.2);
+  border-color: var(--french-blue);
+  box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.2);
 }
 .input-base:disabled {
   background: #F0F4F8;

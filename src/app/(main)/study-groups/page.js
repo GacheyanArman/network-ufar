@@ -83,7 +83,7 @@ export default async function StudyGroupsPage({ searchParams }) {
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>
-        <Link href="/study-groups/create" className="uf-sg-create-btn">
+        <Link href="/study-groups/create" className="btn btn-primary">
           <UiIcon name="plus" size={16} />
           {t.createGroup}
         </Link>
@@ -108,7 +108,7 @@ export default async function StudyGroupsPage({ searchParams }) {
           </div>
           <h2>{t.emptyTitle}</h2>
           <p>{t.emptyHint}</p>
-          <Link href="/study-groups/create" className="uf-sg-create-btn">
+          <Link href="/study-groups/create" className="btn btn-primary" style={{ marginTop: "16px" }}>
             {t.createFirst}
           </Link>
         </div>
@@ -178,14 +178,14 @@ export default async function StudyGroupsPage({ searchParams }) {
                     {isOwner ? (
                       <form action={deleteStudyGroup}>
                         <input type="hidden" name="groupId" value={g.id} />
-                        <button type="submit" className="uf-sg-action-btn uf-sg-action-btn--danger">
+                        <button type="submit" className="btn btn-danger" style={{ minHeight: "36px", padding: "0 14px", fontSize: "13px" }}>
                           {t.deleteGroup}
                         </button>
                       </form>
                     ) : isJoined ? (
                       <form action={leaveStudyGroup}>
                         <input type="hidden" name="groupId" value={g.id} />
-                        <button type="submit" className="uf-sg-action-btn uf-sg-action-btn--leave">
+                        <button type="submit" className="btn btn-secondary" style={{ minHeight: "36px", padding: "0 14px", fontSize: "13px" }}>
                           {t.leaveGroup}
                         </button>
                       </form>
@@ -194,7 +194,8 @@ export default async function StudyGroupsPage({ searchParams }) {
                         <input type="hidden" name="groupId" value={g.id} />
                         <button
                           type="submit"
-                          className="uf-sg-action-btn uf-sg-action-btn--join"
+                          className="btn btn-primary"
+                          style={{ minHeight: "36px", padding: "0 14px", fontSize: "13px" }}
                           disabled={isFull || g.status !== "active"}
                         >
                           {isFull ? t.groupFull : g.status !== "active" ? t.status?.[g.status] : t.joinGroup}

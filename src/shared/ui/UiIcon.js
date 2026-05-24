@@ -513,6 +513,68 @@ export default function UiIcon({ name, size = 18, className = "", color = undefi
         <line x1="15" y1="9" x2="15.01" y2="9" />
       </svg>
     ),
+
+    "map-pin": (
+      <svg {...common}>
+        <path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0Z" />
+        <circle cx="12" cy="10" r="3" />
+      </svg>
+    ),
+
+    edit: (
+      <svg {...common}>
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+      </svg>
+    ),
+
+    lock: (
+      <svg {...common}>
+        <rect x="3" y="11" width="18" height="11" rx="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+    ),
+
+    repeat: (
+      <svg {...common}>
+        <path d="m17 2 4 4-4 4" />
+        <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+        <path d="m7 22-4-4 4-4" />
+        <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+      </svg>
+    ),
+
+    party: (
+      <svg {...common}>
+        <path d="M5.8 11.3 2 22l10.7-3.79" />
+        <path d="M4 3h.01" />
+        <path d="M22 8h.01" />
+        <path d="M15 2h.01" />
+        <path d="M22 20h.01" />
+        <path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" />
+        <path d="m22 13-1.59-.84a1.99 1.99 0 0 0-2.31.32l-.45.45A1.99 1.99 0 0 1 16 13.5H15" />
+        <path d="m13 22 1.17-2.34a1.99 1.99 0 0 0-.5-2.5l-1.5-1.34" />
+        <path d="M11 22 3 14l8-8 8 8z" />
+      </svg>
+    ),
+
+    "calendar-x": (
+      <svg {...common}>
+        <rect x="3" y="4" width="18" height="17" rx="2" />
+        <path d="M16 2v4" />
+        <path d="M8 2v4" />
+        <path d="M3 10h18" />
+        <path d="m10 14 4 4" />
+        <path d="m14 14-4 4" />
+      </svg>
+    ),
+
+    "user-tie": (
+      <svg {...common}>
+        <circle cx="12" cy="7" r="4" />
+        <path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />
+        <path d="M12 11v4" />
+      </svg>
+    ),
   };
 
   return icons[name] || icons.message;

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useTransition } from "react";
 import { suggestResource, requestBook, toggleSaveResource, toggleSaveReadingList } from "@/features/library/server/actions";
+import UiIcon from "@/shared/ui/UiIcon";
 
 type Resource = {
   id: string;
@@ -140,14 +141,23 @@ export default function LibraryPageClient({
       <section className="card" style={{ padding: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
           <div>
-            <h1 style={{ margin: "0 0 6px", fontSize: "30px", fontWeight: 950, color: "var(--french-navy)" }}>🏛 UFAR Library</h1>
+            <h1 style={{ margin: "0 0 6px", fontSize: "30px", fontWeight: 950, color: "var(--french-navy)", display: "flex", alignItems: "center", gap: "10px" }}>
+              <UiIcon name="building" size={28} color="var(--french-navy)" />
+              UFAR Library
+            </h1>
             <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "15px" }}>
               Find books, reading lists, academic resources and useful library information.
             </p>
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <button type="button" className="btn btn-secondary" style={{ fontSize: "13px" }} onClick={() => setShowModal("request")}>📖 Request a Book</button>
-            <button type="button" className="btn btn-secondary" style={{ fontSize: "13px" }} onClick={() => setShowModal("suggest")}>💡 Suggest Resource</button>
+            <button type="button" className="btn btn-secondary" style={{ fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "6px" }} onClick={() => setShowModal("request")}>
+              <UiIcon name="book" size={16} color="var(--french-navy)" />
+              Request a Book
+            </button>
+            <button type="button" className="btn btn-secondary" style={{ fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "6px" }} onClick={() => setShowModal("suggest")}>
+              <UiIcon name="lightbulb" size={16} color="var(--french-navy)" />
+              Suggest Resource
+            </button>
           </div>
         </div>
 
@@ -231,7 +241,9 @@ export default function LibraryPageClient({
           <h2 style={{ fontSize: "18px", fontWeight: 900, marginBottom: "12px" }}>All Resources</h2>
           {filteredResources.length === 0 ? (
             <div className="card" style={{ padding: "50px 24px", textAlign: "center" }}>
-              <div style={{ fontSize: "40px", opacity: 0.3, marginBottom: "10px" }}>📚</div>
+              <div style={{ opacity: 0.4, marginBottom: "10px", display: "flex", justifyContent: "center", color: "var(--text-muted)" }}>
+                <UiIcon name="book-open" size={40} />
+              </div>
               <p style={{ margin: 0, color: "var(--text-secondary)", fontWeight: 700 }}>No resources found. Try another subject or request a book.</p>
             </div>
           ) : (
@@ -249,7 +261,9 @@ export default function LibraryPageClient({
           <h2 style={{ fontSize: "18px", fontWeight: 900, marginBottom: "12px" }}>Reading Lists</h2>
           {readingLists.length === 0 ? (
             <div className="card" style={{ padding: "50px 24px", textAlign: "center" }}>
-              <div style={{ fontSize: "40px", opacity: 0.3, marginBottom: "10px" }}>📋</div>
+              <div style={{ opacity: 0.4, marginBottom: "10px", display: "flex", justifyContent: "center", color: "var(--text-muted)" }}>
+                <UiIcon name="file-text" size={40} />
+              </div>
               <p style={{ margin: 0, color: "var(--text-secondary)", fontWeight: 700 }}>No reading lists available yet.</p>
             </div>
           ) : (
@@ -295,8 +309,13 @@ export default function LibraryPageClient({
         <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }} onMouseDown={() => setShowModal(null)}>
           <div className="card" style={{ width: "100%", maxWidth: "500px", maxHeight: "90vh", overflowY: "auto", padding: "24px" }} onMouseDown={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 950 }}>{showModal === "request" ? "📖 Request a Book" : "💡 Suggest a Resource"}</h2>
-              <button type="button" className="btn btn-secondary" style={{ minHeight: "34px", padding: "0 12px" }} onClick={() => setShowModal(null)}>×</button>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 950, display: "flex", alignItems: "center", gap: "8px" }}>
+                <UiIcon name={showModal === "request" ? "book" : "lightbulb"} size={20} color="var(--french-navy)" />
+                {showModal === "request" ? "Request a Book" : "Suggest a Resource"}
+              </h2>
+              <button type="button" className="btn btn-secondary" style={{ minHeight: "34px", padding: "0 12px", display: "inline-flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowModal(null)} aria-label="Close">
+                <UiIcon name="x" size={16} />
+              </button>
             </div>
             
             <form onSubmit={showModal === "request" ? handleRequest : handleSuggest} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -386,16 +405,16 @@ function ResourceCard({ resource, isSaved, onToggleSave }: { resource: Resource;
         <span style={{ fontSize: "11px", fontWeight: 800, textTransform: "uppercase", background: "var(--bg-soft)", padding: "2px 6px", borderRadius: "4px", color: "var(--french-navy)" }}>
           {formatType(resource.type)}
         </span>
-        <button type="button" onClick={onToggleSave} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "18px", color: isSaved ? "var(--french-gold)" : "var(--border-color)", padding: 0 }}>
-          {isSaved ? "★" : "☆"}
+        <button type="button" onClick={onToggleSave} style={{ border: "none", background: "transparent", cursor: "pointer", color: isSaved ? "var(--french-gold)" : "var(--border-color)", padding: 0, display: "inline-flex" }} aria-label={isSaved ? "Unsave" : "Save"}>
+          <UiIcon name={isSaved ? "star-filled" : "star"} size={18} />
         </button>
       </div>
       <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 900, color: "var(--text-primary)" }}>{resource.title}</h3>
       {resource.author && <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>by {resource.author}</div>}
-      
-      <div style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
-        {resource.faculty && <span>🏛 {resource.faculty}</span>}
-        {resource.subject && <span>📚 {resource.subject}</span>}
+
+      <div style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "4px", alignItems: "center" }}>
+        {resource.faculty && <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><UiIcon name="building" size={13} />{resource.faculty}</span>}
+        {resource.subject && <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><UiIcon name="book-open" size={13} />{resource.subject}</span>}
       </div>
 
       <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--text-secondary)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -422,16 +441,16 @@ function ListCard({ list, isSaved, onToggleSave }: { list: ReadingList; isSaved:
     <div className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 900, color: "var(--text-primary)" }}>{list.title}</h3>
-        <button type="button" onClick={onToggleSave} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "18px", color: isSaved ? "var(--french-gold)" : "var(--border-color)", padding: 0 }}>
-          {isSaved ? "★" : "☆"}
+        <button type="button" onClick={onToggleSave} style={{ border: "none", background: "transparent", cursor: "pointer", color: isSaved ? "var(--french-gold)" : "var(--border-color)", padding: 0, display: "inline-flex" }} aria-label={isSaved ? "Unsave" : "Save"}>
+          <UiIcon name={isSaved ? "star-filled" : "star"} size={18} />
         </button>
       </div>
-      
-      <div style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", gap: "6px", flexWrap: "wrap" }}>
-        {list.faculty && <span>🏛 {list.faculty}</span>}
-        {list.subject && <span>📚 {list.subject}</span>}
-        {list.professorOrCourse && <span>👨‍🏫 {list.professorOrCourse}</span>}
-        <span>📝 {list.items.length} items</span>
+
+      <div style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+        {list.faculty && <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><UiIcon name="building" size={13} />{list.faculty}</span>}
+        {list.subject && <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><UiIcon name="book-open" size={13} />{list.subject}</span>}
+        {list.professorOrCourse && <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><UiIcon name="user-tie" size={13} />{list.professorOrCourse}</span>}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><UiIcon name="file-text" size={13} />{list.items.length} items</span>
       </div>
 
       <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--text-secondary)" }}>

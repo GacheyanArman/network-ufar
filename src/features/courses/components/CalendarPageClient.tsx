@@ -97,13 +97,13 @@ const REMINDER_OPTIONS = [
 // ---------------------------------------------------------------------------
 
 function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, {
+  return new Date(iso).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 function fmtFullDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -828,11 +828,11 @@ function WeekView({
     items.filter((e) => isSameDay(new Date(e.dueDate), d))
   );
 
-  const headerLabel = `${weekStart.toLocaleDateString(undefined, {
+  const headerLabel = `${weekStart.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   })} – ${new Date(weekStart.getTime() + 6 * 86400_000).toLocaleDateString(
-    undefined,
+    "en-US",
     { month: "short", day: "numeric", year: "numeric" }
   )}`;
 
@@ -872,7 +872,7 @@ function WeekView({
                   letterSpacing: 0.4,
                 }}
               >
-                {d.toLocaleDateString(undefined, { weekday: "short" })}{" "}
+                {d.toLocaleDateString("en-US", { weekday: "short" })}{" "}
                 {d.getDate()}
               </div>
               {groups[i].length === 0 ? (
@@ -1052,7 +1052,7 @@ function MonthView({
     0
   ).getDate();
   const startDow = (firstDay.getDay() + 6) % 7;
-  const monthName = firstDay.toLocaleDateString(undefined, {
+  const monthName = firstDay.toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
   });
@@ -1242,7 +1242,7 @@ function ListView({
   for (const e of items) {
     const d = new Date(e.dueDate);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
-    const label = d.toLocaleDateString(undefined, {
+    const label = d.toLocaleDateString("en-US", {
       month: "long",
       year: "numeric",
     });
@@ -1331,7 +1331,7 @@ function EntryCard({
             textTransform: "uppercase",
           }}
         >
-          {date.toLocaleDateString(undefined, { month: "short" })}
+          {date.toLocaleDateString("en-US", { month: "short" })}
         </div>
         <div
           style={{
@@ -1350,7 +1350,7 @@ function EntryCard({
             fontWeight: 700,
           }}
         >
-          {date.toLocaleDateString(undefined, { weekday: "short" })}
+          {date.toLocaleDateString("en-US", { weekday: "short" })}
         </div>
       </div>
 

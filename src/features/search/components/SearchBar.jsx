@@ -201,6 +201,7 @@ export default function SearchBar() {
           <button
             type="button"
             className="uf-search-clear"
+            aria-label="Clear search"
             onClick={() => {
               setQuery("");
               setResults([]);
@@ -208,7 +209,7 @@ export default function SearchBar() {
               inputRef.current?.focus();
             }}
           >
-            ×
+            <UiIcon name="x" size={14} />
           </button>
         )}
       </div>
@@ -376,7 +377,7 @@ const searchStyles = `
 
 .uf-search-clear {
   position: absolute;
-  right: 12px;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
   width: 24px;
@@ -384,7 +385,6 @@ const searchStyles = `
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 22px;
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
@@ -392,6 +392,7 @@ const searchStyles = `
   justify-content: center;
   border-radius: 999px;
   transition: all 0.15s ease;
+  padding: 0;
 }
 
 .uf-search-clear:hover {

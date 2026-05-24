@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useMemo, useState } from "react";
+import { useId, useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import UiIcon from "@/shared/ui/UiIcon";
@@ -16,92 +16,95 @@ type NavItemProps = {
 function NavItem({ href, icon, translationKey, badge }: NavItemProps) {
   const { t } = useLanguage();
   const pathname = usePathname();
-  const isActive = isActivePath(pathname, href);
+  
+  // Strict matching for home route, prefix matching for nested routes
+  let isActive = false;
+  if (pathname === href) {
+    isActive = true;
+  } else if (href !== "/" && pathname && pathname.startsWith(href)) {
+    isActive = true;
+  }
 
   return (
     <Link
       href={href}
-      className={`nav-item${isActive ? " active" : ""}`}
+      className={`nav-item ${isActive ? "active" : ""}`}
+      // Screen reader context for active page
       aria-current={isActive ? "page" : undefined}
     >
       <span className="nav-icon">
         <UiIcon name={icon} />
       </span>
       <span className="nav-label">{t(translationKey)}</span>
-      {badge !== undefined && badge > 0 && (
-        <span className="nav-notification-badge">
+      {badge ? (
+        <span className="nav-notification-badge" aria-hidden="true">
           {badge > 99 ? "99+" : badge}
         </span>
-      )}
+      ) : null}
     </Link>
   );
 }
 
 type NavigationMenuProps = {
-  /**
-   * Kept for backward compatibility — Notifications now live in the topbar,
-   * but other consumers may still pass this prop.
-   */
-  unreadNotifications?: number;
   userRole?: string;
 };
 
+// Use correct dot notation keys for i18n mapping
 const PRIMARY_ITEMS = [
-  { href: "/", icon: "home", key: "Today" },
-  { href: "/schedule", icon: "calendar", key: "Courses" },
-  { href: "/study-materials", icon: "folder", key: "Materials" },
-  { href: "/events", icon: "calendar", key: "Events" },
-  { href: "/communities", icon: "group", key: "Communities" },
-  { href: "/messages", icon: "message", key: "Messages" },
-] as const;
+  { href: "/", icon: "home", key: "nav.today" },
+  { href: "/feed", icon: "message-circle", key: "nav.feed" },
+  { href: "/schedule", icon: "calendar", key: "nav.courses" },
+  { href: "/study-materials", icon: "folder", key: "nav.materials" },
+  { href: "/events", icon: "calendar", key: "nav.events" },
+  { href: "/communities", icon: "group", key: "nav.communities" },
+  { href: "/messages", icon: "message", key: "nav.messages" },
+];
 
 const MORE_ITEMS = [
-  { href: "/feed", icon: "message-circle", key: "Feed" },
-  { href: "/profile", icon: "user", key: "Profile" },
-  { href: "/friends", icon: "users", key: "Friends" },
-  { href: "/photos", icon: "image", key: "Photos" },
-  { href: "/library", icon: "book", key: "Library" },
-  { href: "/study-groups", icon: "users", key: "Study Groups" },
-  { href: "/lost-found", icon: "search", key: "Lost & Found" },
-  { href: "/calendar", icon: "calendar", key: "Calendar" },
-] as const;
+  { href: "/profile", icon: "user", key: "nav.myProfile" },
+  { href: "/friends", icon: "users", key: "nav.friends" },
+  { href: "/photos", icon: "image", key: "nav.photos" },
+  { href: "/library", icon: "book", key: "nav.library" },
+  { href: "/study-groups", icon: "users", key: "nav.studyGroups" },
+  { href: "/lost-found", icon: "search", key: "nav.lostFound" },
+  { href: "/calendar", icon: "calendar", key: "nav.calendar" },
+];
 
-function isActivePath(pathname: string | null, href: string): boolean {
-  if (!pathname) return false;
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-/**
- * Primary navigation: 7 top-level entries.
- *
- * Today, Courses, Materials, Events, Communities, Messages, More.
- * "More" expands inline (accordion) to reveal secondary destinations,
- * and auto-opens whenever the current route is one of those secondary
- * destinations so users don't lose their place.
- *
- * Search and Notifications were moved to the top bar — they are not
- * duplicated in the More accordion to avoid two competing entry points.
- */
 export default function NavigationMenu({ userRole }: NavigationMenuProps) {
   const { t } = useLanguage();
   const pathname = usePathname();
-  const moreId = useId();
+  
+  // Unique ARIA identifier for the expandable region
+  const morePanelId = useId();
+
+  const checkMoreRoute = () => {
+    if (!pathname) return false;
+    for (let i = 0; i < MORE_ITEMS.length; i++) {
+      if (pathname.startsWith(MORE_ITEMS[i].href)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const [isMoreOpen, setIsMoreOpen] = useState(checkMoreRoute());
+
+  // Auto-expand if navigating directly to a nested route
+  useEffect(() => {
+    if (checkMoreRoute()) {
+      setIsMoreOpen(true);
+    }
+  }, [pathname]);
+
   const showAdmin = userRole === "admin" || userRole === "moderator";
 
-  const isOnMoreRoute = useMemo(
-    () => MORE_ITEMS.some((item) => isActivePath(pathname, item.href)),
-    [pathname],
-  );
-
-  // The accordion auto-opens on a More-route on first render and remains
-  // user-controllable thereafter (clicking the toggle overrides the route
-  // hint until the user navigates away).
-  const [userToggled, setUserToggled] = useState<boolean | null>(null);
-  const isMoreOpen = userToggled ?? isOnMoreRoute;
+  const toggleMenu = () => setIsMoreOpen((prev) => !prev);
 
   return (
-    <nav className="student-nav card">
+    <nav 
+      className="student-nav card" 
+      aria-label={t("nav.primary") || "Primary navigation"}
+    >
       <div className="nav-section">
         {PRIMARY_ITEMS.map((item) => (
           <NavItem
@@ -115,18 +118,24 @@ export default function NavigationMenu({ userRole }: NavigationMenuProps) {
         <button
           type="button"
           className={`nav-item nav-item-more ${isMoreOpen ? "is-open" : ""}`}
+          onClick={toggleMenu}
+          // The critical ARIA pair
           aria-expanded={isMoreOpen}
-          aria-controls={moreId}
-          onClick={() => setUserToggled(!isMoreOpen)}
+          aria-controls={isMoreOpen ? morePanelId : undefined}
         >
           <span className="nav-icon">
             <UiIcon name={isMoreOpen ? "chevron-up" : "chevron-down"} />
           </span>
-          <span className="nav-label">{t("More")}</span>
+          <span className="nav-label">{t("nav.more")}</span>
         </button>
 
-        {isMoreOpen && (
-          <div id={moreId} className="nav-more-panel" role="region">
+        {isMoreOpen ? (
+          <div 
+            id={morePanelId} 
+            className="nav-more-panel" 
+            role="region"
+            aria-label={t("nav.more")}
+          >
             {MORE_ITEMS.map((item) => (
               <NavItem
                 key={item.href}
@@ -136,21 +145,21 @@ export default function NavigationMenu({ userRole }: NavigationMenuProps) {
               />
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
-      {showAdmin && (
+      {showAdmin ? (
         <>
-          <div className="divider"></div>
+          <div className="divider" aria-hidden="true"></div>
           <div className="nav-section">
             <NavItem
               href="/admin"
               icon="shield"
-              translationKey="Admin"
+              translationKey="nav.admin"
             />
           </div>
         </>
-      )}
+      ) : null}
     </nav>
   );
 }

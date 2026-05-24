@@ -81,7 +81,7 @@ export default async function CourseHubPage({ params }: { params: { courseId: st
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
           {/* Announcements */}
-          <section style={{ background: "var(--bg-card)", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+          <section style={{ background: "var(--bg-card)", padding: "24px", borderRadius: "16px", border: "1px solid var(--border-color)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h2 style={{ margin: 0, fontSize: "1.3rem", display: "flex", alignItems: "center", gap: "8px" }}>
                 <UiIcon name="bell" size={20} color="var(--french-blue-deep)" /> Announcements
@@ -91,7 +91,7 @@ export default async function CourseHubPage({ params }: { params: { courseId: st
               <p style={{ color: "var(--text-secondary)", margin: 0 }}>No announcements yet.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {announcements.map(a => (
+                {announcements.map((a: any) => (
                   <div key={a.id} style={{ padding: "16px", background: a.isPinned ? "var(--french-blue-soft)" : "var(--bg-soft)", borderRadius: "12px", border: a.isPinned ? "1px solid #bfdbfe" : "none" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                       <strong>{a.authorName}</strong>
@@ -105,7 +105,7 @@ export default async function CourseHubPage({ params }: { params: { courseId: st
           </section>
 
           {/* Materials */}
-          <section style={{ background: "var(--bg-card)", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+          <section style={{ background: "var(--bg-card)", padding: "24px", borderRadius: "16px", border: "1px solid var(--border-color)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h2 style={{ margin: 0, fontSize: "1.3rem", display: "flex", alignItems: "center", gap: "8px" }}>
                 <UiIcon name="file-text" size={20} color="var(--french-blue-deep)" /> Latest Materials
@@ -116,8 +116,8 @@ export default async function CourseHubPage({ params }: { params: { courseId: st
               <p style={{ color: "var(--text-secondary)", margin: 0 }}>No materials uploaded yet.</p>
             ) : (
               <div style={{ display: "grid", gap: "12px" }}>
-                {materials.map(m => (
-                  <Link key={m.id} href={`/materials/${m.id}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", background: m.isPinned ? "var(--french-blue-soft)" : "var(--bg-card)", border: m.isPinned ? "1px solid #bfdbfe" : "1px solid #e2e8f0", borderRadius: "12px", textDecoration: "none", color: "inherit" }}>
+                {materials.map((m: any) => (
+                  <Link key={m.id} href={`/materials/${m.id}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", background: m.isPinned ? "var(--french-blue-soft)" : "var(--bg-card)", border: m.isPinned ? "1px solid #bfdbfe" : "1px solid var(--border-color)", borderRadius: "12px", textDecoration: "none", color: "inherit" }}>
                     <div>
                       <h3 style={{ margin: "0 0 4px", fontSize: "1.1rem", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
                         {m.title}
@@ -133,7 +133,7 @@ export default async function CourseHubPage({ params }: { params: { courseId: st
           </section>
 
           {/* Discussions */}
-          <section style={{ background: "var(--bg-card)", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+          <section style={{ background: "var(--bg-card)", padding: "24px", borderRadius: "16px", border: "1px solid var(--border-color)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h2 style={{ margin: 0, fontSize: "1.3rem", display: "flex", alignItems: "center", gap: "8px" }}>
                 <UiIcon name="message-square" size={20} color="var(--french-blue-deep)" /> Questions & Discussions
@@ -144,8 +144,8 @@ export default async function CourseHubPage({ params }: { params: { courseId: st
               <p style={{ color: "var(--text-secondary)", margin: 0 }}>No discussions yet.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                {discussions.map(d => (
-                  <div key={d.id} style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "16px" }}>
+                {discussions.map((d: any) => (
+                  <div key={d.id} style={{ borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>
                     <p style={{ margin: "0 0 8px", color: "var(--text-primary)", lineHeight: 1.5, fontWeight: "500" }}>{d.content}</p>
                     <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                       Asked by {d.authorName} • {new Date(d.createdAt).toLocaleDateString()}
@@ -162,7 +162,7 @@ export default async function CourseHubPage({ params }: { params: { courseId: st
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
           {/* Deadlines */}
-          <section style={{ background: "var(--bg-card)", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+          <section style={{ background: "var(--bg-card)", padding: "24px", borderRadius: "16px", border: "1px solid var(--border-color)" }}>
             <h2 style={{ margin: "0 0 16px", fontSize: "1.3rem", display: "flex", alignItems: "center", gap: "8px" }}>
               <UiIcon name="calendar" size={20} color="var(--french-blue-deep)" /> Upcoming Deadlines
             </h2>
@@ -170,7 +170,7 @@ export default async function CourseHubPage({ params }: { params: { courseId: st
               <p style={{ color: "var(--text-secondary)", margin: 0 }}>No upcoming deadlines.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {deadlines.map(d => (
+                {deadlines.map((d: any) => (
                   <div key={d.id} style={{ display: "flex", gap: "12px", padding: "12px", background: "var(--bg-soft)", borderRadius: "8px" }}>
                     <div style={{ background: "#e0e7ff", color: "#4f46e5", padding: "8px", borderRadius: "8px", textAlign: "center", minWidth: "48px" }}>
                       <div style={{ fontSize: "0.75rem", fontWeight: "bold", textTransform: "uppercase" }}>{new Date(d.dueDate).toLocaleString('en-US', { month: 'short' })}</div>
@@ -187,7 +187,7 @@ export default async function CourseHubPage({ params }: { params: { courseId: st
           </section>
 
           {/* Study Groups */}
-          <section style={{ background: "var(--bg-card)", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+          <section style={{ background: "var(--bg-card)", padding: "24px", borderRadius: "16px", border: "1px solid var(--border-color)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h2 style={{ margin: 0, fontSize: "1.3rem", display: "flex", alignItems: "center", gap: "8px" }}>
                 <UiIcon name="users" size={20} color="var(--french-blue-deep)" /> Study Groups
@@ -197,15 +197,15 @@ export default async function CourseHubPage({ params }: { params: { courseId: st
               <p style={{ color: "var(--text-secondary)", margin: 0 }}>No study groups created yet.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {groups.map(g => (
-                  <Link key={g.id} href={`/study-groups/${g.id}`} style={{ padding: "12px", border: "1px solid #e2e8f0", borderRadius: "8px", textDecoration: "none", color: "inherit", display: "block" }}>
+                {groups.map((g: any) => (
+                  <Link key={g.id} href={`/study-groups/${g.id}`} style={{ padding: "12px", border: "1px solid var(--border-color)", borderRadius: "8px", textDecoration: "none", color: "inherit", display: "block" }}>
                     <h4 style={{ margin: "0 0 4px", color: "var(--text-primary)" }}>{g.title}</h4>
                     <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)" }}>{g.membersCount} members</p>
                   </Link>
                 ))}
               </div>
             )}
-            <button style={{ width: "100%", marginTop: "16px", padding: "10px", background: "var(--bg-soft)", border: "1px solid #e2e8f0", borderRadius: "8px", fontWeight: "bold", color: "var(--french-blue-deep)", cursor: "pointer" }}>
+            <button style={{ width: "100%", marginTop: "16px", padding: "10px", background: "var(--bg-soft)", border: "1px solid var(--border-color)", borderRadius: "8px", fontWeight: "bold", color: "var(--french-blue-deep)", cursor: "pointer" }}>
               Create Group
             </button>
           </section>

@@ -312,7 +312,7 @@ const pageCSS = `
 .uf-lf-header p {
   margin: 4px 0 0;
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .uf-lf-create-btn {
@@ -337,7 +337,7 @@ const pageCSS = `
   padding: 10px 18px;
   border-radius: 10px;
   background: #fff;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 800;
   border: 1px solid #d9e2ef;
@@ -357,7 +357,7 @@ const pageCSS = `
   border-radius: 999px;
   border: 1px solid #d9e2ef;
   background: #fff;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
@@ -404,7 +404,7 @@ const pageCSS = `
 .uf-lf-form-group input,
 .uf-lf-form-group select,
 .uf-lf-form-group textarea {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 14px;
@@ -529,7 +529,7 @@ const pageCSS = `
 
 .uf-lf-status--open { background: #fef3c7; color: #92400e; }
 .uf-lf-status--returned { background: #ecfdf5; color: #065f46; }
-.uf-lf-status--expired { background: #f1f5f9; color: #64748b; }
+.uf-lf-status--expired { background: var(--bg-hover); color: var(--text-secondary); }
 
 .uf-lf-card-image {
   border-radius: 10px;
@@ -556,14 +556,14 @@ const pageCSS = `
   align-items: center;
   gap: 5px;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
 .uf-lf-card-desc {
   margin: 0;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -572,7 +572,7 @@ const pageCSS = `
   gap: 6px;
   margin-top: 6px;
   padding-top: 8px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-color-light);
 }
 
 .uf-lf-action-btn {
@@ -631,7 +631,7 @@ const pageCSS = `
 .uf-lf-empty p {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 700px) {

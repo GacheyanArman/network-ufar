@@ -31,7 +31,7 @@
   display: block;
   margin-bottom: 6px;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: rgba(255, 255, 255, 0.60);
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -59,7 +59,7 @@
 
 .auth-link {
   color: #d4af37;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   text-decoration: none;
   font-size: 0.86rem;
   transition: text-shadow 0.2s ease;
@@ -76,8 +76,8 @@
   align-items: center;
   gap: 8px;
   margin: 0 0 16px;
-  font-family: Georgia, serif;
-  font-weight: 700;
+  font-family: var(--font-main);
+  font-weight: var(--fw-bold);
 }
 
 /* ─── Layout utilities ──────────────────────────────────── */
@@ -95,7 +95,7 @@
   justify-content: center;
   gap: 8px;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   font-family: var(--font-main);
   text-decoration: none;
   cursor: pointer;
@@ -249,7 +249,7 @@
 
 .label-base {
   display: block;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   margin-bottom: 6px;
   color: #0A1931;
   font-size: 0.9rem;
@@ -286,7 +286,7 @@
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }

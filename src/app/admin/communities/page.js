@@ -29,7 +29,7 @@ export default async function AdminCommunitiesPage() {
                 background: "var(--bg-card)",
                 borderRadius: 10,
                 padding: 16,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border-color)",
                 display: "flex",
                 alignItems: "center",
                 gap: 16,

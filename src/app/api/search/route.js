@@ -7,6 +7,9 @@ import {
   events,
   studyMaterials,
   libraryResources,
+  academicCalendar,
+  photos,
+  photoAlbums,
 } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
 import { ilike, or, sql, and, ne, eq, desc, notInArray } from "drizzle-orm";
@@ -40,7 +43,7 @@ export async function GET(request) {
       );
     const blockedIds = blockedRows.map((r) => r.bid).filter(Boolean);
 
-    const [userRows, communityRows, eventRows, materialRows, libraryRows, postRows] =
+    const [userRows, communityRows, eventRows, materialRows, libraryRows, postRows, calendarRows, photoRows, albumRows] =
       await Promise.all([
       db
         .select({
@@ -225,23 +228,13 @@ export async function GET(request) {
           and(
             eq(photoAlbums.isPrivate, false),
             or(
-              ilike(libraryResources.title, pattern),
-              ilike(libraryResources.author, pattern)
-            )
-          )
-          .limit(3),
-
-        db
-          .select({
-            id: posts.id,
-            name: sql`LEFT(${posts.content}, 60)`.as("name"),
-            type: sql`'post'`.as("type"),
-          })
-          .from(posts)
-          .where(ilike(posts.content, pattern))
-          .orderBy(desc(posts.createdAt))
-          .limit(2),
-      ]);
+              ilike(photoAlbums.title, pattern),
+              ilike(photoAlbums.description, pattern),
+            ),
+          ),
+        )
+        .limit(3),
+    ]);
 
     const allResults = [
       ...userRows.map((u) => ({ ...u, href: `/profile/${u.id}` })),
@@ -253,6 +246,9 @@ export async function GET(request) {
       })),
       ...libraryRows.map((l) => ({ ...l, href: `/library?id=${l.id}` })),
       ...postRows.map((p) => ({ ...p, href: `/?highlight=${p.id}` })),
+      ...calendarRows.map((c) => ({ ...c, href: `/calendar` })),
+      ...photoRows.map((p) => ({ ...p, href: `/photos/${p.id}` })),
+      ...albumRows.map((a) => ({ ...a, href: `/photos/albums/${a.id}` })),
     ]
       .sort((a, b) => (a.rank || 9) - (b.rank || 9))
       .slice(0, 10);

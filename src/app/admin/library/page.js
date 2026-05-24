@@ -35,7 +35,7 @@ export default async function AdminLibraryPage() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {resources.map((r) => (
-              <div key={r.id} style={{ background: "var(--bg-card)", borderRadius: 10, padding: 16, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 16 }}>
+              <div key={r.id} style={{ background: "var(--bg-card)", borderRadius: 10, padding: 16, border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{r.title}</div>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>{r.type} · {r.faculty} · {r.subject}</div>
@@ -68,7 +68,7 @@ export default async function AdminLibraryPage() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {bookRequests.map((b) => (
-              <div key={b.id} style={{ background: "var(--bg-card)", borderRadius: 10, padding: 16, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 16 }}>
+              <div key={b.id} style={{ background: "var(--bg-card)", borderRadius: 10, padding: 16, border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{b.title}</div>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>

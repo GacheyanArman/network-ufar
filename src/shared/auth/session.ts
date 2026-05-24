@@ -1,8 +1,9 @@
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
+import { cache } from "react";
 
-export async function getSession() {
+export const getSession = cache(async function _getSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get("session")?.value;
 
@@ -18,13 +19,13 @@ export async function getSession() {
       const [row] = await db
         .select({ isBanned: users.isBanned, banExpiresAt: users.banExpiresAt })
         .from(users)
-        .where(eq(users.id, payload.userId))
+        .where(eq(users.id, payload.userId as string))
         .limit(1);
 
       if (row?.isBanned) {
         if (row.banExpiresAt && new Date(row.banExpiresAt) < new Date()) {
           const { sql } = await import("drizzle-orm");
-          await db.update(users).set({ isBanned: false, bannedAt: null, banReason: null, banExpiresAt: null }).where(eq(users.id, payload.userId));
+          await db.update(users).set({ isBanned: false, bannedAt: null, banReason: null, banExpiresAt: null }).where(eq(users.id, payload.userId as string));
         } else {
           return null;
         }
@@ -36,4 +37,4 @@ export async function getSession() {
     console.error("JWT verification failed:", e);
     return null;
   }
-}
+});

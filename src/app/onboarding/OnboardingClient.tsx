@@ -307,7 +307,7 @@ export default function OnboardingClient({
                 style={{
                   padding: "12px 20px",
                   borderRadius: 12,
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid var(--border-color)",
                   background: "var(--bg-card)",
                   color: "var(--text-primary)",
                   fontWeight: 800,

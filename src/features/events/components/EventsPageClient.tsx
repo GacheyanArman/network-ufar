@@ -740,7 +740,7 @@ function EventCard({
             marginLeft: "auto",
             padding: "6px 10px",
             borderRadius: 8,
-            background: "var(--bg-hover, #f1f5f9)",
+            background: "var(--bg-hover)",
             color: "var(--text-primary)",
             textDecoration: "none",
             fontWeight: 700,
@@ -863,7 +863,7 @@ function SkeletonGrid() {
             style={{
               height: 140,
               background:
-                "linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%)",
+                "linear-gradient(90deg, var(--bg-hover) 0%, var(--border-color) 50%, var(--bg-hover) 100%)",
               backgroundSize: "200% 100%",
               animation: "shimmer 1.4s infinite",
             }}

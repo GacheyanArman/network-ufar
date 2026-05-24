@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/shared/db/db";
 import { communities, communityMembers } from "@/shared/db/schema";
-import { getUserRole, isStaff } from "./roles";
+import { getUserRole, isStaff } from "@/shared/auth/roles";
 
 // --------- Canonical post types ---------
 export const POST_TYPES = [

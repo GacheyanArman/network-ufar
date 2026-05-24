@@ -8,22 +8,21 @@ import {
   type ChangeEvent,
 } from "react";
 import { createPost, type CreatePostState } from "@/features/feed/server/actions";
+import UiIcon from "@/shared/ui/UiIcon";
 
-const EMOJIS = [
-  "😂",
-  "❤️",
-  "🔥",
-  "👍",
-  "😭",
-  "🙏",
-  "😎",
-  "🤔",
-  "🎉",
-  "💯",
-  "👀",
-  "✨",
-  "🎓",
-  "💻",
+const EMOJI_CATEGORIES = [
+  {
+    label: "Frequently Used",
+    emojis: ["😂", "❤️", "🔥", "👍", "😭", "🙏", "😎", "🤔", "🎉", "💯", "👀", "✨"],
+  },
+  {
+    label: "Academic",
+    emojis: ["🎓", "📚", "💻", "📝", "🧠", "📖", "✏️", "🏫", "📐", "🔬", "📊", "🎯"],
+  },
+  {
+    label: "Reactions",
+    emojis: ["😍", "🥳", "😢", "😤", "🤣", "😴", "🤩", "🫡", "👏", "🙌", "💪", "🤝"],
+  },
 ];
 
 type MediaType = "image" | "video";
@@ -308,69 +307,207 @@ export default function PostComposer({
           position: "relative",
         }}
       >
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {/* Photo / Video button — styled like CommunityPostComposer */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
+              minHeight: 38,
+              padding: "0 14px",
+              border: "1px solid var(--border-color)",
+              borderRadius: 999,
+              background: "var(--bg-card)",
               color: "var(--text-secondary)",
-              fontWeight: "600",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              fontSize: 14,
+              fontWeight: 800,
+              cursor: "pointer",
+              transition: "all 0.16s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--french-blue-soft)";
+              e.currentTarget.style.color = "var(--french-blue)";
+              e.currentTarget.style.borderColor = "var(--french-blue)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--bg-card)";
+              e.currentTarget.style.color = "var(--text-secondary)";
+              e.currentTarget.style.borderColor = "var(--border-color)";
             }}
           >
-            🖼️ Photo / Video
+            <UiIcon name="image" size={18} />
+            <span>Photo / Video</span>
           </button>
 
+          {/* Emoji button — styled like CommunityPostComposer */}
           <button
             type="button"
             onClick={() => setShowEmojis((value) => !value)}
             style={{
-              background: "none",
-              border: "none",
+              minHeight: 38,
+              padding: "0 14px",
+              border: "1px solid var(--border-color)",
+              borderRadius: 999,
+              background: showEmojis ? "var(--french-blue-soft)" : "var(--bg-card)",
+              color: showEmojis ? "var(--french-blue)" : "var(--text-secondary)",
+              borderColor: showEmojis ? "var(--french-blue)" : undefined,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              fontSize: 14,
+              fontWeight: 800,
               cursor: "pointer",
-              color: "var(--text-secondary)",
-              fontWeight: "600",
+              transition: "all 0.16s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--french-blue-soft)";
+              e.currentTarget.style.color = "var(--french-blue)";
+              e.currentTarget.style.borderColor = "var(--french-blue)";
+            }}
+            onMouseLeave={(e) => {
+              if (!showEmojis) {
+                e.currentTarget.style.background = "var(--bg-card)";
+                e.currentTarget.style.color = "var(--text-secondary)";
+                e.currentTarget.style.borderColor = "var(--border-color)";
+              }
             }}
           >
-            😊 Emoji
+            <UiIcon name="smile" size={18} />
+            <span>Emoji</span>
           </button>
         </div>
 
+        {/* Premium emoji picker panel */}
         {showEmojis && (
           <div
             ref={emojiRef}
             style={{
               position: "absolute",
-              bottom: "48px",
+              bottom: "52px",
               left: "0",
-              background: "white",
+              width: "min(380px, calc(100vw - 48px))",
+              background: "var(--bg-card)",
               border: "1px solid var(--border-color)",
-              borderRadius: "12px",
-              padding: "10px",
-              display: "grid",
-              gridTemplateColumns: "repeat(8, 1fr)",
-              gap: "6px",
-              boxShadow: "var(--shadow-sm)",
-              zIndex: 20,
+              borderRadius: "16px",
+              padding: "0",
+              boxShadow: "0 12px 32px rgba(15, 23, 42, 0.12), 0 4px 8px rgba(15, 23, 42, 0.06)",
+              zIndex: 50,
+              overflow: "hidden",
             }}
           >
-            {EMOJIS.map((emoji) => (
+            {/* Picker header */}
+            <div
+              style={{
+                padding: "12px 16px",
+                borderBottom: "1px solid var(--border-color-light)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <UiIcon name="smile" size={16} color="var(--french-gold)" />
+                <span
+                  style={{
+                    fontSize: "0.78rem",
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: "var(--french-navy)",
+                  }}
+                >
+                  Emoji
+                </span>
+              </div>
               <button
-                key={emoji}
                 type="button"
-                onClick={() => setContent((value) => value + emoji)}
+                onClick={() => setShowEmojis(false)}
                 style={{
+                  width: 28,
+                  height: 28,
                   border: "none",
-                  background: "transparent",
+                  background: "var(--bg-hover)",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   cursor: "pointer",
-                  fontSize: "1.2rem",
+                  color: "var(--text-muted)",
+                  transition: "all 0.16s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--danger-soft)";
+                  e.currentTarget.style.color = "var(--danger)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "var(--bg-hover)";
+                  e.currentTarget.style.color = "var(--text-muted)";
                 }}
               >
-                {emoji}
+                <UiIcon name="x" size={14} />
               </button>
-            ))}
+            </div>
+
+            {/* Emoji categories */}
+            <div style={{ padding: "8px 12px 12px", maxHeight: "280px", overflowY: "auto" }}>
+              {EMOJI_CATEGORIES.map((category) => (
+                <div key={category.label} style={{ marginBottom: 8 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: "var(--text-muted)",
+                      padding: "6px 4px 4px",
+                    }}
+                  >
+                    {category.label}
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(8, 1fr)",
+                      gap: "2px",
+                    }}
+                  >
+                    {category.emojis.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setContent((value) => value + emoji)}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          fontSize: "1.35rem",
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "all 0.12s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "var(--french-blue-soft)";
+                          e.currentTarget.style.transform = "scale(1.2)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                          e.currentTarget.style.transform = "scale(1)";
+                        }}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

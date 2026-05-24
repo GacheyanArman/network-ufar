@@ -445,7 +445,7 @@ const searchPageStyles = `
 .uf-search-header p {
   margin: 0;
   font-size: 15px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
@@ -497,14 +497,14 @@ const searchPageStyles = `
   align-items: center;
   gap: 8px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-color-light);
 }
 
 .uf-search-section-count {
   font-size: 12px;
   font-weight: 700;
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--text-secondary);
+  background: var(--bg-hover);
   padding: 2px 8px;
   border-radius: 999px;
   margin-left: auto;
@@ -571,7 +571,7 @@ const searchPageStyles = `
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: #f1f5f9;
+  background: var(--bg-hover);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -579,7 +579,7 @@ const searchPageStyles = `
   flex-shrink: 0;
   font-weight: 900;
   font-size: 16px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .uf-search-item-thumb img {
@@ -607,7 +607,7 @@ const searchPageStyles = `
 
 .uf-search-item-info span {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -617,8 +617,8 @@ const searchPageStyles = `
 .uf-search-item-badge {
   font-size: 11px;
   font-weight: 700;
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--text-secondary);
+  background: var(--bg-hover);
   padding: 3px 8px;
   border-radius: 6px;
   text-transform: capitalize;
@@ -630,7 +630,7 @@ const searchPageStyles = `
   text-align: center;
   padding: 12px 0 0;
   margin-top: 8px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-color-light);
   color: #0b3aa8;
   font-size: 13px;
   font-weight: 800;
@@ -655,7 +655,7 @@ const searchPageStyles = `
   width: 96px;
   height: 96px;
   border-radius: 999px;
-  background: #f1f5f9;
+  background: var(--bg-hover);
   color: #cbd5e1;
   display: flex;
   align-items: center;
@@ -674,7 +674,7 @@ const searchPageStyles = `
   margin: 0;
   max-width: 420px;
   font-size: 15px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
   line-height: 1.6;
 }

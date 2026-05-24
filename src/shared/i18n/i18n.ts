@@ -702,6 +702,12 @@ export const translations = {
       today: "Today",
       noBirthdays: "No birthdays today.",
       happyBirthday: "Happy Birthday!",
+      deadlines: "Deadlines",
+      all: "All",
+      noMoreClasses: "No more classes today.",
+      allCaughtUp: "You\u2019re all caught up.",
+      notificationsLabel: "Notifications",
+      notificationsUnread: "Notifications ({count} unread)",
     },
 
     // Communities
@@ -1588,6 +1594,12 @@ export const translations = {
       today: "Aujourd'hui",
       noBirthdays: "Aucun anniversaire aujourd'hui.",
       happyBirthday: "Joyeux Anniversaire!",
+      deadlines: "Échéances",
+      all: "Tout",
+      noMoreClasses: "Plus de cours aujourd\u2019hui.",
+      allCaughtUp: "Tout est à jour.",
+      notificationsLabel: "Notifications",
+      notificationsUnread: "Notifications ({count} non lues)",
     },
 
     // Communities
@@ -2539,6 +2551,12 @@ export const translations = {
       today: "Այսօր",
       noBirthdays: "Այսօր ծննդյան օրեր չկան։",
       happyBirthday: "Շնորհավոր Ծննդյան Օր!",
+      deadlines: "Ժամկետներ",
+      all: "Բոլորը",
+      noMoreClasses: "Այսօր դասեր չկան։",
+      allCaughtUp: "Դուք ամեն ինչ հասցրել եք։",
+      notificationsLabel: "Ծանուցումներ",
+      notificationsUnread: "Ծանուցումներ ({count} չկարդացված)",
     },
 
     // Communities

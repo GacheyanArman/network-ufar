@@ -29,7 +29,7 @@ export default async function AdminPhotosPage() {
               style={{
                 background: "var(--bg-card)",
                 borderRadius: 10,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border-color)",
                 overflow: "hidden",
               }}
             >

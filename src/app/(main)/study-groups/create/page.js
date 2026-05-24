@@ -53,7 +53,7 @@ export default function CreateStudyGroupPage() {
             placeholder="What will you study? Who should join?"
             maxLength={1000}
             rows={3}
-            style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 10, padding: 10, fontSize: 14, resize: "none", fontFamily: "inherit" }}
+            style={{ width: "100%", border: "1px solid var(--border-color)", borderRadius: 10, padding: 10, fontSize: 14, resize: "none", fontFamily: "inherit" }}
           />
         </div>
 
@@ -62,7 +62,7 @@ export default function CreateStudyGroupPage() {
             <label style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)", display: "block", marginBottom: 8 }}>
               Meeting Day
             </label>
-            <select name="meetingDay" style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: 8, fontSize: 14 }}>
+            <select name="meetingDay" style={{ width: "100%", border: "1px solid var(--border-color)", borderRadius: 8, padding: 8, fontSize: 14 }}>
               <option value="">Select day</option>
               {DAYS.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
@@ -110,7 +110,7 @@ function CardInput({ label, name, placeholder, required, type = "text", min, max
         required={required}
         min={min}
         max={max}
-        style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: 8, fontSize: 14 }}
+        style={{ width: "100%", border: "1px solid var(--border-color)", borderRadius: 8, padding: 8, fontSize: 14 }}
       />
     </div>
   );

@@ -20,7 +20,7 @@ export default function AdminUsersClient({ users }: { users: Array<Record<string
             background: "var(--bg-card)",
             borderRadius: 10,
             padding: 16,
-            border: "1px solid #e2e8f0",
+            border: "1px solid var(--border-color)",
             display: "flex",
             alignItems: "center",
             gap: 16,
@@ -79,8 +79,8 @@ export default function AdminUsersClient({ users }: { users: Array<Record<string
             ) : (
               <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(async () => { await banUser(fd); }); }} style={{ display: "flex", gap: 4, alignItems: "center" }}>
                 <input type="hidden" name="userId" value={u.id} />
-                <input name="reason" placeholder="Reason..." style={{ fontSize: "0.8rem", padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6, width: 100 }} />
-                <select name="durationHours" defaultValue="" style={{ fontSize: "0.8rem", padding: "4px 6px", border: "1px solid #e2e8f0", borderRadius: 6 }}>
+                <input name="reason" placeholder="Reason..." style={{ fontSize: "0.8rem", padding: "4px 8px", border: "1px solid var(--border-color)", borderRadius: 6, width: 100 }} />
+                <select name="durationHours" defaultValue="" style={{ fontSize: "0.8rem", padding: "4px 6px", border: "1px solid var(--border-color)", borderRadius: 6 }}>
                   <option value="">Permanent</option>
                   <option value="1">1h</option>
                   <option value="6">6h</option>
@@ -97,7 +97,7 @@ export default function AdminUsersClient({ users }: { users: Array<Record<string
 
             <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(async () => { await changeUserRole(fd); }); }}>
               <input type="hidden" name="userId" value={u.id} />
-              <select name="role" defaultValue={u.role} style={{ fontSize: "0.8rem", padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 6 }}>
+              <select name="role" defaultValue={u.role} style={{ fontSize: "0.8rem", padding: "4px 8px", border: "1px solid var(--border-color)", borderRadius: 6 }}>
                 <option value="user">User</option>
                 <option value="moderator">Moderator</option>
                 <option value="admin">Admin</option>

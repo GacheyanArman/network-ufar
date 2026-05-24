@@ -325,7 +325,7 @@ export default function EventDetailClient({
                   fontSize: 11,
                   fontWeight: 800,
                   color: "var(--text-secondary)",
-                  background: "var(--bg-hover, #f1f5f9)",
+                  background: "var(--bg-hover)",
                   padding: "4px 10px",
                   borderRadius: 999,
                 }}
@@ -1400,7 +1400,7 @@ function Avatar({
         borderRadius: "50%",
         background: src
           ? `center/cover no-repeat url(${src})`
-          : "var(--bg-hover, #e2e8f0)",
+          : "var(--bg-hover)",
         color: "var(--text-secondary)",
         display: "flex",
         alignItems: "center",
@@ -1433,7 +1433,7 @@ function countBtn(primary = false, readOnly = false): React.CSSProperties {
     padding: "6px 12px",
     background: primary
       ? "var(--french-blue-soft, #e8eef9)"
-      : "var(--bg-hover, #f1f5f9)",
+      : "var(--bg-hover)",
     color: "var(--text-primary)",
     fontSize: 13,
     cursor: readOnly ? "default" : "pointer",
@@ -1505,6 +1505,6 @@ const smallPrimaryButtonStyle: React.CSSProperties = {
 const smallSecondaryButtonStyle: React.CSSProperties = {
   ...smallPrimaryButtonStyle,
   border: "1px solid var(--border-color)",
-  background: "var(--bg-hover, #f1f5f9)",
+  background: "var(--bg-hover)",
   color: "var(--text-primary)",
 };

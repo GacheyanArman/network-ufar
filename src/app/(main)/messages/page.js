@@ -333,7 +333,7 @@ const messagesStyles = `
   height: 40px;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: var(--text-secondary);
   border-radius: 12px;
   cursor: pointer;
   display: flex;
@@ -343,7 +343,7 @@ const messagesStyles = `
 }
 
 .tg-menu-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-hover);
   color: #0f172a;
 }
 
@@ -368,7 +368,7 @@ const messagesStyles = `
   width: 100%;
   height: 40px;
   padding: 0 16px 0 40px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   background: #f8fafc;
   font-size: 14px;
@@ -395,7 +395,7 @@ const messagesStyles = `
   width: 24px;
   height: 24px;
   border: none;
-  background: #e2e8f0;
+  background: var(--border-color);
   color: #475569;
   border-radius: 50%;
   cursor: pointer;
@@ -437,7 +437,7 @@ const messagesStyles = `
   padding: 12px 16px 8px;
   font-size: 13px;
   font-weight: 800;
-  color: #64748b;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -531,7 +531,7 @@ const messagesStyles = `
 .tg-chat-preview {
   margin: 0;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -553,7 +553,7 @@ const messagesStyles = `
   width: 80px;
   height: 80px;
   border-radius: 999px;
-  background: #f1f5f9;
+  background: var(--bg-hover);
   color: #cbd5e1;
   display: flex;
   align-items: center;
@@ -570,7 +570,7 @@ const messagesStyles = `
 .tg-empty-state p {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
   max-width: 280px;
 }
@@ -608,7 +608,7 @@ const messagesStyles = `
 .tg-empty-chat p {
   margin: 0;
   font-size: 15px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
   max-width: 360px;
 }
@@ -671,7 +671,7 @@ const messagesStyles = `
 
 .tg-chat-header-text span {
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
@@ -695,7 +695,7 @@ const messagesStyles = `
   width: 0;
   height: 40px;
   padding: 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   background: #f8fafc;
   font-size: 14px;
@@ -732,7 +732,7 @@ const messagesStyles = `
   height: 40px;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: var(--text-secondary);
   border-radius: 12px;
   cursor: pointer;
   display: flex;
@@ -745,7 +745,7 @@ const messagesStyles = `
 }
 
 .tg-header-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-hover);
   color: #0f172a;
 }
 
@@ -799,7 +799,7 @@ const messagesStyles = `
 .tg-empty-history p {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
@@ -818,7 +818,7 @@ const messagesStyles = `
   height: 40px;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: var(--text-secondary);
   border-radius: 12px;
   cursor: pointer;
   display: flex;
@@ -829,7 +829,7 @@ const messagesStyles = `
 }
 
 .tg-attach-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-hover);
   color: #0f172a;
 }
 
@@ -837,7 +837,7 @@ const messagesStyles = `
   flex: 1;
   height: 44px;
   padding: 0 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 22px;
   background: #f8fafc;
   font-size: 14px;
@@ -976,7 +976,7 @@ const messagesStyles = `
 }
 
 .tg-message-other .tg-message-time {
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .tg-message-wrapper {
@@ -1020,7 +1020,7 @@ const messagesStyles = `
   bottom: 80px;
   right: 20px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 8px 12px;
   display: flex;
@@ -1058,7 +1058,7 @@ const messagesStyles = `
   padding: 0 10px;
   border-radius: 8px;
   border: 1px solid transparent;
-  background: #f1f5f9;
+  background: var(--bg-hover);
   font-size: 13px;
   outline: none;
 }
@@ -1071,13 +1071,13 @@ const messagesStyles = `
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 700;
 }
 .tg-chat-search-meta button {
   width: 26px;
   height: 26px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   background: #fff;
   border-radius: 8px;
   cursor: pointer;
@@ -1093,7 +1093,7 @@ const messagesStyles = `
   gap: 4px;
   padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   background: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -1105,7 +1105,7 @@ const messagesStyles = `
   gap: 6px;
   font-size: 12px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 .tg-presence-dot {
   width: 8px;
@@ -1121,7 +1121,7 @@ const messagesStyles = `
 .tg-loading-more {
   text-align: center;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   padding: 8px;
 }
 
@@ -1175,7 +1175,7 @@ const messagesStyles = `
   z-index: 6;
   min-width: 180px;
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(15,23,42,0.16);
   padding: 4px;
@@ -1193,7 +1193,7 @@ const messagesStyles = `
   z-index: 20;
   min-width: 200px;
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(15,23,42,0.18);
   padding: 4px;
@@ -1217,7 +1217,7 @@ const messagesStyles = `
   width: 100%;
 }
 .tg-chat-header-menu-item:hover {
-  background: #f1f5f9;
+  background: var(--bg-hover);
 }
 .tg-chat-header-menu-item.danger {
   color: #b91c1c;
@@ -1237,7 +1237,7 @@ const messagesStyles = `
   color: #0f172a;
 }
 .tg-msg-menu button:hover {
-  background: #f1f5f9;
+  background: var(--bg-hover);
 }
 
 .tg-msg-edit textarea {
@@ -1276,7 +1276,7 @@ const messagesStyles = `
   color: #0b3aa8;
 }
 .tg-message-other .tg-msg-edit-actions button {
-  background: #f1f5f9;
+  background: var(--bg-hover);
   color: #0f172a;
 }
 .tg-message-other .tg-msg-edit-actions button.primary {
@@ -1322,7 +1322,7 @@ const messagesStyles = `
   margin-bottom: 6px;
 }
 .tg-message-other .tg-msg-file {
-  background: #f1f5f9;
+  background: var(--bg-hover);
 }
 
 /* Attachment preview chip */
@@ -1331,7 +1331,7 @@ const messagesStyles = `
   left: 16px;
   bottom: 64px;
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 6px 10px;
   display: flex;
@@ -1354,7 +1354,7 @@ const messagesStyles = `
   background: transparent;
   cursor: pointer;
   font-size: 16px;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1;
 }
 
@@ -1366,7 +1366,7 @@ const messagesStyles = `
   padding: 8px 14px;
   margin: 6px 0;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 700;
 }
 .tg-typing-dot {
@@ -1395,7 +1395,7 @@ const messagesStyles = `
 .tg-search-counter {
   font-size: 13px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-secondary);
   min-width: 60px;
   text-align: center;
 }

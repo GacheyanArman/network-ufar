@@ -58,7 +58,7 @@ export default function LanguageSwitcher() {
 
         .lang-flag-btn:hover {
           opacity: 0.85;
-          background: var(--bg-hover, #f1f5f9);
+          background: var(--bg-hover);
         }
 
         .lang-flag-btn.active {

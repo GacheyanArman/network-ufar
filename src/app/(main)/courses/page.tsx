@@ -82,7 +82,7 @@ export default async function CoursesDashboardPage() {
                     <Badge variant="gold">{enr.role.toUpperCase()}</Badge>
                   )}
                 </div>
-                <h2 style={{ fontSize: "1.2rem", margin: "0 0 16px", color: "var(--french-navy)", fontFamily: "Georgia, serif" }}>
+                <h2 style={{ fontSize: "1.2rem", margin: "0 0 16px", color: "var(--french-navy)", fontWeight: 700 }}>
                   {enr.courseName}
                 </h2>
                 <div style={{ display: "flex", gap: "12px", color: "var(--text-secondary)", fontSize: "0.9rem" }}>

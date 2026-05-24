@@ -581,7 +581,7 @@ const profileStyles = `
 .uf-profile-heading p {
   margin: 6px 0 0;
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
@@ -805,7 +805,7 @@ const profileStyles = `
 .uf-profile-empty p {
   margin: 0 auto;
   max-width: 420px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 15px;
   line-height: 1.55;
 }
@@ -836,7 +836,7 @@ const profileStyles = `
 .uf-info-block span {
   display: block;
   margin-bottom: 5px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 700;
 }

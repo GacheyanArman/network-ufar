@@ -309,7 +309,7 @@ const commentSectionStyles = `
 
 .uf-comment-bubble:hover {
   background: #f3f4f8;
-  border-color: #e2e8f0;
+  border-color: var(--border-color);
 }
 
 .uf-comment-header {
@@ -345,7 +345,7 @@ const commentSectionStyles = `
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -384,7 +384,7 @@ const commentSectionStyles = `
   align-items: center;
   gap: 8px;
   background: #ffffff;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--border-color);
   border-radius: 999px;
   padding: 4px 4px 4px 16px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);

@@ -3,50 +3,57 @@
 import { useEffect, useId, useRef, useState } from "react";
 import UiIcon from "@/shared/ui/UiIcon";
 import SearchBar from "@/features/search/components/SearchBar";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-/**
- * Topbar search trigger — icon button that reveals the full SearchBar
- * autocomplete in a dropdown anchored to the icon. Closes on outside
- * click and on Escape; when closing via Escape, focus returns to the
- * button so keyboard users keep their place.
- */
 export default function TopbarSearch() {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const dropdownId = useId();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!open) return;
 
-    function onClick(e: MouseEvent) {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+
+        requestAnimationFrame(() => {
+          buttonRef.current?.focus();
+        });
+      }
+    };
+
+    const onClickOutside = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setOpen(false);
-        // Return focus to the trigger so keyboard navigation continues
-        // from a sensible place.
-        buttonRef.current?.focus();
-      }
-    }
-    document.addEventListener("mousedown", onClick);
-    document.addEventListener("keydown", onKey);
+    };
 
-    // Move focus into the search input on open. Querying the dropdown is
-    // safer than reaching inside SearchBar's internals — any focusable
-    // input/button works.
-    const focusable =
-      dropdownRef.current?.querySelector<HTMLElement>("input, button");
-    focusable?.focus();
+    document.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("mousedown", onClickOutside);
 
     return () => {
-      document.removeEventListener("mousedown", onClick);
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onKeyDown, true);
+      document.removeEventListener("mousedown", onClickOutside);
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        const input = dropdownRef.current?.querySelector("input");
+        if (input) {
+          input.focus();
+        }
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
   }, [open]);
 
   return (
@@ -54,8 +61,8 @@ export default function TopbarSearch() {
       <button
         ref={buttonRef}
         type="button"
-        className="action-icon-btn topbar-action-icon"
-        aria-label="Search"
+        className={`action-icon-btn topbar-action-icon ${open ? "is-active" : ""}`}
+        aria-label={t("nav.search")}
         aria-expanded={open}
         aria-controls={dropdownId}
         onClick={() => setOpen((v) => !v)}
@@ -69,7 +76,7 @@ export default function TopbarSearch() {
           id={dropdownId}
           className="topbar-dropdown topbar-dropdown-search"
           role="dialog"
-          aria-label="Search"
+          aria-label={t("nav.search")}
         >
           <SearchBar />
         </div>

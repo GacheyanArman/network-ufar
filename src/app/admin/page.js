@@ -52,7 +52,7 @@ export default async function AdminDashboardPage() {
                 background: "var(--bg-card)",
                 borderRadius: 12,
                 padding: 20,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border-color)",
                 display: "flex",
                 alignItems: "center",
                 gap: 16,

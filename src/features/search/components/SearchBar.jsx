@@ -166,7 +166,7 @@ export default function SearchBar() {
     r.image;
 
   const iconStyle = (type) =>
-    TYPE_STYLE[type] || { bg: "#f1f5f9", color: "#64748b" };
+    TYPE_STYLE[type] || { bg: "var(--bg-hover)", color: "var(--text-secondary)" };
 
   return (
     <div className="uf-search-container" ref={searchRef}>
@@ -335,7 +335,7 @@ const searchStyles = `
   width: 100%;
   height: 42px;
   padding: 0 40px 0 40px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 999px;
   background: #f8fafc;
   font-size: 14px;
@@ -383,7 +383,7 @@ const searchStyles = `
   height: 24px;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
@@ -395,7 +395,7 @@ const searchStyles = `
 }
 
 .uf-search-clear:hover {
-  background: #f1f5f9;
+  background: var(--bg-hover);
   color: #0f172a;
 }
 
@@ -405,7 +405,7 @@ const searchStyles = `
   left: 0;
   right: 0;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   box-shadow: 0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.08);
   max-height: 480px;
@@ -427,7 +427,7 @@ const searchStyles = `
   text-decoration: none;
   color: #0f172a;
   transition: background 0.12s ease;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-color-light);
 }
 
 .uf-search-result:last-of-type {
@@ -483,7 +483,7 @@ const searchStyles = `
 
 .uf-search-result-info span {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -494,8 +494,8 @@ const searchStyles = `
   width: 26px;
   height: 26px;
   border-radius: 8px;
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -511,7 +511,7 @@ const searchStyles = `
   color: #0b3aa8;
   font-size: 13px;
   font-weight: 800;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-color);
   transition: background 0.12s ease;
 }
 
@@ -534,7 +534,7 @@ const searchStyles = `
 
 .uf-search-empty p {
   margin: 0;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
 }

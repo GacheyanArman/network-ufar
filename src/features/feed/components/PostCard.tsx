@@ -1064,7 +1064,7 @@ const postCardStyles = `
 
 .uf-post-action.like:hover,
 .uf-post-action.like.active {
-  color: #e11d48;
+  color: var(--danger);
 }
 
 .uf-post-action.like:hover .uf-post-action-icon,

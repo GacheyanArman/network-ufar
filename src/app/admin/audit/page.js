@@ -88,7 +88,7 @@ export default async function AdminAuditPage({ searchParams }) {
                 background: "var(--bg-card)",
                 borderRadius: 8,
                 padding: "10px 14px",
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border-color)",
                 display: "flex",
                 alignItems: "center",
                 gap: 12,

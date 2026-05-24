@@ -182,7 +182,7 @@ const editProfileStyles = `
 .uf-edit-header-text p {
   margin: 0;
   font-size: 15px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
   line-height: 1.5;
 }

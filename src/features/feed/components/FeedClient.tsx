@@ -196,69 +196,71 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
   }, [hasMore, isLoading, loadMore]);
 
   return (
-    <section className="card" style={{ padding: 0, overflow: "hidden" }}>
-      <div style={{ padding: "16px 18px", borderBottom: "1px solid var(--border-color-light)" }}>
-        <PostComposer currentUser={currentUser} onOptimisticPost={addOptimisticPost} />
-      </div>
+    <div className="feed-container" style={{ maxWidth: "720px", margin: "0 auto", width: "100%" }}>
+      <section className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: "16px 18px", borderBottom: "1px solid var(--border-color-light)" }}>
+          <PostComposer currentUser={currentUser} onOptimisticPost={addOptimisticPost} />
+        </div>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "6px",
-          padding: "8px 18px 12px",
-          borderBottom: "1px solid var(--border-color-light)",
-          flexWrap: "wrap",
-        }}
-      >
-        {FILTER_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setFilterBy(opt.value)}
-            style={{
-              border: "none",
-              borderRadius: "8px",
-              background: filterBy === opt.value
-                ? "linear-gradient(135deg, var(--french-blue), var(--french-navy))"
-                : "var(--bg-hover)",
-              color: filterBy === opt.value ? "var(--bg-card)" : "var(--text-secondary)",
-              fontSize: "0.80rem",
-              fontWeight: filterBy === opt.value ? 700 : 500,
-              padding: "5px 14px",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+        <div
+          style={{
+            display: "flex",
+            gap: "6px",
+            padding: "8px 18px 12px",
+            borderBottom: "1px solid var(--border-color-light)",
+            flexWrap: "wrap",
+          }}
+        >
+          {FILTER_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setFilterBy(opt.value)}
+              style={{
+                border: "none",
+                borderRadius: "8px",
+                background: filterBy === opt.value
+                  ? "linear-gradient(135deg, var(--french-blue), var(--french-navy))"
+                  : "var(--bg-hover)",
+                color: filterBy === opt.value ? "var(--bg-card)" : "var(--text-secondary)",
+                fontSize: "0.80rem",
+                fontWeight: filterBy === opt.value ? 700 : 500,
+                padding: "5px 14px",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
 
-      <div>
-        {displayed.length === 0 ? (
-          <div style={{ padding: "32px 18px", textAlign: "center", color: "var(--text-muted)", fontSize: "0.92rem" }}>
-            No items match this filter.
-          </div>
-        ) : (
-          <>
-            {displayed.map((item) => renderFeedItem(item))}
+        <div>
+          {displayed.length === 0 ? (
+            <div style={{ padding: "32px 18px", textAlign: "center", color: "var(--text-muted)", fontSize: "0.92rem" }}>
+              No items match this filter.
+            </div>
+          ) : (
+            <>
+              {displayed.map((item) => renderFeedItem(item))}
 
-            {hasMore && (
-              <div
-                ref={observerRef}
-                style={{ padding: "20px", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.86rem" }}
-              >
-                {isLoading ? "Loading more..." : ""}
-              </div>
-            )}
+              {hasMore && (
+                <div
+                  ref={observerRef}
+                  style={{ padding: "20px", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.86rem" }}
+                >
+                  {isLoading ? "Loading more..." : ""}
+                </div>
+              )}
 
-            {!hasMore && displayed.length > 0 && (
-              <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)", fontSize: "0.86rem" }}>
-                You&apos;ve reached the end
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </section>
+              {!hasMore && displayed.length > 0 && (
+                <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)", fontSize: "0.86rem" }}>
+                  You&apos;ve reached the end
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }

@@ -239,7 +239,7 @@ const pageCSS = `
 .uf-sg-header p {
   margin: 4px 0 0;
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .uf-sg-create-btn {
@@ -272,7 +272,7 @@ const pageCSS = `
   border-radius: 999px;
   border: 1px solid #d9e2ef;
   background: #fff;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
@@ -333,7 +333,7 @@ const pageCSS = `
   gap: 4px;
   font-size: 13px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .uf-sg-card-title {
@@ -348,14 +348,14 @@ const pageCSS = `
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
 .uf-sg-card-desc {
   margin: 0;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -366,7 +366,7 @@ const pageCSS = `
   gap: 8px;
   margin-top: auto;
   padding-top: 10px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-color-light);
 }
 
 .uf-sg-card-owner {
@@ -415,7 +415,7 @@ const pageCSS = `
 
 .uf-sg-action-btn--leave {
   background: #fff;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .uf-sg-action-btn--leave:hover { background: #f8fafc; }
@@ -463,7 +463,7 @@ const pageCSS = `
 .uf-sg-empty p {
   margin: 0 0 16px;
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 700px) {

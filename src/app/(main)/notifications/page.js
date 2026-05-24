@@ -339,7 +339,7 @@ const pageStyles = `
 
 .uf-notifications-title-wrap p {
   margin: 8px 0 0;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -396,7 +396,7 @@ const pageStyles = `
   border-radius: 999px;
   border: 1px solid #d9e2ef;
   background: #fff;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -609,7 +609,7 @@ const pageStyles = `
 }
 
 .uf-notification-time {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
 }
@@ -707,7 +707,7 @@ const pageStyles = `
 .uf-notifications-empty-card p {
   margin: 0 auto;
   max-width: 420px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.55;
 }

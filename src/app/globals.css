@@ -59,8 +59,8 @@
     --page-gap: 24px;
 
     --font-main:
-        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    --font-display: "Inter Display", "Inter", sans-serif;
+        var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-display: var(--font-inter), "Inter", sans-serif;
 
     /* Typography scale (Major Third, ratio 1.25). Use these for any new
      headings/sizes. Existing inline-styled headings remain — base h1..h4
@@ -78,6 +78,8 @@
     --fw-medium: 500;
     --fw-semibold: 600;
     --fw-bold: 700;
+    --fw-extrabold: 800;
+    --fw-black: 900;
 
     --lh-tight: 1.2;
     --lh-snug: 1.35;
@@ -263,7 +265,7 @@ button[type="submit"] {
     padding: 0 20px !important;
     font-size: 15px !important;
     border-radius: var(--radius-btn) !important;
-    font-weight: 800 !important;
+    font-weight: var(--fw-extrabold) !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -415,7 +417,7 @@ select:focus {
     align-items: center !important;
     justify-content: center !important;
     font-size: 22px !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
     letter-spacing: -0.02em !important;
     box-shadow:
         0 8px 20px rgba(44, 90, 160, 0.24),
@@ -454,7 +456,7 @@ select:focus {
 .brand-name {
     color: var(--french-navy) !important;
     font-size: 23px !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
     letter-spacing: -0.03em !important;
     font-family: var(--font-display) !important;
 }
@@ -555,7 +557,7 @@ select:focus {
         var(--french-navy) 100%
     ) !important;
     color: #ffffff !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
 }
 
 .logout-btn {
@@ -631,7 +633,7 @@ select:focus {
     margin: 12px 10px 8px !important;
     color: var(--text-muted) !important;
     font-size: 11px !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
     letter-spacing: 0.08em !important;
     text-transform: uppercase !important;
 }
@@ -646,7 +648,7 @@ select:focus {
     gap: 12px !important;
     text-decoration: none !important;
     font-size: 14px !important;
-    font-weight: 800 !important;
+    font-weight: var(--fw-extrabold) !important;
     transition:
         background-color 0.16s ease,
         color 0.16s ease,
@@ -736,7 +738,7 @@ select:focus {
     margin: 0 !important;
     color: var(--text-primary) !important;
     font-size: 14px !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
     letter-spacing: -0.02em !important;
 }
 
@@ -744,7 +746,7 @@ select:focus {
 .old-widget-count {
     color: var(--french-blue) !important;
     font-size: 12px !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
     text-decoration: none !important;
     transition: color 0.2s var(--transition-smooth) !important;
 }
@@ -803,7 +805,7 @@ select:focus {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
     box-shadow: 0 2px 8px rgba(44, 90, 160, 0.16) !important;
     transition: transform 0.2s var(--transition-smooth) !important;
 }
@@ -832,7 +834,7 @@ select:focus {
 
 .mini-user-main strong {
     font-size: 13px !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
 }
 
 .mini-user-main span {
@@ -862,20 +864,20 @@ select:focus {
     display: block !important;
     color: var(--text-primary) !important;
     font-size: 18px !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
     letter-spacing: -0.035em !important;
 }
 
 .old-feed-header span {
     color: var(--text-secondary) !important;
     font-size: 13px !important;
-    font-weight: 700 !important;
+    font-weight: var(--fw-bold) !important;
 }
 
 .old-feed-header a {
     color: var(--french-blue) !important;
     font-size: 13px !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
     text-decoration: none !important;
 }
 
@@ -949,7 +951,7 @@ textarea[name="content"]:focus {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
 }
 
 .old-composer-avatar img,
@@ -990,7 +992,7 @@ button[type="button"] {
     border: 1px solid var(--border-color-light) !important;
     background: #ffffff !important;
     color: var(--text-secondary) !important;
-    font-weight: 800 !important;
+    font-weight: var(--fw-extrabold) !important;
 }
 
 .old-composer-tool:hover,
@@ -1012,7 +1014,7 @@ button[type="submit"].old-composer-submit {
         var(--french-navy) 100%
     ) !important;
     color: #ffffff !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
     cursor: pointer !important;
 }
 
@@ -1091,7 +1093,7 @@ button:disabled {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12) !important;
 }
 
@@ -1120,7 +1122,7 @@ button:disabled {
 .tw-name {
     color: #020617 !important;
     font-size: 15px !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
 }
 
 .tw-handle,
@@ -1128,7 +1130,7 @@ button:disabled {
 .tw-dot {
     color: var(--text-secondary) !important;
     font-size: 14px !important;
-    font-weight: 500 !important;
+    font-weight: var(--fw-medium) !important;
 }
 
 .tw-menu-btn,
@@ -1160,7 +1162,7 @@ button:disabled {
 .tw-hashtag,
 .tw-mention {
     color: var(--french-blue) !important;
-    font-weight: 800 !important;
+    font-weight: var(--fw-extrabold) !important;
     text-decoration: none !important;
 }
 
@@ -1216,7 +1218,7 @@ button:disabled {
     gap: 4px !important;
     cursor: pointer !important;
     font-size: 13px !important;
-    font-weight: 800 !important;
+    font-weight: var(--fw-extrabold) !important;
 }
 
 .tw-action-icon-wrap {
@@ -1328,7 +1330,7 @@ button:disabled {
     border: 4px solid #ffffff !important;
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18) !important;
     font-size: 44px !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
 }
 
 .clean-profile-avatar img {
@@ -1349,7 +1351,7 @@ button:disabled {
     color: #020617 !important;
     font-size: 28px !important;
     line-height: 1.08 !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
     letter-spacing: -0.045em !important;
 }
 
@@ -1358,7 +1360,7 @@ button:disabled {
     margin: 6px 0 0 !important;
     color: var(--text-secondary) !important;
     font-size: 14px !important;
-    font-weight: 600 !important;
+    font-weight: var(--fw-semibold) !important;
 }
 
 .clean-profile-badges {
@@ -1380,7 +1382,7 @@ button:disabled {
     align-items: center !important;
     gap: 8px !important;
     font-size: 13px !important;
-    font-weight: 850 !important;
+    font-weight: var(--fw-extrabold) !important;
 }
 
 .clean-profile-badge strong {
@@ -1450,7 +1452,7 @@ button:disabled {
     justify-content: center !important;
     text-decoration: none !important;
     font-size: 14px !important;
-    font-weight: 900 !important;
+    font-weight: var(--fw-black) !important;
     box-shadow: var(--shadow-elegant) !important;
     transition: all 0.3s var(--transition-smooth) !important;
 }
@@ -1478,7 +1480,7 @@ button:disabled {
     color: #475569 !important;
     text-decoration: none !important;
     font-size: 14px !important;
-    font-weight: 650 !important;
+    font-weight: var(--fw-semibold) !important;
     border-radius: 10px !important;
 }
 
@@ -1496,7 +1498,7 @@ button:disabled {
 .clean-profile-stat-row strong {
     color: var(--french-blue) !important;
     font-size: 16px !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
 }
 
 .clean-profile-main {
@@ -1520,7 +1522,7 @@ button:disabled {
     color: #475569 !important;
     border-bottom: 4px solid transparent !important;
     font-size: 15px !important;
-    font-weight: 850 !important;
+    font-weight: var(--fw-extrabold) !important;
     text-decoration: none !important;
 }
 
@@ -1574,7 +1576,7 @@ button:disabled {
     align-items: center !important;
     justify-content: center !important;
     overflow: hidden !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
 }
 
 .clean-post-avatar img {
@@ -1594,7 +1596,7 @@ button:disabled {
 .clean-post-name-row strong {
     color: #020617 !important;
     font-size: 15px !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
 }
 
 .clean-post-name-row span,
@@ -1665,7 +1667,7 @@ button:disabled {
     justify-content: center !important;
     gap: 9px !important;
     font-size: 14px !important;
-    font-weight: 700 !important;
+    font-weight: var(--fw-bold) !important;
 }
 
 .clean-action-icon {
@@ -1683,7 +1685,7 @@ button:disabled {
     margin: 0 0 8px !important;
     color: var(--text-primary) !important;
     font-size: 20px !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
 }
 
 .clean-profile-empty p {
@@ -1708,7 +1710,7 @@ button:disabled {
     margin: 0 0 18px !important;
     color: var(--text-primary) !important;
     font-size: 17px !important;
-    font-weight: 950 !important;
+    font-weight: var(--fw-black) !important;
 }
 
 .clean-info-block {
@@ -1721,7 +1723,7 @@ button:disabled {
     margin-bottom: 5px !important;
     color: var(--text-secondary) !important;
     font-size: 13px !important;
-    font-weight: 800 !important;
+    font-weight: var(--fw-extrabold) !important;
 }
 
 .clean-info-block strong {
@@ -2125,7 +2127,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     gap: 9px;
     text-decoration: none;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
     transition:
         background-color 160ms ease,
         border-color 160ms ease,
@@ -2173,7 +2175,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     align-items: center;
     justify-content: center;
     font-size: 10px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     line-height: 1;
 }
 
@@ -2201,7 +2203,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     line-height: 1;
     box-shadow: 0 4px 12px rgba(215, 25, 32, 0.22);
 }
@@ -2275,7 +2277,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin: 0;
     color: #0f172a;
     font-size: 15px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     letter-spacing: -0.02em;
 }
 
@@ -2283,7 +2285,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin: 2px 0 0;
     color: #64748b;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 .uf-birthday-empty {
@@ -2308,7 +2310,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin: 0;
     color: #64748b;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 /* =========================================================
@@ -2405,7 +2407,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     line-height: 1;
     box-shadow: 0 4px 12px rgba(215, 25, 32, 0.22);
 }
@@ -2454,7 +2456,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin: 0;
     color: #0f172a;
     font-size: 15px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     letter-spacing: -0.02em;
 }
 
@@ -2462,7 +2464,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin: 2px 0 0;
     color: #64748b;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 .uf-birthday-empty {
@@ -2482,7 +2484,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin: 0;
     color: #64748b;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 .uf-birthday-list {
@@ -2518,7 +2520,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     align-items: center;
     justify-content: center;
     font-size: 16px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     flex-shrink: 0;
     overflow: hidden;
 }
@@ -2540,7 +2542,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .uf-birthday-info strong {
     color: #0f172a;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2549,7 +2551,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .uf-birthday-info span {
     color: #64748b;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
 }
 
 /* =========================================================
@@ -2741,7 +2743,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: rgba(15, 23, 42, 0.62);
     color: #ffffff;
     font-size: 13px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .uf-photo-viewer-nav {
@@ -2816,7 +2818,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .uf-photo-viewer-avatar img,
@@ -2830,7 +2832,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     display: block;
     color: #0f172a;
     font-size: 15px;
-    font-weight: 950;
+    font-weight: var(--fw-black);
 }
 
 .uf-photo-viewer-author span {
@@ -2838,7 +2840,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin-top: 3px;
     color: #64748b;
     font-size: 13px;
-    font-weight: 750;
+    font-weight: var(--fw-bold);
 }
 
 .uf-photo-viewer-caption {
@@ -2851,7 +2853,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     color: #27364a;
     font-size: 15px;
     line-height: 1.55;
-    font-weight: 650;
+    font-weight: var(--fw-semibold);
 }
 
 .uf-photo-viewer-muted {
@@ -2871,7 +2873,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: #eef4ff;
     color: #0b3aa8;
     font-size: 12px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     border: 1px solid #dbeafe;
 }
 
@@ -2898,7 +2900,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     gap: 2px;
     cursor: pointer;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
     transition: color 160ms ease;
     text-decoration: none;
 }
@@ -2927,7 +2929,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     min-width: 12px;
     color: currentColor;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 .uf-photo-viewer-action:disabled {
@@ -2977,7 +2979,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin: 0 0 12px;
     color: #0f172a;
     font-size: 14px;
-    font-weight: 950;
+    font-weight: var(--fw-black);
 }
 
 .uf-photo-viewer-student-box div {
@@ -2994,13 +2996,13 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .uf-photo-viewer-student-box span {
     color: #64748b;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
 }
 
 .uf-photo-viewer-student-box strong {
     color: #334155;
     font-size: 13px;
-    font-weight: 850;
+    font-weight: var(--fw-extrabold);
     text-align: right;
 }
 
@@ -3014,13 +3016,13 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .uf-photo-viewer-comments-title strong {
     color: #0f172a;
     font-size: 14px;
-    font-weight: 950;
+    font-weight: var(--fw-black);
 }
 
 .uf-photo-viewer-comments-title span {
     color: #0b3aa8;
     font-size: 12px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .uf-photo-viewer-comment {
@@ -3044,7 +3046,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 
 .uf-photo-viewer-comment p strong {
     color: #0f172a;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .uf-photo-viewer-comment small {
@@ -3052,7 +3054,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin-top: 3px;
     color: #94a3b8;
     font-size: 11px;
-    font-weight: 750;
+    font-weight: var(--fw-bold);
 }
 
 .uf-photo-viewer-empty-comments {
@@ -3062,7 +3064,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     border: 1px dashed #cbd5e1;
     color: #64748b;
     font-size: 14px;
-    font-weight: 750;
+    font-weight: var(--fw-bold);
     text-align: center;
 }
 
@@ -3138,7 +3140,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: #0b3aa8;
     color: white;
     font-size: 16px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -3162,7 +3164,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     padding: 0 14px;
     background: transparent !important;
     color: #0b3aa8;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     font-size: 13px;
     letter-spacing: 0.2px;
     text-transform: uppercase;
@@ -3204,7 +3206,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: rgba(11, 58, 168, 0.06);
     color: #334155;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 .uf-photo-viewer-replying-banner strong {
@@ -3262,7 +3264,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     align-items: center;
     justify-content: center;
     font-size: 12px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .uf-ig-comment.is-reply .uf-ig-comment-avatar {
@@ -3292,7 +3294,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 
 .uf-ig-comment-text strong {
-    font-weight: 850;
+    font-weight: var(--fw-extrabold);
     margin-right: 4px;
 }
 
@@ -3303,12 +3305,12 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin-top: 4px;
     color: #64748b;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 .uf-ig-comment-time {
     color: #94a3b8;
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
 }
 
 .uf-ig-comment-likes {
@@ -3320,7 +3322,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: transparent;
     color: #64748b;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
     padding: 0;
     cursor: pointer;
     font-family: inherit;
@@ -3437,7 +3439,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     text-align: left;
     padding: 8px 12px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
     color: #1e293b;
     border-radius: 6px;
     cursor: pointer;
@@ -3472,7 +3474,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: transparent;
     color: #475569;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
     padding: 0;
     cursor: pointer;
     text-align: left;
@@ -3558,7 +3560,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     gap: 8px;
     color: var(--text-secondary);
     font-size: 14px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
     text-decoration: none;
     transition: color 0.2s ease;
     align-self: flex-start;
@@ -3590,7 +3592,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     justify-content: center;
     color: #ffffff;
     font-size: 36px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     box-shadow: 0 8px 24px rgba(11, 58, 168, 0.2);
     flex-shrink: 0;
 }
@@ -3627,7 +3629,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     flex-wrap: wrap;
     color: var(--text-primary);
     font-size: 26px;
-    font-weight: 950;
+    font-weight: var(--fw-black);
     letter-spacing: -0.02em;
 }
 
@@ -3645,7 +3647,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     flex-wrap: wrap;
     color: var(--text-secondary);
     font-size: 13px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 .uf-community-meta-item {
@@ -3683,7 +3685,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: transparent;
     color: var(--text-secondary);
     font-size: 14px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
     text-decoration: none;
     display: inline-flex;
     align-items: center;
@@ -3717,7 +3719,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: rgba(44, 90, 160, 0.12);
     color: var(--french-blue);
     font-size: 11px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3764,7 +3766,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     gap: 8px;
     color: var(--text-primary);
     font-size: 14px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
@@ -3788,7 +3790,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: var(--french-blue-soft);
     color: var(--french-blue);
     font-size: 13px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .uf-sidebar-member-row {
@@ -3803,7 +3805,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .uf-sidebar-member-name {
     color: var(--text-primary);
     font-size: 14px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3816,7 +3818,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     padding: 3px 10px;
     border-radius: 999px;
     font-size: 11px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     letter-spacing: 0.02em;
     line-height: 1;
 }
@@ -3846,7 +3848,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 12px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     line-height: 1;
 }
 
@@ -3876,7 +3878,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: #ffffff;
     color: var(--text-secondary);
     font-size: 13px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -3907,7 +3909,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     padding: 3px 10px;
     border-radius: 6px;
     font-size: 11px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
@@ -3951,7 +3953,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: var(--french-gold-soft);
     color: #8a6d1a;
     font-size: 11px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
@@ -3965,7 +3967,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: #ecfdf5;
     color: #047857;
     font-size: 11px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
@@ -3994,7 +3996,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin: 0;
     color: var(--text-primary);
     font-size: 18px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .uf-empty-description {
@@ -4041,7 +4043,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     margin: 0;
     color: var(--text-primary);
     font-size: 17px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .uf-members-panel-close {
@@ -4094,13 +4096,13 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .uf-member-name {
     color: var(--text-primary);
     font-size: 14px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .uf-member-meta {
     color: var(--text-secondary);
     font-size: 12px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 .uf-chip-btn {
@@ -4111,7 +4113,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: #ffffff;
     color: var(--text-secondary);
     font-size: 12px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
     cursor: pointer;
     transition: all 0.2s ease;
     display: inline-flex;
@@ -4174,7 +4176,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: var(--french-blue-soft);
     color: var(--french-blue);
     font-size: 12px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
     line-height: 1;
 }
 
@@ -4185,7 +4187,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     gap: 10px;
     color: var(--text-primary);
     font-size: 20px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .uf-card-section-title .uf-community-pill {
@@ -4207,7 +4209,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .uf-best-answer-title {
     color: #065f46;
     font-size: 12px;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     letter-spacing: 0.04em;
     text-transform: uppercase;
     display: inline-flex;
@@ -4225,7 +4227,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .uf-best-answer-author {
     color: #065f46;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: var(--fw-extrabold);
 }
 
 @media (max-width: 1024px) {
@@ -4276,7 +4278,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     align-items: center;
     gap: 8px;
     font-size: 1rem;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
     color: var(--french-navy);
     margin: 0 0 12px;
     text-transform: uppercase;
@@ -4306,7 +4308,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 
 .dash-quick-action-label {
     color: var(--french-navy);
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
 }
 
 .dashboard-grid {
@@ -4345,7 +4347,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 
 .dash-next-class-code {
     font-size: 1.05rem;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
     color: var(--french-gold);
     margin-bottom: 4px;
 }
@@ -4361,7 +4363,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 
 .dash-next-class-time {
     font-size: 1.15rem;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 .dash-next-class-day {
@@ -4388,17 +4390,17 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .dash-deadline-month {
     font-size: 0.7rem;
     text-transform: uppercase;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 .dash-deadline-day {
     font-size: 1.1rem;
-    font-weight: 900;
+    font-weight: var(--fw-black);
     line-height: 1.1;
 }
 
 .dash-deadline-title {
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
     color: var(--french-navy);
 }
 
@@ -4427,7 +4429,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 
 .dash-material-title {
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
     color: var(--french-navy);
 }
 
@@ -4438,7 +4440,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 
 .dash-accent {
     color: var(--french-gold);
-    font-weight: 700;
+    font-weight: var(--fw-bold);
 }
 
 /* Announcements */
@@ -4472,7 +4474,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 
 .dash-event-title {
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
     color: var(--french-navy);
 }
 
@@ -4491,7 +4493,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 
 .dash-community-title {
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
     color: var(--french-navy);
 }
 
@@ -4524,7 +4526,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     background: #e11d48;
     color: var(--bg-card);
     font-size: 10px;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -4610,7 +4612,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 
 .right-widget-time {
     font-size: 0.8rem;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
     color: var(--french-navy);
     min-width: 46px;
 }
@@ -4629,13 +4631,13 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 
 .right-widget-month {
     font-size: 0.62rem;
-    font-weight: 700;
+    font-weight: var(--fw-bold);
     text-transform: uppercase;
 }
 
 .right-widget-day {
     font-size: 0.9rem;
-    font-weight: 900;
+    font-weight: var(--fw-black);
 }
 
 .right-widget-main {
@@ -4648,7 +4650,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 
 .right-widget-main strong {
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

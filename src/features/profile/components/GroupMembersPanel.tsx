@@ -244,7 +244,7 @@ export default function GroupMembersPanel({
                 height: 36,
                 padding: "0 12px",
                 borderRadius: 10,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border-color)",
                 background: "var(--bg-soft)",
                 fontSize: 13,
               }}
@@ -314,7 +314,7 @@ export default function GroupMembersPanel({
                   alignItems: "center",
                   gap: 10,
                   padding: "10px 18px",
-                  borderBottom: "1px solid #f1f5f9",
+                  borderBottom: "1px solid var(--border-color-light)",
                 }}
               >
                 <Avatar src={m.image || undefined} thumbnailUrl={undefined} alt={m.fullName} size={36} className="" />
@@ -394,7 +394,7 @@ const iconBtn: React.CSSProperties = {
 const miniBtn: React.CSSProperties = {
   width: 28,
   height: 28,
-  border: "1px solid #e2e8f0",
+  border: "1px solid var(--border-color)",
   background: "var(--bg-card)",
   borderRadius: 8,
   cursor: "pointer",

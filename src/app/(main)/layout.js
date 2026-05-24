@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { getServerTranslator } from "@/shared/i18n/server";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSession } from "@/shared/auth/session";
@@ -9,8 +10,6 @@ import { getFacultyLabel } from "@/features/profile/server/utils";
 import {
   getCachedUserBasicInfo,
   getCachedUnreadNotifications,
-  getCachedFollowingSummary,
-  getCachedPeopleYouMayKnow,
 } from "@/shared/cache/cache";
 import UiIcon from "@/shared/ui/UiIcon";
 import LanguageSwitcher from "@/shared/ui/LanguageSwitcher";
@@ -18,11 +17,14 @@ import NavigationMenu from "@/shared/ui/NavigationMenu";
 import TopbarSearch from "@/shared/ui/TopbarSearch";
 import TopbarNotifications from "@/shared/ui/TopbarNotifications";
 import RightPanelWidgets from "@/features/dashboard/components/RightPanelWidgets";
+import RightPanelSocialWidgets from "@/features/dashboard/components/RightPanelSocialWidgets";
 
 // Routes where the right sidebar is intentionally hidden.
 // Keeping this list server-side lets us skip the DB fetches entirely
 // instead of just CSS-hiding the panel after the queries already ran.
 const HIDE_RIGHT_PANEL_PREFIXES = ["/messages", "/group-chats"];
+
+
 
 export default async function MainLayout({ children }) {
   const session = await getSession();
@@ -33,6 +35,7 @@ export default async function MainLayout({ children }) {
 
   const cookieStore = await cookies();
   const lang = cookieStore.get("language")?.value || "en";
+  const t = getServerTranslator(lang);
 
   // Derive the current pathname from request headers so we can skip
   // the right-panel queries on routes where the sidebar is hidden.
@@ -47,12 +50,10 @@ export default async function MainLayout({ children }) {
 
   // Fetch user info + notifications unconditionally; social widget data
   // only when the right panel will actually be rendered.
-  const [currentUser, unreadNotifications, followingSummary, peopleYouMayKnow] =
+  const [currentUser, unreadNotifications] =
     await Promise.all([
       getCachedUserBasicInfo(session.userId),
       getCachedUnreadNotifications(session.userId),
-      showRightPanel ? getCachedFollowingSummary(session.userId, 5) : Promise.resolve({ count: 0, users: [] }),
-      showRightPanel ? getCachedPeopleYouMayKnow(session.userId, 5) : Promise.resolve([]),
     ]);
 
   if (currentUser && !currentUser.onboardingComplete) {
@@ -74,13 +75,12 @@ export default async function MainLayout({ children }) {
             </Link>
           </div>
 
-          <div className="topbar-actions">
-            <TopbarSearch />
-            <TopbarNotifications unread={unreadNotifications} />
-          </div>
+          <div className="topbar-actions" />
 
           <div className="clean-topbar-profile">
             <LanguageSwitcher />
+
+            <TopbarNotifications unread={unreadNotifications} />
 
             <Link href="/profile" className="topbar-avatar-link">
               {avatarImage ? (
@@ -99,7 +99,7 @@ export default async function MainLayout({ children }) {
             <form action={logoutUser}>
               <button type="submit" className="logout-btn clean-logout-btn">
                 <UiIcon name="logout" size={16} />
-                <span>Logout</span>
+                <span>{t("common.logout")}</span>
               </button>
             </form>
           </div>
@@ -115,113 +115,14 @@ export default async function MainLayout({ children }) {
 
         {showRightPanel && (
           <aside className="sidebar-right">
+            <div className="card right-widget" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", overflow: "visible", position: "relative", zIndex: 100 }}>
+              <h4 className="widget-title" style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--french-navy)", margin: 0 }}>
+                <UiIcon name="search" size={16} color="var(--french-gold)" /> {t("nav.search") || "Search"}
+              </h4>
+              <TopbarSearch />
+            </div>
             <RightPanelWidgets userId={session.userId} />
-
-            <div className="card">
-              <div className="old-widget-head">
-                <h4 className="widget-title">You may also know</h4>
-                <Link href="/friends" className="old-widget-link">
-                  View all
-                </Link>
-              </div>
-
-              {peopleYouMayKnow.length === 0 ? (
-                <div className="empty-state-mini">
-                  <p>No suggestions.</p>
-                </div>
-              ) : (
-                <div className="mini-user-list">
-                  {peopleYouMayKnow.map((user) => (
-                    <div className="mini-user-row" key={user.id}>
-                      <Link
-                        href={`/profile/${user.id}`}
-                        className="mini-user-avatar"
-                        style={{ textDecoration: "none" }}
-                      >
-                        {user.image || user.avatarUrl ? (
-                          <Image
-                            src={user.image || user.avatarUrl}
-                            alt={user.fullName}
-                            width={40}
-                            height={40}
-                          />
-                        ) : (
-                          user.fullName?.[0] || "U"
-                        )}
-                      </Link>
-
-                      <Link
-                        href={`/profile/${user.id}`}
-                        className="mini-user-main"
-                      >
-                        <strong>{user.fullName}</strong>
-                        <span>{user.reason}</span>
-                      </Link>
-
-                      <form action={followUser}>
-                        <input type="hidden" name="targetId" value={user.id} />
-                        <button className="btn btn-secondary">Follow</button>
-                      </form>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="card" style={{ padding: "0" }}>
-              <div
-                className="old-widget-head"
-                style={{ padding: "8px 8px 0" }}
-              >
-                <h4 className="widget-title" style={{ borderBottom: "none" }}>
-                  FOLLOWING
-                </h4>
-                <span className="old-widget-count">
-                  {followingSummary.count}
-                </span>
-              </div>
-
-              {followingSummary.users.length === 0 ? (
-                <div className="empty-state-mini" style={{ padding: "8px" }}>
-                  <p>You are not following anyone yet.</p>
-                </div>
-              ) : (
-                <div
-                  className="mini-user-list"
-                  style={{ padding: "0 8px 8px" }}
-                >
-                  {followingSummary.users.map((user) => (
-                    <Link
-                      href={`/profile/${user.id}`}
-                      className="mini-user-row mini-user-row-link"
-                      key={user.id}
-                    >
-                      <div className="mini-user-avatar">
-                        {user.image || user.avatarUrl ? (
-                          <Image
-                            src={user.image || user.avatarUrl}
-                            alt={user.fullName}
-                            width={40}
-                            height={40}
-                          />
-                        ) : (
-                          user.fullName?.[0] || "U"
-                        )}
-                      </div>
-
-                      <div className="mini-user-main">
-                        <strong>{user.fullName}</strong>
-                        <span>
-                          {user.faculty
-                            ? getFacultyLabel(user.faculty, lang)
-                            : user.username || "Student"}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+            <RightPanelSocialWidgets userId={session.userId} lang={lang} />
           </aside>
         )}
       </div>

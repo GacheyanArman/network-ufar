@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { db } from "@/shared/db/db";
 import {
   users,
@@ -24,151 +25,181 @@ import {
   PageShell,
 } from "@/shared/ui/Layout";
 import { Button } from "@/shared/ui/Button";
+import { Language } from "@/shared/i18n/i18n";
+import { getServerTranslator } from "@/shared/i18n/server";
 
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+let DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 type TodayDashboardProps = {
   userId: string;
-  /**
-   * Pre-fetched user info (from page.tsx's cached user call).
-   * Saves an extra `users.fullName` round-trip.
-   */
   currentUser: { fullName: string | null } | null;
 };
 
-/**
- * Today Dashboard — server component.
- *
- * Renders six sections: Next Class, Upcoming Deadlines, New Materials,
- * Pinned Announcements, Events This Week, and My Communities.
- */
 export default async function TodayDashboard({
   userId,
   currentUser,
 }: TodayDashboardProps) {
-  const now = new Date();
+  // await the cookies, Next.js requires this now
+  let cookieStore = await cookies();
+  let langCookie = cookieStore.get("language");
+  
+  let lang = "en";
+  if (langCookie != undefined) {
+    lang = langCookie.value;
+  }
+  
+  let t = getServerTranslator(lang as Language);
+  
+  let localeStr = "en-US";
+  if (lang == "hy") {
+    localeStr = "hy-AM";
+  } else if (lang == "fr") {
+    localeStr = "fr-FR";
+  }
 
-  // Stage 1: course enrollments only.
-  const enrollments = await db
+  let now = new Date();
+
+  let enrollments = await db
     .select({ courseId: courseEnrollments.courseId })
     .from(courseEnrollments)
     .where(eq(courseEnrollments.userId, userId));
 
-  const resolvedName = currentUser?.fullName;
-  const greeting = resolvedName
-    ? `Welcome back, ${resolvedName.split(" ")[0]}`
-    : "Welcome to Campus Hub";
-  const myCourseIds = enrollments
-    .map((e) => e.courseId)
-    .filter(Boolean) as string[];
+  let resolvedName = "";
+  if (currentUser != null && currentUser.fullName != null) {
+    resolvedName = currentUser.fullName;
+  }
 
-  const currentDayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
-  const currentTime = now.toTimeString().slice(0, 5);
+  let greeting = "Campus Hub";
+  if (resolvedName != "") {
+    let firstName = resolvedName.split(" ")[0];
+    greeting = t("today.title") + ", " + firstName;
+  }
+    
+  // explicitly define type to prevent TS7034
+  let myCourseIds: string[] = [];
+  for (let i = 0; i < enrollments.length; i++) {
+    if (enrollments[i].courseId != null) {
+      myCourseIds.push(enrollments[i].courseId as string);
+    }
+  }
 
-  // Stage 2: parallel — six sections.
-  //
-  // Schedule + deadlines come from shared cached helpers, so the right
-  // panel widget on the home page reuses the same SQL within a render.
-  const [
-    mySchedule,
-    cachedDeadlines,
-    newMaterials,
-    pinnedAnnouncements,
-    eventsThisWeek,
-    myCommunities,
-  ] = await Promise.all([
-    getCachedUserSchedule(userId),
+  let currentDayOfWeek = now.getDay() - 1;
+  if (now.getDay() == 0) {
+    currentDayOfWeek = 6;
+  }
+  
+  let currentTime = now.toTimeString().slice(0, 5);
 
-    getCachedUpcomingDeadlines(userId),
+  let mySchedule = await getCachedUserSchedule(userId);
+  let cachedDeadlines = await getCachedUpcomingDeadlines(userId);
 
-    myCourseIds.length > 0
-      ? db
-          .select({
-            id: studyMaterials.id,
-            title: studyMaterials.title,
-            type: studyMaterials.type,
-            courseCode: courses.code,
-            createdAt: studyMaterials.createdAt,
-          })
-          .from(studyMaterials)
-          .leftJoin(courses, eq(studyMaterials.courseId, courses.id))
-          .where(
-            and(
-              eq(studyMaterials.status, "approved"),
-              inArray(studyMaterials.courseId, myCourseIds),
-            ),
-          )
-          .orderBy(desc(studyMaterials.createdAt))
-          .limit(4)
-      : Promise.resolve([] as any[]),
-
-    db
+  type MaterialItem = {
+    id: string;
+    title: string;
+    type: string | null;
+    courseCode: string | null;
+    createdAt: Date | null;
+  };
+  let newMaterials: MaterialItem[] = [];
+  if (myCourseIds.length > 0) {
+    newMaterials = await db
       .select({
-        id: posts.id,
-        content: posts.content,
-        authorName: users.fullName,
-        createdAt: posts.createdAt,
+        id: studyMaterials.id,
+        title: studyMaterials.title,
+        type: studyMaterials.type,
+        courseCode: courses.code,
+        createdAt: studyMaterials.createdAt,
       })
-      .from(posts)
-      .innerJoin(users, eq(posts.authorId, users.id))
-      .where(and(eq(posts.postType, "announcement"), eq(posts.isPinned, true)))
-      .orderBy(desc(posts.pinnedAt))
-      .limit(2),
-
-    db
-      .select({
-        id: events.id,
-        title: events.title,
-        startTime: events.startTime,
-        location: events.location,
-      })
-      .from(events)
-      .where(and(gte(events.startTime, now), eq(events.status, "approved")))
-      .orderBy(asc(events.startTime))
-      .limit(3),
-
-    db
-      .select({
-        id: communities.id,
-        name: communities.name,
-        avatar: communities.avatar,
-        role: communityMembers.role,
-      })
-      .from(communityMembers)
-      .innerJoin(communities, eq(communityMembers.communityId, communities.id))
+      .from(studyMaterials)
+      .leftJoin(courses, eq(studyMaterials.courseId, courses.id))
       .where(
         and(
-          eq(communityMembers.userId, userId),
-          eq(communities.status, "approved"),
+          eq(studyMaterials.status, "approved"),
+          inArray(studyMaterials.courseId, myCourseIds),
         ),
       )
-      .orderBy(desc(communityMembers.createdAt))
-      .limit(4),
-  ]);
-
-  // "Next class" = the next entry that hasn't started yet, scanning today
-  // (after current time) → following days → wraparound to start of week.
-  // Schedule rows are pre-sorted (dayOfWeek, startTime).
-  let nextClass = mySchedule.find(
-    (s) => s.dayOfWeek === currentDayOfWeek && s.startTime >= currentTime,
-  );
-  let isNextWeek = false;
-
-  if (!nextClass) {
-    nextClass = mySchedule.find((s) => s.dayOfWeek > currentDayOfWeek);
+      .orderBy(desc(studyMaterials.createdAt))
+      .limit(4);
   }
-  if (!nextClass && mySchedule.length > 0) {
+
+  let pinnedAnnouncements = await db
+    .select({
+      id: posts.id,
+      content: posts.content,
+      authorName: users.fullName,
+      createdAt: posts.createdAt,
+    })
+    .from(posts)
+    .innerJoin(users, eq(posts.authorId, users.id))
+    .where(and(eq(posts.postType, "announcement"), eq(posts.isPinned, true)))
+    .orderBy(desc(posts.pinnedAt))
+    .limit(2);
+
+  let eventsThisWeek = await db
+    .select({
+      id: events.id,
+      title: events.title,
+      startTime: events.startTime,
+      location: events.location,
+    })
+    .from(events)
+    .where(and(gte(events.startTime, now), eq(events.status, "approved")))
+    .orderBy(asc(events.startTime))
+    .limit(3);
+
+  let myCommunities = await db
+    .select({
+      id: communities.id,
+      name: communities.name,
+      avatar: communities.avatar,
+      role: communityMembers.role,
+    })
+    .from(communityMembers)
+    .innerJoin(communities, eq(communityMembers.communityId, communities.id))
+    .where(
+      and(
+        eq(communityMembers.userId, userId),
+        eq(communities.status, "approved"),
+      ),
+    )
+    .orderBy(desc(communityMembers.createdAt))
+    .limit(4);
+
+  let nextClass = null;
+  for (let i = 0; i < mySchedule.length; i++) {
+    if (mySchedule[i].dayOfWeek == currentDayOfWeek && mySchedule[i].startTime >= currentTime) {
+      nextClass = mySchedule[i];
+      break;
+    }
+  }
+  
+  let isNextWeek = false;
+  if (nextClass == null) {
+    for (let i = 0; i < mySchedule.length; i++) {
+      if (mySchedule[i].dayOfWeek > currentDayOfWeek) {
+        nextClass = mySchedule[i];
+        break;
+      }
+    }
+  }
+  
+  if (nextClass == null && mySchedule.length > 0) {
     nextClass = mySchedule[0];
     isNextWeek = true;
   }
 
-  const upcomingDeadlines = cachedDeadlines.slice(0, 3);
+  let upcomingDeadlines: typeof cachedDeadlines = [];
+  for (let i = 0; i < cachedDeadlines.length; i++) {
+    if (i < 3) {
+      upcomingDeadlines.push(cachedDeadlines[i]);
+    }
+  }
 
   return (
     <PageShell variant="wide" className="dashboard-page">
       <PageHeader
         title={greeting}
-        description={now.toLocaleDateString("en-US", {
+        description={now.toLocaleDateString(localeStr, {
           weekday: "long",
           month: "long",
           day: "numeric",
@@ -180,22 +211,22 @@ export default async function TodayDashboard({
         <QuickActionLink
           href="/study-materials"
           icon="upload"
-          label="Upload Material"
+          label={t("emptyStates.materials.upload")}
         />
         <QuickActionLink
           href="/courses"
           icon="message-circle"
-          label="Ask Question"
+          label={t("communities.questions")}
         />
         <QuickActionLink
           href="/study-groups"
           icon="users"
-          label="Create Group"
+          label={t("studyGroups.createGroup")}
         />
         <QuickActionLink
           href="/lost-found"
           icon="search"
-          label="Report Lost Item"
+          label={t("lostFound.reportItem")}
         />
       </div>
 
@@ -203,38 +234,36 @@ export default async function TodayDashboard({
         {/* Section 1: Next Class */}
         <section className="dashboard-section">
           <h2 className="dash-section-title">
-            <UiIcon name="book-open" size={20} color="var(--french-gold)" /> Next Class
+            <UiIcon name="book-open" size={20} color="var(--french-gold)" /> {t("today.nextClass")}
           </h2>
           <Card padding="none">
-            {nextClass ? (
+            {nextClass != null ? (
               <div className="dash-next-class">
                 <div>
                   <div className="dash-next-class-code">
                     {nextClass.courseCode || nextClass.courseName}
                   </div>
                   <div className="dash-next-class-room">
-                    Room: {nextClass.room || "TBA"}
+                    {t("today.room")}: {nextClass.room || "TBA"}
                   </div>
                 </div>
                 <div className="dash-next-class-meta">
                   <div className="dash-next-class-time">{nextClass.startTime}</div>
                   <div className="dash-next-class-day">
-                    {nextClass.dayOfWeek === currentDayOfWeek && !isNextWeek
-                      ? "Today"
-                      : isNextWeek
-                        ? `Next ${DAY_LABELS[nextClass.dayOfWeek]}`
-                        : DAY_LABELS[nextClass.dayOfWeek]}
+                    {nextClass.dayOfWeek == currentDayOfWeek && isNextWeek == false
+                      ? t("today.title")
+                      : DAY_LABELS[nextClass.dayOfWeek]}
                   </div>
                 </div>
               </div>
             ) : (
               <EmptyState
                 icon="calendar"
-                title="No classes scheduled"
+                title={t("today.noClasses")}
                 action={
                   <Link href="/schedule">
                     <Button variant="outline" size="sm">
-                      Manage Schedule
+                      {t("today.seeSchedule")}
                     </Button>
                   </Link>
                 }
@@ -246,7 +275,7 @@ export default async function TodayDashboard({
         {/* Section 2: Upcoming Deadlines */}
         <section className="dashboard-section">
           <h2 className="dash-section-title">
-            <UiIcon name="clock" size={20} color="var(--french-gold)" /> Upcoming Deadlines
+            <UiIcon name="clock" size={20} color="var(--french-gold)" /> {t("today.deadlines")}
           </h2>
           {upcomingDeadlines.length > 0 ? (
             <div className="dash-list">
@@ -255,7 +284,7 @@ export default async function TodayDashboard({
                   <div className="dash-deadline-row">
                     <div className="dash-deadline-date">
                       <div className="dash-deadline-month">
-                        {new Date(d.dueDate).toLocaleString("en-US", {
+                        {new Date(d.dueDate).toLocaleString(localeStr, {
                           month: "short",
                         })}
                       </div>
@@ -273,7 +302,7 @@ export default async function TodayDashboard({
             </div>
           ) : (
             <Card padding="md">
-              <EmptyState icon="check-circle" title="You're all caught up!" />
+              <EmptyState icon="check-circle" title={t("today.noDeadlines")} />
             </Card>
           )}
         </section>
@@ -281,7 +310,7 @@ export default async function TodayDashboard({
         {/* Section 3: New Materials */}
         <section className="dashboard-section">
           <h2 className="dash-section-title">
-            <UiIcon name="folder" size={20} color="var(--french-gold)" /> New Materials
+            <UiIcon name="folder" size={20} color="var(--french-gold)" /> {t("today.newMaterials")}
           </h2>
           {newMaterials.length > 0 ? (
             <div className="dash-list">
@@ -315,20 +344,20 @@ export default async function TodayDashboard({
             <Card padding="md">
               <EmptyState
                 icon="folder"
-                title="No new materials"
+                title={t("today.noMaterials")}
                 description={
                   myCourseIds.length > 0
-                    ? "No new materials in your courses."
-                    : "Enroll in courses to see materials."
+                    ? t("today.noMaterials")
+                    : t("emptyStates.materials.noUploadedHint")
                 }
                 action={
                   <Link
-                    href={myCourseIds.length > 0 ? "/study-materials" : "/courses"}
+                    href={myCourseIds.length > 0 ? "/study-materials" : "/courses?tab=enroll"}
                   >
                     <Button variant="outline" size="sm">
                       {myCourseIds.length > 0
-                        ? "Browse Materials"
-                        : "View My Courses"}
+                        ? t("emptyStates.materials.browse")
+                        : t("nav.courses")}
                     </Button>
                   </Link>
                 }
@@ -341,7 +370,7 @@ export default async function TodayDashboard({
         {pinnedAnnouncements.length > 0 && (
           <section className="dashboard-section dashboard-section-wide">
             <h2 className="dash-section-title">
-              <UiIcon name="bell" size={20} color="var(--french-gold)" /> Campus Announcements
+              <UiIcon name="bell" size={20} color="var(--french-gold)" /> {t("communities.announcements")}
             </h2>
             <div className="dash-announcements-grid">
               {pinnedAnnouncements.map((a) => (
@@ -352,7 +381,7 @@ export default async function TodayDashboard({
                 >
                   <div className="dash-announcement-meta">
                     <strong>{a.authorName}</strong> •{" "}
-                    {new Date(a.createdAt).toLocaleDateString()}
+                    {new Date(a.createdAt).toLocaleDateString(localeStr)}
                   </div>
                   <p className="dash-announcement-body">{a.content}</p>
                 </Card>
@@ -364,7 +393,7 @@ export default async function TodayDashboard({
         {/* Section 5: Events This Week */}
         <section className="dashboard-section">
           <h2 className="dash-section-title">
-            <UiIcon name="calendar" size={20} color="var(--french-gold)" /> Events This Week
+            <UiIcon name="calendar" size={20} color="var(--french-gold)" /> {t("today.eventsThisWeek")}
           </h2>
           {eventsThisWeek.length > 0 ? (
             <div className="dash-list">
@@ -378,7 +407,7 @@ export default async function TodayDashboard({
                     <div className="dash-event-row">
                       <div className="dash-event-title">{e.title}</div>
                       <div className="dash-event-meta">
-                        <span>{new Date(e.startTime).toLocaleDateString()}</span>
+                        <span>{new Date(e.startTime).toLocaleDateString(localeStr)}</span>
                         <span>•</span>
                         <span>{e.location || "TBA"}</span>
                       </div>
@@ -391,11 +420,11 @@ export default async function TodayDashboard({
             <Card padding="md">
               <EmptyState
                 icon="calendar"
-                title="No upcoming events."
+                title={t("today.noEvents")}
                 action={
                   <Link href="/events">
                     <Button variant="outline" size="sm">
-                      Browse Events
+                      {t("emptyStates.explore.browseEvents")}
                     </Button>
                   </Link>
                 }
@@ -407,7 +436,7 @@ export default async function TodayDashboard({
         {/* Section 6: My Communities */}
         <section className="dashboard-section">
           <h2 className="dash-section-title">
-            <UiIcon name="group" size={20} color="var(--french-gold)" /> My Communities
+            <UiIcon name="group" size={20} color="var(--french-gold)" /> {t("communities.myCommunities")}
           </h2>
           {myCommunities.length > 0 ? (
             <div className="dash-list">
@@ -430,11 +459,11 @@ export default async function TodayDashboard({
             <Card padding="md">
               <EmptyState
                 icon="group"
-                title="You're not in any communities yet."
+                title={t("communities.noCommunities")}
                 action={
                   <Link href="/communities">
                     <Button variant="outline" size="sm">
-                      Discover Communities
+                      {t("communities.browseCommunities")}
                     </Button>
                   </Link>
                 }

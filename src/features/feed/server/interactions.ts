@@ -369,7 +369,7 @@ export async function getPostCommentsForViewer(
   // Pre-fetch which of these the current user has liked, in one query.
   let likedSet = new Set<string>();
   if (currentUserId && rows.length > 0) {
-    const ids = rows.map((r) => r.id);
+    const ids = rows.map((r: any) => r.id);
     const likedRows = await db
       .select({ commentId: commentLikes.commentId })
       .from(commentLikes)
@@ -379,7 +379,7 @@ export async function getPostCommentsForViewer(
           inArray(commentLikes.commentId, ids),
         ),
       );
-    likedSet = new Set(likedRows.map((r) => r.commentId));
+    likedSet = new Set(likedRows.map((r: any) => r.commentId));
   }
 
   const byId = new Map<string, ViewerComment>();

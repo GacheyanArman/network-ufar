@@ -184,7 +184,7 @@ export async function getCalendarFeed(filters: CalendarFeedFilters = {}) {
     .select({ communityId: communityMembers.communityId })
     .from(communityMembers)
     .where(eq(communityMembers.userId, userId));
-  const myCommunityIds = myMemberships.map((m) => m.communityId);
+  const myCommunityIds = myMemberships.map((m: any) => m.communityId);
 
   const conditions = [
     or(
@@ -262,13 +262,13 @@ export async function getCalendarFeed(filters: CalendarFeedFilters = {}) {
   const mirroredEventKeys = new Set(
     rawAcademic
       .filter(
-        (r) =>
+        (r: any) =>
           r.entry.createdBy === userId &&
           !r.entry.isPublic &&
           r.entry.eventType === "event",
       )
       .map(
-        (r) => `${r.entry.title}::${new Date(r.entry.dueDate).toISOString()}`,
+        (r: any) => `${r.entry.title}::${new Date(r.entry.dueDate).toISOString()}`,
       ),
   );
 
@@ -278,7 +278,7 @@ export async function getCalendarFeed(filters: CalendarFeedFilters = {}) {
     .select({ eventId: eventRsvps.eventId })
     .from(eventRsvps)
     .where(and(eq(eventRsvps.userId, userId), eq(eventRsvps.status, "going")));
-  const rsvpEventIds = myRsvps.map((r) => r.eventId);
+  const rsvpEventIds = myRsvps.map((r: any) => r.eventId);
 
   if (rsvpEventIds.length > 0) {
     const rsvpRows = await db

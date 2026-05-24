@@ -123,7 +123,7 @@ export async function fetchPhotoFeed(
 
   if (rows.length === 0) return [];
 
-  const photoIds = rows.map((r) => r.id);
+  const photoIds = rows.map((r: any) => r.id);
 
   // Hashtags per photo.
   const tagRows = await db
@@ -173,7 +173,7 @@ export async function fetchPhotoFeed(
         pid,
         list
           .reverse()
-          .map((c) => ({
+          .map((c: any) => ({
             id: c.id,
             content: c.content,
             createdAt: c.createdAt,
@@ -185,7 +185,7 @@ export async function fetchPhotoFeed(
     }
   }
 
-  return rows.map((r) => ({
+  return rows.map((r: any) => ({
     id: r.id,
     imageUrl: r.imageUrl,
     caption: r.caption,

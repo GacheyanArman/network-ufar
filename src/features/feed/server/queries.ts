@@ -384,9 +384,9 @@ export async function getUnifiedFeed(
       .where(or(eq(blockedUsers.blockerId, userId), eq(blockedUsers.blockedId, userId))),
   ]);
 
-  const friendIds = new Set(friendRows.map((r) => getOtherFriendId(r, userId)));
-  const followingIds = new Set(followRows.map((r) => r.followingId));
-  const communityIds = new Set(communityRows.map((r) => r.communityId));
+  const friendIds = new Set<string>(friendRows.map((r: any) => getOtherFriendId(r, userId)));
+  const followingIds = new Set<string>(followRows.map((r: any) => r.followingId));
+  const communityIds = new Set<string>(communityRows.map((r: any) => r.communityId));
   const blockedUserIds = new Set<string>();
   for (const r of blockedRows) {
     blockedUserIds.add(r.blockerId === userId ? r.blockedId : r.blockerId);
@@ -495,8 +495,8 @@ export async function getUnifiedFeed(
     .limit(5),
   ]);
 
-  const eventOrganizerIds = upcomingEvents.map((e) => e.organizerId);
-  const eventCommunityIds = upcomingEvents.filter((e) => e.communityId).map((e) => e.communityId!);
+  const eventOrganizerIds = upcomingEvents.map((e: any) => e.organizerId);
+  const eventCommunityIds = upcomingEvents.filter((e: any) => e.communityId).map((e: any) => e.communityId!);
 
   const [
     organizerNames,
@@ -513,15 +513,15 @@ export async function getUnifiedFeed(
       : [],
     upcomingEvents.length > 0
       ? db.select({ eventId: eventRsvps.eventId }).from(eventRsvps)
-        .where(and(inArray(eventRsvps.eventId, upcomingEvents.map((e) => e.id)), eq(eventRsvps.status, "going")))
+        .where(and(inArray(eventRsvps.eventId, upcomingEvents.map((e: any) => e.id)), eq(eventRsvps.status, "going")))
       : [],
     upcomingEvents.length > 0
       ? db.select({ eventId: eventRsvps.eventId }).from(eventRsvps)
-        .where(and(inArray(eventRsvps.eventId, upcomingEvents.map((e) => e.id)), eq(eventRsvps.userId, userId), eq(eventRsvps.status, "going")))
+        .where(and(inArray(eventRsvps.eventId, upcomingEvents.map((e: any) => e.id)), eq(eventRsvps.userId, userId), eq(eventRsvps.status, "going")))
       : [],
     trendingPhotos.length > 0
       ? db.select({ photoId: photoLikes.photoId }).from(photoLikes)
-        .where(and(inArray(photoLikes.photoId, trendingPhotos.map((p) => p.id)), eq(photoLikes.userId, userId)))
+        .where(and(inArray(photoLikes.photoId, trendingPhotos.map((p: any) => p.id)), eq(photoLikes.userId, userId)))
       : [],
   ]);
 
@@ -537,16 +537,16 @@ export async function getUnifiedFeed(
   const allItems: UnifiedFeedItem[] = [];
 
   const filteredPosts = candidatePosts
-    .filter((post) => {
+    .filter((post: any) => {
       if (post.authorId === userId) return true;
       const privacy = post.authorPrivacyLevel || "public";
       if (privacy === "private") return false;
       if (privacy === "friends") return friendIds.has(post.authorId);
       return true;
     })
-    .filter((post) => post.postType !== "announcement" || !post.isPinned);
+    .filter((post: any) => post.postType !== "announcement" || !post.isPinned);
 
-  const postIdsForLikes = filteredPosts.slice(0, limit).map((p) => p.id);
+  const postIdsForLikes = filteredPosts.slice(0, limit).map((p: any) => p.id);
   const [likedRows, commentRows] = postIdsForLikes.length > 0 ? await Promise.all([
     db.select({ postId: postLikes.postId }).from(postLikes)
       .where(and(inArray(postLikes.postId, postIdsForLikes), eq(postLikes.userId, userId))),

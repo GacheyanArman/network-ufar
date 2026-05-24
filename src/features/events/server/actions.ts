@@ -336,7 +336,7 @@ export async function getEventsList(filters: EventListFilters = {}) {
           .select({ communityId: communityMembers.communityId })
           .from(communityMembers)
           .where(eq(communityMembers.userId, userId))
-      ).map((m) => m.communityId)
+      ).map((m: any) => m.communityId)
     : [];
   const role = userId ? await getUserRole(userId) : "user";
   const staff = isStaff(role as any);
@@ -465,7 +465,7 @@ export async function getEventsList(filters: EventListFilters = {}) {
     .limit(120);
 
   // Aggregate RSVP counts and the current user's RSVP, in two side queries.
-  const eventIds = rows.map((r) => r.id);
+  const eventIds = rows.map((r: any) => r.id);
 
   const [rsvpCounts, userRsvps, coOrganizerSets] = await Promise.all([
     eventIds.length
@@ -539,7 +539,7 @@ export async function getEventsList(filters: EventListFilters = {}) {
     coOrganizers.set(c.eventId, s);
   }
 
-  let normalized = rows.map((e) => {
+  let normalized = rows.map((e: any) => {
     const c = counts.get(e.id) || { going: 0, interested: 0, waitlisted: 0 };
     const my = myRsvp.get(e.id) ?? null;
     const isMine =
@@ -585,7 +585,7 @@ export async function getEventsList(filters: EventListFilters = {}) {
   // need a UNION otherwise.
   if (filters.filter === "my_events" && userId) {
     normalized = normalized.filter(
-      (e) =>
+      (e: any) =>
         e.isMine ||
         e.rsvpStatus === "going" ||
         e.rsvpStatus === "interested" ||
@@ -596,7 +596,7 @@ export async function getEventsList(filters: EventListFilters = {}) {
   if (filters.query) {
     const q = filters.query.trim().toLowerCase();
     if (q) {
-      normalized = normalized.filter((e) =>
+      normalized = normalized.filter((e: any) =>
         [
           e.title,
           e.description ?? "",
@@ -764,9 +764,9 @@ export async function getEventAttendees(eventId: string) {
     .orderBy(asc(eventRsvps.waitlistPosition), asc(users.fullName));
 
   return {
-    going: rows.filter((r) => r.status === "going"),
-    interested: rows.filter((r) => r.status === "interested"),
-    waitlisted: rows.filter((r) => r.status === "waitlisted"),
+    going: rows.filter((r: any) => r.status === "going"),
+    interested: rows.filter((r: any) => r.status === "interested"),
+    waitlisted: rows.filter((r: any) => r.status === "waitlisted"),
   };
 }
 
@@ -1383,10 +1383,10 @@ export async function searchEventCoOrganizerCandidates(
     .select({ userId: eventCoOrganizers.userId })
     .from(eventCoOrganizers)
     .where(eq(eventCoOrganizers.eventId, eventId));
-  const existingIds = new Set(existing.map((c) => c.userId));
+  const existingIds = new Set(existing.map((c: any) => c.userId));
 
   return rows.filter(
-    (u) => u.id !== event.organizerId && !existingIds.has(u.id),
+    (u: any) => u.id !== event.organizerId && !existingIds.has(u.id),
   );
 }
 

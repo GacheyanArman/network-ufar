@@ -177,11 +177,11 @@ export async function getMaterials(filters: MaterialFilters = {}) {
         .from(studyMaterialRatings)
         .where(eq(studyMaterialRatings.userId, userId)),
     ]);
-    savedIds = new Set(saves.map((s) => s.materialId));
-    userRatings = new Map(ratings.map((r) => [r.materialId, r.rating]));
+    savedIds = new Set<string>(saves.map((s: any) => s.materialId));
+    userRatings = new Map<string, number>(ratings.map((r: any) => [r.materialId, r.rating]));
   }
 
-  return rows.map((m) => ({
+  return rows.map((m: any) => ({
     ...m,
     averageRating:
       m.ratingCount > 0
@@ -238,14 +238,14 @@ export async function getMyMaterials() {
   ]);
 
   return {
-    uploaded: uploaded.map((u) => ({
+    uploaded: uploaded.map((u: any) => ({
       ...u,
       averageRating:
         u.ratingCount > 0
           ? Math.round((u.ratingSum / u.ratingCount) * 10) / 10
           : 0,
     })),
-    saved: savedData.map((s) => s.material),
+    saved: savedData.map((s: any) => s.material),
     requested,
   };
 }
@@ -612,10 +612,10 @@ export async function getOpenMaterialRequests() {
       .select({ requestId: studyMaterialRequestSupporters.requestId })
       .from(studyMaterialRequestSupporters)
       .where(eq(studyMaterialRequestSupporters.userId, userId));
-    supportedIds = new Set(supports.map((s) => s.requestId));
+    supportedIds = new Set<string>(supports.map((s: any) => s.requestId));
   }
 
-  return rows.map((r) => ({
+  return rows.map((r: any) => ({
     ...r,
     isSupportedByMe: supportedIds.has(r.id),
     isMine: r.userId === userId,

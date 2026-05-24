@@ -98,9 +98,9 @@ export async function GET(request: NextRequest) {
     ]);
 
     const suggestions = [
-      ...userResults.map((user) => ({ ...user, type: "user" })),
-      ...postResults.map((post) => ({ ...post, type: "post" })),
-      ...communityResults.map((community) => ({ ...community, type: "community" })),
+      ...userResults.map((user: any) => ({ ...user, type: "user" })),
+      ...postResults.map((post: any) => ({ ...post, type: "post" })),
+      ...communityResults.map((community: any) => ({ ...community, type: "community" })),
     ];
 
     return NextResponse.json(suggestions);

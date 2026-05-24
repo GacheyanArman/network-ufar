@@ -279,7 +279,7 @@ export default async function TodayDashboard({
           </h2>
           {upcomingDeadlines.length > 0 ? (
             <div className="dash-list">
-              {upcomingDeadlines.map((d) => (
+              {upcomingDeadlines.map((d: any) => (
                 <Card key={d.id} padding="sm" interactive>
                   <div className="dash-deadline-row">
                     <div className="dash-deadline-date">
@@ -373,7 +373,7 @@ export default async function TodayDashboard({
               <UiIcon name="bell" size={20} color="var(--french-gold)" /> {t("communities.announcements")}
             </h2>
             <div className="dash-announcements-grid">
-              {pinnedAnnouncements.map((a) => (
+              {pinnedAnnouncements.map((a: any) => (
                 <Card
                   key={a.id}
                   padding="md"
@@ -397,7 +397,7 @@ export default async function TodayDashboard({
           </h2>
           {eventsThisWeek.length > 0 ? (
             <div className="dash-list">
-              {eventsThisWeek.map((e) => (
+              {eventsThisWeek.map((e: any) => (
                 <Link
                   key={e.id}
                   href={`/events/${e.id}`}
@@ -440,7 +440,7 @@ export default async function TodayDashboard({
           </h2>
           {myCommunities.length > 0 ? (
             <div className="dash-list">
-              {myCommunities.map((c) => (
+              {myCommunities.map((c: any) => (
                 <Link
                   key={c.id}
                   href={`/communities/${c.id}`}

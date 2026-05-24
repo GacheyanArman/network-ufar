@@ -125,7 +125,7 @@ export async function getActiveStoryAuthors(viewerId: string) {
     .groupBy(stories.ownerId, users.fullName, users.image)
     .orderBy(desc(sql`MAX(${stories.createdAt})`));
 
-  return rows.map((row) => ({
+  return rows.map((row: any) => ({
     ownerId: row.ownerId,
     ownerName: row.ownerName,
     ownerAvatar: row.ownerAvatar,

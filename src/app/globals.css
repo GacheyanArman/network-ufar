@@ -522,6 +522,11 @@ select:focus {
     color: var(--french-blue) !important;
 }
 
+.action-icon-btn.is-active {
+    background: var(--french-blue-soft) !important;
+    color: var(--french-blue) !important;
+}
+
 .user-dropdown-btn {
     display: inline-flex !important;
     align-items: center !important;
@@ -4535,23 +4540,77 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 
 .topbar-dropdown {
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + 10px);
     right: 0;
     z-index: 50;
     background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
-    padding: 12px;
+    border: 1px solid var(--border-color-light);
+    border-radius: 16px;
+    box-shadow:
+        0 20px 48px rgba(15, 23, 42, 0.14),
+        0 6px 14px rgba(15, 23, 42, 0.08),
+        0 0 0 1px rgba(15, 23, 42, 0.02);
+    padding: 14px;
+    transform-origin: top right;
+    animation: topbar-dropdown-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.topbar-dropdown::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    right: 18px;
+    width: 12px;
+    height: 12px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color-light);
+    border-left: 1px solid var(--border-color-light);
+    transform: rotate(45deg);
+    border-radius: 2px 0 0 0;
+}
+
+@keyframes topbar-dropdown-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .topbar-dropdown-search {
-    width: min(420px, calc(100vw - 32px));
+    width: min(460px, calc(100vw - 24px));
+    padding: 12px;
+}
+
+/* When SearchBar lives inside the topbar dropdown, render its results
+   inline so the whole search surface feels like one cohesive panel. */
+.topbar-dropdown-search .uf-search-dropdown {
+    position: static !important;
+    margin-top: 10px !important;
+    border: 1px solid var(--border-color-light) !important;
+    box-shadow: none !important;
+    border-radius: 12px !important;
+    animation: none !important;
+    max-height: 60vh !important;
+}
+
+.topbar-dropdown-search .uf-search-input {
+    background: var(--french-blue-soft, #f0f4fb) !important;
+}
+
+.topbar-dropdown-search .uf-search-input:focus {
+    background: var(--bg-card) !important;
 }
 
 @media (max-width: 720px) {
     .topbar-dropdown-search {
         right: -50px;
+    }
+    .topbar-dropdown::before {
+        right: 68px;
     }
 }
 

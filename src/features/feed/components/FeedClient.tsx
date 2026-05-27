@@ -3,11 +3,7 @@
 import { useCallback, useOptimistic, useEffect, useRef, useState } from "react";
 import PostCard from "@/features/feed/components/PostCard";
 import PostComposer from "@/features/feed/components/PostComposer";
-import FeedEventCard from "@/features/feed/components/FeedEventCard";
-import FeedPhotoCard from "@/features/feed/components/FeedPhotoCard";
-import FeedStudyGroupCard from "@/features/feed/components/FeedStudyGroupCard";
-import FeedMaterialCard from "@/features/feed/components/FeedMaterialCard";
-import FeedBirthdayCard from "@/features/feed/components/FeedBirthdayCard";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { UnifiedFeedItem } from "@/features/feed/server/queries";
 
 type CurrentUser = {
@@ -55,70 +51,63 @@ type FeedClientProps = {
   currentUser: CurrentUser;
 };
 
-type FilterMode = "all" | "posts" | "events" | "media" | "materials";
+type FilterMode = "all" | "questions" | "announcements" | "my_courses";
 
-const FILTER_OPTIONS: { value: FilterMode; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "posts", label: "Posts" },
-  { value: "events", label: "Events" },
-  { value: "media", label: "Media" },
-  { value: "materials", label: "Materials" },
-];
-
+/**
+ * Renders a post item, wrapping announcements in a visual badge.
+ */
 function renderFeedItem(item: UnifiedFeedItem, currentUser: CurrentUser) {
-  switch (item.type) {
-    case "post":
-      return <PostCard key={`post-${item.id}`} post={item} currentUser={currentUser} />;
-    case "announcement":
-      return (
-        <div key={`ann-${item.id}`} style={{ position: "relative" }}>
-          <div
-            style={{
-              position: "absolute",
-              top: "12px",
-              right: "12px",
-              zIndex: 2,
-              background: "linear-gradient(135deg, var(--french-blue), var(--french-navy))",
-              color: "var(--bg-card)",
-              fontSize: "0.68rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              padding: "3px 10px",
-              borderRadius: "6px",
-            }}
-          >
-            📌 Announcement
+  if (item.type === "post" || item.type === "announcement") {
+    return (
+      <div key={`${item.type}-${item.id}`} className="feed-post-wrapper">
+        {item.type === "announcement" && (
+          <div className="feed-type-badge feed-type-badge--announcement">
+            📢 Announcement
           </div>
-          <PostCard post={item} currentUser={currentUser} />
-        </div>
+        )}
+        {"postType" in item && (item as any).postType === "question" && (
+          <div className="feed-type-badge feed-type-badge--question">
+            ❓ Question
+          </div>
+        )}
+        <PostCard post={item} currentUser={currentUser} />
+      </div>
+    );
+  }
+
+  // For non-post types that slip through, render them normally
+  return null;
+}
+
+/**
+ * Filters items to show only posts & announcements (academic feed).
+ * Further filters by tab selection.
+ */
+function filterItems(items: UnifiedFeedItem[], filter: FilterMode): UnifiedFeedItem[] {
+  // First, only keep posts and announcements (no photos, events, materials, etc.)
+  const academic = items.filter(
+    (i) => i.type === "post" || i.type === "announcement"
+  );
+
+  switch (filter) {
+    case "questions":
+      return academic.filter(
+        (i) => i.type === "post" && "postType" in i && (i as any).postType === "question"
       );
-    case "event":
-      return <FeedEventCard key={`event-${item.id}`} item={item} />;
-    case "photo":
-      return <FeedPhotoCard key={`photo-${item.id}`} item={item} />;
-    case "study_group":
-      return <FeedStudyGroupCard key={`group-${item.id}`} item={item} />;
-    case "material":
-      return <FeedMaterialCard key={`mat-${item.id}`} item={item} />;
-    case "birthday":
-      return <FeedBirthdayCard key={`bday-${item.id}`} item={item} />;
+    case "announcements":
+      return academic.filter((i) => i.type === "announcement");
+    case "my_courses":
+      // Show posts that have a communityId (course-related) or are from a community
+      return academic.filter(
+        (i) => (i as any).communityId || (i as any).communityName
+      );
     default:
-      return null;
+      return academic;
   }
 }
 
-function filterItems(items: UnifiedFeedItem[], filter: FilterMode): UnifiedFeedItem[] {
-  if (filter === "all") return items;
-  if (filter === "posts") return items.filter((i) => i.type === "post" || i.type === "announcement");
-  if (filter === "events") return items.filter((i) => i.type === "event");
-  if (filter === "media") return items.filter((i) => i.type === "photo" || (i.type === "post" && i.imageUrl));
-  if (filter === "materials") return items.filter((i) => i.type === "material" || i.type === "study_group");
-  return items;
-}
-
 export default function FeedClient({ initialItems, currentUser }: FeedClientProps) {
-  const postItems = initialItems.filter((i): i is UnifiedFeedItem & { type: "post" } => i.type === "post");
+  const { t } = useLanguage();
 
   const [items, addOptimisticPost] = useOptimistic(
     initialItems,
@@ -156,21 +145,20 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
   );
 
   const [filterBy, setFilterBy] = useState<FilterMode>("all");
-  const [displayed, setDisplayed] = useState<UnifiedFeedItem[]>(initialItems.slice(0, 12));
-  const [hasMore, setHasMore] = useState(initialItems.length > 12);
+  const filtered = filterItems(items, filterBy);
+  const [displayed, setDisplayed] = useState<UnifiedFeedItem[]>(filtered.slice(0, 15));
+  const [hasMore, setHasMore] = useState(filtered.length > 15);
   const [isLoading, setIsLoading] = useState(false);
   const observerRef = useRef<HTMLDivElement>(null);
 
-  const filtered = filterItems(items, filterBy);
-
-  // Reset pagination whenever the underlying items or filter change.
-  // Using the "store previous prop" pattern so we don't run setState inside an effect.
+  // Reset pagination whenever filter or items change
   const filterKey = `${items.length}:${filterBy}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (prevFilterKey !== filterKey) {
     setPrevFilterKey(filterKey);
-    setDisplayed(filtered.slice(0, 12));
-    setHasMore(filtered.length > 12);
+    const newFiltered = filterItems(items, filterBy);
+    setDisplayed(newFiltered.slice(0, 15));
+    setHasMore(newFiltered.length > 15);
   }
 
   const loadMore = useCallback(() => {
@@ -181,7 +169,7 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
       setDisplayed(next);
       setHasMore(next.length < filtered.length);
       setIsLoading(false);
-    }, 300);
+    }, 200);
   }, [displayed.length, filtered]);
 
   useEffect(() => {
@@ -197,72 +185,72 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
     return () => observer.disconnect();
   }, [hasMore, isLoading, loadMore]);
 
+  const TABS: { value: FilterMode; label: string; icon: string }[] = [
+    { value: "all", label: t("feed.tabAll") || "All", icon: "" },
+    { value: "questions", label: t("feed.tabQuestions") || "Questions", icon: "❓" },
+    { value: "announcements", label: t("feed.tabAnnouncements") || "Announcements", icon: "📢" },
+    { value: "my_courses", label: t("feed.tabMyCourses") || "My Courses", icon: "📚" },
+  ];
+
   return (
-    <div className="feed-container" style={{ maxWidth: "720px", margin: "0 auto", width: "100%" }}>
-      <section className="card" style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ padding: "16px 18px", borderBottom: "1px solid var(--border-color-light)" }}>
-          <PostComposer currentUser={currentUser} onOptimisticPost={addOptimisticPost} />
-        </div>
+    <div className="feed-container">
+      {/* Post Composer */}
+      <div className="feed-composer-wrap">
+        <PostComposer currentUser={currentUser} onOptimisticPost={addOptimisticPost} />
+      </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "6px",
-            padding: "8px 18px 12px",
-            borderBottom: "1px solid var(--border-color-light)",
-            flexWrap: "wrap",
-          }}
-        >
-          {FILTER_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setFilterBy(opt.value)}
-              style={{
-                border: "none",
-                borderRadius: "8px",
-                background: filterBy === opt.value
-                  ? "linear-gradient(135deg, var(--french-blue), var(--french-navy))"
-                  : "var(--bg-hover)",
-                color: filterBy === opt.value ? "var(--bg-card)" : "var(--text-secondary)",
-                fontSize: "0.80rem",
-                fontWeight: filterBy === opt.value ? 700 : 500,
-                padding: "5px 14px",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+      {/* Filter Tabs */}
+      <div className="feed-tabs" role="tablist" aria-label="Feed filters">
+        {TABS.map((tab) => (
+          <button
+            key={tab.value}
+            role="tab"
+            aria-selected={filterBy === tab.value}
+            onClick={() => setFilterBy(tab.value)}
+            className={`feed-tab ${filterBy === tab.value ? "feed-tab--active" : ""}`}
+          >
+            {tab.icon && <span className="feed-tab-icon">{tab.icon}</span>}
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <div>
-          {displayed.length === 0 ? (
-            <div style={{ padding: "32px 18px", textAlign: "center", color: "var(--text-muted)", fontSize: "0.92rem" }}>
-              No items match this filter.
+      {/* Feed Items */}
+      <div className="feed-items">
+        {displayed.length === 0 ? (
+          <div className="feed-empty">
+            <div className="feed-empty-icon">
+              {filterBy === "questions" ? "❓" : filterBy === "announcements" ? "📢" : "📝"}
             </div>
-          ) : (
-            <>
-              {displayed.map((item) => renderFeedItem(item, currentUser))}
+            <p className="feed-empty-title">
+              {filterBy === "questions"
+                ? (t("feed.noQuestions") || "No questions yet")
+                : filterBy === "announcements"
+                ? (t("feed.noAnnouncements") || "No announcements yet")
+                : (t("feed.noPosts") || "No posts yet")}
+            </p>
+            <p className="feed-empty-hint">
+              {t("feed.beFirst") || "Be the first to share something!"}
+            </p>
+          </div>
+        ) : (
+          <>
+            {displayed.map((item) => renderFeedItem(item, currentUser))}
 
-              {hasMore && (
-                <div
-                  ref={observerRef}
-                  style={{ padding: "20px", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.86rem" }}
-                >
-                  {isLoading ? "Loading more..." : ""}
-                </div>
-              )}
+            {hasMore && (
+              <div ref={observerRef} className="feed-loading">
+                {isLoading ? (t("common.loading") || "Loading...") : ""}
+              </div>
+            )}
 
-              {!hasMore && displayed.length > 0 && (
-                <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)", fontSize: "0.86rem" }}>
-                  You&apos;ve reached the end
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </section>
+            {!hasMore && displayed.length > 0 && (
+              <div className="feed-end">
+                {t("feed.reachedEnd") || "You\u2019ve reached the end"}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

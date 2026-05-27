@@ -4324,15 +4324,86 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
         padding: 18px;
     }
 }
-/* ─── Dashboard (Today) ──────────────────────────────────────────────── */
-/* `.dashboard-page` extends `.page-shell`; padding/max-width come from
-   PageShell. This class is just a hook for any dashboard-specific tweaks. */
+/* ─── Dashboard (Today) — Redesigned ─────────────────────────────────── */
 
+/* Summary bar — horizontal stats row */
+.dash-summary-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.dash-summary-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-card);
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.2s var(--transition-smooth),
+                border-color 0.2s var(--transition-smooth);
+}
+
+.dash-summary-item:hover {
+    border-color: var(--french-blue-line);
+    box-shadow: var(--shadow-soft);
+}
+
+.dash-summary-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.dash-summary-icon--classes {
+    background: var(--french-blue-soft);
+    color: var(--french-blue);
+}
+
+.dash-summary-icon--deadlines {
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
+.dash-summary-icon--materials {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.dash-summary-icon--messages {
+    background: var(--purple-soft);
+    color: var(--purple);
+}
+
+.dash-summary-number {
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-bold);
+    color: var(--french-navy);
+    line-height: 1;
+}
+
+.dash-summary-label {
+    font-size: var(--fs-xs);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: var(--fw-medium);
+}
+
+/* Section titles */
 .dash-section-title {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: var(--fw-bold);
     color: var(--french-navy);
     margin: 0 0 12px;
@@ -4340,17 +4411,60 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     letter-spacing: 0.04em;
 }
 
+/* Section header with "View all" link */
+.dash-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.dash-section-head .dash-section-title {
+    margin-bottom: 0;
+}
+
+.dash-view-all {
+    font-size: var(--fs-xs);
+    color: var(--french-blue);
+    text-decoration: none;
+    font-weight: var(--fw-semibold);
+    white-space: nowrap;
+}
+
+.dash-view-all:hover {
+    text-decoration: underline;
+}
+
+/* Dashboard grid — 2 columns for cards */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dashboard-section-wide {
+    grid-column: 1 / -1;
+}
+
+/* Quick actions row */
 .dashboard-quick-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
-    margin-bottom: 28px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
 }
 
 .dash-quick-action {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .dash-quick-action-icon {
@@ -4364,17 +4478,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .dash-quick-action-label {
     color: var(--french-navy);
     font-weight: var(--fw-semibold);
-}
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 24px;
-    align-items: start;
-}
-
-.dashboard-section-wide {
-    grid-column: 1 / -1;
+    font-size: var(--fs-sm);
 }
 
 .dash-link-reset {
@@ -4389,27 +4493,27 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     gap: 10px;
 }
 
-/* Next class card */
+/* Next class card — hero-style */
 .dash-next-class {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 18px 20px;
+    padding: 20px 24px;
     background: var(--french-navy);
     color: var(--bg-card);
     border-radius: inherit;
 }
 
 .dash-next-class-code {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     font-weight: var(--fw-bold);
-    color: var(--french-gold);
+    color: #93c5fd;
     margin-bottom: 4px;
 }
 
 .dash-next-class-room {
     font-size: 0.85rem;
-    opacity: 0.85;
+    opacity: 0.8;
 }
 
 .dash-next-class-meta {
@@ -4417,13 +4521,13 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 
 .dash-next-class-time {
-    font-size: 1.15rem;
+    font-size: 1.25rem;
     font-weight: var(--fw-bold);
 }
 
 .dash-next-class-day {
     font-size: 0.8rem;
-    opacity: 0.8;
+    opacity: 0.75;
 }
 
 /* Deadlines */
@@ -4434,16 +4538,16 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 
 .dash-deadline-date {
-    background: var(--french-gold-soft);
-    color: var(--french-gold);
+    background: var(--warning-soft);
+    color: var(--warning);
     padding: 6px 10px;
     border-radius: 8px;
     text-align: center;
-    min-width: 56px;
+    min-width: 52px;
 }
 
 .dash-deadline-month {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
     font-weight: var(--fw-bold);
 }
@@ -4472,8 +4576,8 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 
 .dash-material-icon {
-    background: var(--french-blue-soft);
-    color: var(--french-navy);
+    background: var(--success-soft);
+    color: var(--success);
     padding: 9px;
     border-radius: 8px;
     display: inline-flex;
@@ -4481,11 +4585,15 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 
 .dash-material-meta {
     flex: 1;
+    min-width: 0;
 }
 
 .dash-material-title {
     font-weight: var(--fw-semibold);
     color: var(--french-navy);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dash-material-sub {
@@ -4494,53 +4602,118 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 
 .dash-accent {
-    color: var(--french-gold);
+    color: var(--french-blue);
     font-weight: var(--fw-bold);
 }
 
 /* Announcements */
-.dash-announcements-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 12px;
-}
-
 .dash-announcement-card {
-    border-left: 4px solid var(--french-gold);
+    border-left: 3px solid var(--french-blue);
 }
 
 .dash-announcement-meta {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     color: var(--text-secondary);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 .dash-announcement-body {
     margin: 0;
     color: var(--french-navy);
     line-height: 1.5;
+    font-size: var(--fs-sm);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-/* Events */
+/* Events — compact row */
 .dash-event-row {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 12px;
+}
+
+.dash-event-date {
+    background: var(--french-blue-soft);
+    color: var(--french-blue);
+    padding: 6px 10px;
+    border-radius: 8px;
+    text-align: center;
+    min-width: 52px;
+}
+
+.dash-event-date-month {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    font-weight: var(--fw-bold);
+}
+
+.dash-event-date-day {
+    font-size: 1.1rem;
+    font-weight: var(--fw-black);
+    line-height: 1.1;
+}
+
+.dash-event-info {
+    flex: 1;
+    min-width: 0;
 }
 
 .dash-event-title {
     font-weight: var(--fw-semibold);
     color: var(--french-navy);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dash-event-meta {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
     display: flex;
     gap: 8px;
 }
 
-/* Communities */
+/* Messages preview */
+.dash-messages-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dash-messages-count {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dash-messages-badge {
+    background: var(--purple);
+    color: white;
+    font-weight: var(--fw-bold);
+    font-size: var(--fs-lg);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dash-messages-label {
+    font-size: var(--fs-sm);
+    color: var(--french-navy);
+    font-weight: var(--fw-semibold);
+}
+
+.dash-messages-sublabel {
+    font-size: var(--fs-xs);
+    color: var(--text-secondary);
+}
+
+/* Community row — not used on today but kept for reuse */
 .dash-community-row {
     display: flex;
     justify-content: space-between;
@@ -4550,6 +4723,43 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 .dash-community-title {
     font-weight: var(--fw-semibold);
     color: var(--french-navy);
+}
+
+/* ─── Dashboard mobile tweaks ───────────────────────────────────────── */
+@media (max-width: 600px) {
+    .dash-summary-bar {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .dash-summary-item {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .dash-summary-icon {
+        width: 34px;
+        height: 34px;
+    }
+
+    .dash-summary-number {
+        font-size: var(--fs-lg);
+    }
+
+    .dash-next-class {
+        padding: 16px 18px;
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+
+    .dash-next-class-meta {
+        text-align: center;
+    }
+
+    .dashboard-quick-actions {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 /* ─── Topbar icons (Search / Notifications) ─────────────────────────── */
@@ -4793,7 +5003,320 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     flex-direction: column;
 }
 
-/* ─── Feed page uses <PageShell variant="narrow"> — no extra class needed */
+/* ─── Feed / Questions & Announcements ───────────────────────────────── */
+
+.feed-container {
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Composer — collapsed state */
+.feed-composer-wrap {
+    margin-bottom: 16px;
+}
+
+.composer-collapsed {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+}
+
+.composer-prompt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 18px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+.composer-prompt:hover {
+    background: var(--bg-hover);
+}
+
+.composer-prompt-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--french-blue-soft);
+    color: var(--french-blue);
+    flex-shrink: 0;
+}
+
+.composer-prompt-text {
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    font-weight: var(--fw-medium);
+}
+
+/* Composer — expanded state */
+.composer-expanded {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-card);
+    padding: 16px 18px;
+}
+
+.composer-textarea {
+    width: 100%;
+    min-height: 80px;
+    border: none;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 1rem;
+    background: transparent;
+    color: var(--text-primary);
+    line-height: var(--lh-normal);
+}
+
+.composer-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.composer-preview {
+    position: relative;
+    margin: 10px 0;
+    width: fit-content;
+    max-width: 100%;
+}
+
+.composer-preview-media {
+    max-height: 240px;
+    max-width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+video.composer-preview-media {
+    background: black;
+}
+
+.composer-preview-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.composer-error {
+    color: var(--danger);
+    background: var(--danger-soft);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: var(--fs-sm);
+    border: 1px solid #fecdca;
+}
+
+.composer-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border-color-light);
+    padding-top: 12px;
+    margin-top: 8px;
+}
+
+.composer-tools {
+    display: flex;
+    gap: 4px;
+}
+
+.composer-tool-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.composer-tool-btn:hover {
+    background: var(--french-blue-soft);
+    color: var(--french-blue);
+    border-color: var(--french-blue);
+}
+
+.composer-submit {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 10px;
+    background: var(--french-blue);
+    color: white;
+    font-weight: var(--fw-bold);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.composer-submit:hover:not(:disabled) {
+    background: var(--french-blue-hover);
+}
+
+.composer-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Feed filter tabs */
+.feed-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 0 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.feed-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.feed-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: var(--fw-semibold);
+    padding: 7px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.feed-tab:hover {
+    background: var(--bg-hover);
+    color: var(--french-navy);
+}
+
+.feed-tab--active {
+    background: var(--french-navy);
+    color: white;
+    border-color: var(--french-navy);
+}
+
+.feed-tab--active:hover {
+    background: var(--french-navy);
+    color: white;
+}
+
+.feed-tab-icon {
+    font-size: 0.9rem;
+}
+
+/* Post type badges */
+.feed-post-wrapper {
+    position: relative;
+}
+
+.feed-type-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    font-size: 0.68rem;
+    font-weight: var(--fw-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 10px;
+    border-radius: 6px;
+}
+
+.feed-type-badge--announcement {
+    background: linear-gradient(135deg, var(--french-blue), var(--french-navy));
+    color: white;
+}
+
+.feed-type-badge--question {
+    background: var(--warning-soft);
+    color: var(--warning);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Feed empty state */
+.feed-empty {
+    padding: 48px 24px;
+    text-align: center;
+}
+
+.feed-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+}
+
+.feed-empty-title {
+    font-size: var(--fs-md);
+    font-weight: var(--fw-semibold);
+    color: var(--french-navy);
+    margin: 0 0 6px;
+}
+
+.feed-empty-hint {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* Feed loading / end */
+.feed-loading {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: var(--fs-sm);
+}
+
+.feed-end {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
+}
+
+/* Mobile tweaks */
+@media (max-width: 600px) {
+    .feed-tabs {
+        padding: 0 0 12px;
+    }
+
+    .feed-tab {
+        padding: 6px 12px;
+        font-size: 0.78rem;
+    }
+
+    .composer-prompt {
+        padding: 12px 14px;
+    }
+}
 
 /* ─── PageHeader Overrides to make it less bulky ─── */
 .page-header {
@@ -4805,4 +5328,137 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 }
 .page-header-desc {
     font-size: 0.85rem !important;
+}
+
+/* ─── Courses Hub ──────────────────────────────────────────────────── */
+
+.courses-hub { max-width: 960px; margin: 0 auto; }
+
+.courses-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+}
+.courses-header-left h1 {
+    font-size: 1.5rem; font-weight: var(--fw-black);
+    color: var(--french-navy); margin: 0 0 4px;
+}
+.courses-semester-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 999px;
+    background: var(--french-blue-soft); color: var(--french-blue);
+    font-size: 0.78rem; font-weight: var(--fw-bold);
+}
+
+.courses-tabs {
+    display: flex; gap: 6px; margin-bottom: 20px;
+}
+.courses-tab {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid var(--border-color); border-radius: 999px;
+    background: var(--bg-card); color: var(--text-secondary);
+    font-size: 0.82rem; font-weight: var(--fw-semibold);
+    padding: 7px 16px; cursor: pointer; transition: all 0.15s ease;
+}
+.courses-tab:hover { background: var(--bg-hover); }
+.courses-tab--active {
+    background: var(--french-navy); color: white; border-color: var(--french-navy);
+}
+
+.courses-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
+}
+
+.course-card {
+    background: var(--bg-card); border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-card); padding: 18px; cursor: pointer;
+    transition: all 0.15s ease; text-decoration: none; color: inherit; display: block;
+}
+.course-card:hover {
+    border-color: var(--french-blue); box-shadow: 0 2px 12px rgba(0, 48, 135, 0.08);
+}
+.course-card-name {
+    font-size: 1rem; font-weight: var(--fw-bold);
+    color: var(--french-navy); margin: 0 0 4px;
+}
+.course-card-code {
+    font-size: 0.78rem; color: var(--text-muted);
+    font-weight: var(--fw-semibold); margin-bottom: 10px;
+}
+.course-card-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.course-card-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.72rem; font-weight: var(--fw-semibold);
+    padding: 3px 8px; border-radius: 6px;
+    background: var(--bg-hover); color: var(--text-secondary);
+}
+.course-card-badge--materials { background: var(--success-soft); color: var(--success); }
+.course-card-badge--role { background: var(--french-blue-soft); color: var(--french-blue); }
+
+.course-card-schedule {
+    font-size: 0.78rem; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-color-light);
+}
+
+/* Course Detail */
+.course-detail { max-width: 800px; margin: 0 auto; }
+
+.course-detail-header {
+    background: var(--bg-card); border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-card); padding: 24px; margin-bottom: 20px;
+}
+.course-detail-name {
+    font-size: 1.4rem; font-weight: var(--fw-black);
+    color: var(--french-navy); margin: 0 0 4px;
+}
+.course-detail-code {
+    font-size: 0.85rem; color: var(--text-muted);
+    font-weight: var(--fw-semibold); margin-bottom: 12px;
+}
+.course-detail-info { display: flex; flex-wrap: wrap; gap: 12px; }
+.course-detail-info-item {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.82rem; color: var(--text-secondary);
+}
+
+.course-detail-tabs {
+    display: flex; gap: 6px; margin-bottom: 20px;
+    overflow-x: auto; scrollbar-width: none;
+}
+.course-detail-tabs::-webkit-scrollbar { display: none; }
+
+.course-detail-section {
+    background: var(--bg-card); border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-card); padding: 20px;
+}
+.course-detail-section h3 {
+    font-size: 0.95rem; font-weight: var(--fw-bold);
+    color: var(--french-navy); margin: 0 0 12px;
+}
+
+.course-material-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border-color-light);
+}
+.course-material-row:last-child { border-bottom: none; }
+.course-material-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--french-blue-soft); color: var(--french-blue);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.course-material-info { flex: 1; min-width: 0; }
+.course-material-title {
+    font-size: 0.88rem; font-weight: var(--fw-semibold);
+    color: var(--text-primary); margin: 0 0 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.course-material-meta { font-size: 0.75rem; color: var(--text-muted); }
+
+.course-empty { padding: 32px 16px; text-align: center; }
+.course-empty-icon { font-size: 2rem; margin-bottom: 8px; opacity: 0.5; }
+.course-empty-text { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+
+@media (max-width: 600px) {
+    .courses-grid { grid-template-columns: 1fr; }
+    .courses-header { flex-direction: column; align-items: flex-start; }
 }

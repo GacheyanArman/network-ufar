@@ -11,6 +11,9 @@ import {
   studyMaterialComments,
   studyMaterialRatings,
   users,
+  courses,
+  semesters,
+  faculties,
 } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
 import { saveUploadFileWithMeta, MATERIAL_TYPES } from "@/shared/storage/upload";
@@ -262,40 +265,79 @@ export async function uploadMaterial(formData: FormData) {
 
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim();
-  const faculty = String(formData.get("faculty") || "").trim();
-  const course = String(formData.get("course") || "").trim();
-  const year = String(formData.get("year") || "").trim();
-  const subject = String(formData.get("subject") || "").trim();
+  const courseId = String(formData.get("courseId") || "").trim();
   const type = String(formData.get("type") || "other").trim() as any;
-  const professorCourse = String(formData.get("professorCourse") || "").trim();
+  const link = String(formData.get("link") || "").trim();
+  const year = String(formData.get("year") || "").trim();
+  const tags = String(formData.get("tags") || "").trim();
   const visibility = String(formData.get("visibility") || "all").trim() as any;
-  const file = formData.get("file") as File;
 
   if (!title) throw new Error("Title is required");
-  if (!file || file.size === 0) throw new Error("No file provided");
+  if (!courseId) throw new Error("Course is required");
 
-  const fileResult = await saveUploadFileWithMeta(file, {
-    subdir: "materials",
-    prefix: "mat",
-    maxSize: 20 * 1024 * 1024,
-    allowedMimeTypes: [...MATERIAL_TYPES],
-    processImage: true,
-  });
-  const fileUrl = fileResult?.url ?? null;
+  // Get course details (code and facultyId)
+  const courseResult = await db
+    .select({
+      code: courses.code,
+      facultyId: courses.facultyId,
+    })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
+  const courseObj = courseResult[0];
+  if (!courseObj) throw new Error("Selected course not found");
+
+  // Get active semester
+  const activeSemesterResult = await db
+    .select()
+    .from(semesters)
+    .where(eq(semesters.isActive, true))
+    .limit(1);
+  const activeSem = activeSemesterResult[0] || null;
+
+  // Resolve faculty name
+  let facultyName = "";
+  if (courseObj.facultyId) {
+    const facultyResult = await db
+      .select({ name: faculties.name })
+      .from(faculties)
+      .where(eq(faculties.id, courseObj.facultyId))
+      .limit(1);
+    if (facultyResult[0]) facultyName = facultyResult[0].name;
+  }
+
+  const file = formData.get("file") as File | null;
+  let fileUrl = null;
+
+  if (file && file.size > 0) {
+    const fileResult = await saveUploadFileWithMeta(file, {
+      subdir: "materials",
+      prefix: "mat",
+      maxSize: 20 * 1024 * 1024,
+      allowedMimeTypes: [...MATERIAL_TYPES],
+      processImage: true,
+    });
+    fileUrl = fileResult?.url ?? null;
+  } else if (link) {
+    fileUrl = link;
+  } else {
+    throw new Error("Please upload a file or provide a link");
+  }
 
   await db.insert(studyMaterials).values({
     title: title.slice(0, 160),
     description: description.slice(0, 500),
-    faculty,
-    course,
-    year,
-    subject,
+    faculty: facultyName,
+    course: courseObj.code, // Legacy text field
+    courseId: courseId,     // Foreign key
+    semesterId: activeSem?.id ?? null,
+    year: year || null,
     type,
-    professorCourse,
+    topicTags: tags.slice(0, 200),
     visibility,
     fileUrl,
     ownerId: userId,
-    status: "pending", // Moderator needs to approve.
+    status: "approved", // Auto-approved for best student UX
   });
 
   revalidatePath("/study-materials");

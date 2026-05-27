@@ -524,6 +524,17 @@ export const postLikes = pgTable("post_like", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const postSaves = pgTable("post_save", {
+  id: text("id").$defaultFn(() => createId()).primaryKey(),
+  postId: text("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  postUserUnique: uniqueIndex("post_save_post_user_unique").on(table.postId, table.userId),
+  postIdx: index("post_save_post_idx").on(table.postId),
+  userIdx: index("post_save_user_idx").on(table.userId),
+}));
+
 export const comments = pgTable("comment", {
   id: text("id").$defaultFn(() => createId()).primaryKey(),
   postId: text("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),

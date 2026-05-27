@@ -2,7 +2,6 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import {
   getCachedUserSchedule,
-  getCachedUpcomingDeadlines,
 } from "@/shared/cache/cache";
 import UiIcon from "@/shared/ui/UiIcon";
 import { Language } from "@/shared/i18n/i18n";
@@ -20,22 +19,15 @@ type ScheduleEntry = {
   endTime: string;
 };
 
-type DeadlineEntry = {
-  id: string;
-  title: string;
-  eventType: string;
-  dueDate: Date;
-};
-
 type Props = {
   userId: string;
 };
 
 /**
- * Compact right-sidebar widgets: today's class lineup + upcoming deadlines.
+ * Compact right-sidebar widgets: today's class lineup.
  *
- * Both queries are cached (`getCachedUserSchedule` / `getCachedUpcomingDeadlines`)
- * with short TTLs and shared with `TodayDashboard`, so on the home page the
+ * The query is cached (`getCachedUserSchedule`)
+ * with a short TTL and shared with `TodayDashboard`, so on the home page the
  * same data is fetched only once per render cycle.
  */
 export default async function RightPanelWidgets({ userId }: Props) {
@@ -43,24 +35,15 @@ export default async function RightPanelWidgets({ userId }: Props) {
   const lang = (cookieStore.get("language")?.value || "en") as Language;
   const t = getServerTranslator(lang);
 
-  let localeStr = "en-US";
-  if (lang === "hy") localeStr = "hy-AM";
-  else if (lang === "fr") localeStr = "fr-FR";
-
   const now = new Date();
   const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
   const currentTime = now.toTimeString().slice(0, 5);
 
-  const [allClasses, allDeadlines] = await Promise.all([
-    getCachedUserSchedule(userId),
-    getCachedUpcomingDeadlines(userId),
-  ]) as [ScheduleEntry[], DeadlineEntry[]];
+  const allClasses = (await getCachedUserSchedule(userId)) as ScheduleEntry[];
 
   const todaysClasses = allClasses
     .filter((c: ScheduleEntry) => c.dayOfWeek === dayOfWeek && c.startTime >= currentTime)
     .slice(0, 4);
-
-  const upcomingDeadlines = allDeadlines.slice(0, 3);
 
   return (
     <>
@@ -89,45 +72,6 @@ export default async function RightPanelWidgets({ userId }: Props) {
                   <span className="right-widget-sub">
                     {c.room || "TBA"} • {DAY_LABELS[dayOfWeek]}
                   </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Upcoming deadlines */}
-      <div className="card right-widget">
-        <div className="right-widget-head">
-          <h4 className="widget-title">
-            <UiIcon name="clock" size={16} color="var(--french-gold)" /> {t("widgets.deadlines")}
-          </h4>
-          <Link href="/calendar" className="right-widget-link">
-            {t("widgets.all")}
-          </Link>
-        </div>
-
-        {upcomingDeadlines.length === 0 ? (
-          <div className="empty-state-mini">
-            <p>{t("widgets.allCaughtUp")}</p>
-          </div>
-        ) : (
-          <ul className="right-widget-list">
-            {upcomingDeadlines.map((d) => (
-              <li key={d.id} className="right-widget-row">
-                <span className="right-widget-date">
-                  <span className="right-widget-month">
-                    {new Date(d.dueDate).toLocaleString(localeStr, {
-                      month: "short",
-                    })}
-                  </span>
-                  <span className="right-widget-day">
-                    {new Date(d.dueDate).getDate()}
-                  </span>
-                </span>
-                <span className="right-widget-main">
-                  <strong>{d.title}</strong>
-                  <span className="right-widget-sub">{d.eventType}</span>
                 </span>
               </li>
             ))}

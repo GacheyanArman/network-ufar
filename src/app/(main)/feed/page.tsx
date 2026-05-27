@@ -25,7 +25,6 @@ export default async function FeedPage() {
     <PageShell variant="narrow">
       <PageHeader
         title="Campus Feed"
-        description="Posts, photos, events and more from across UFAR"
       />
       <FeedClient initialItems={items} currentUser={currentUser} />
     </PageShell>

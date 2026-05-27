@@ -22,6 +22,14 @@ export const translations = {
       studyGroups: "Study Groups",
       lostFound: "Lost & Found",
       admin: "Admin",
+      feedDesc: "Posts & campus news",
+      todayDesc: "Your schedule & deadlines",
+      schedulDesc: "Your classes this week",
+      materialsDesc: "Notes & study files",
+      eventsDesc: "What's happening at UFAR",
+      communitiesDesc: "Clubs & groups",
+      messagesDesc: "Chat with classmates",
+      profileDesc: "Your page",
     },
 
     // Today Dashboard
@@ -902,6 +910,14 @@ export const translations = {
       studyGroups: "Groupes d\u2019\u00e9tude",
       lostFound: "Objets trouv\u00e9s",
       admin: "Administration",
+      feedDesc: "Publications et actualités du campus",
+      todayDesc: "Votre emploi du temps et échéances",
+      schedulDesc: "Vos cours cette semaine",
+      materialsDesc: "Notes et fichiers d'étude",
+      eventsDesc: "Ce qui se passe à l'UFAR",
+      communitiesDesc: "Clubs et groupes",
+      messagesDesc: "Discuter avec vos camarades",
+      profileDesc: "Votre page",
     },
 
     // Today Dashboard
@@ -1809,6 +1825,14 @@ export const translations = {
       lostFound:
         "\u053f\u0578\u0580\u057d\u057e\u0561\u056e \u0587 \u0533\u057f\u0576\u057e\u0561\u056e",
       admin: "\u0531\u0564\u0574\u056b\u0576",
+      feedDesc: "\u0540\u0580\u0561\u057a\u0561\u0580\u0561\u056f\u0578\u0582\u0574\u0576\u0565\u0580 \u0587 \u0576\u0578\u0580\u0578\u0582\u0569\u0575\u0578\u0582\u0576\u0576\u0565\u0580",
+      todayDesc: "\u053f\u0561\u0572\u0561\u057e\u0561\u0580\u0565\u0561\u0576\u056b \u0587 \u057e\u0565\u0580\u056a\u0576\u0561\u0569\u0565\u0569\u0578\u0582\u0574\u0576\u0565\u0580",
+      schedulDesc: "\u053f\u0561\u0572\u0561\u057e\u0561\u0580\u0565\u0561\u0576\u056b \u0561\u057a\u0578\u0572\u057b\u0578\u0582\u0574\u0576\u0565\u0580\u0568",
+      materialsDesc: "\u0546\u0578\u0582\u0569\u0565\u0580 \u0587 \u0586\u0561\u0575\u056c\u0565\u0580",
+      eventsDesc: "\u053b\u0576\u0579 \u056f\u0561 \u056f\u0561\u057f\u0561\u0580\u057e\u0578\u0582\u0574 UFAR-\u0578\u0582\u0574",
+      communitiesDesc: "\u0531\u056f\u0578\u0582\u0574\u0562\u0576\u0565\u0580 \u0587 \u056d\u0574\u0562\u0565\u0580",
+      messagesDesc: "\u0536\u0580\u0578\u0582\u0581\u0565\u056c \u0570\u0561\u0574\u0561\u056f\u0578\u0582\u0580\u057d\u0565\u0581\u056b\u0576\u0565\u0580\u056b \u0570\u0565\u057f",
+      profileDesc: "\u0551\u0565\u0580 \u0567\u056b\u0576\u0568",
     },
 
     // Today Dashboard

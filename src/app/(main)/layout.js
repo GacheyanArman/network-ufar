@@ -1,12 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getServerTranslator } from "@/shared/i18n/server";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSession } from "@/shared/auth/session";
 import { logoutUser } from "@/features/auth/server/actions";
-import { followUser } from "@/features/profile/server/follow";
-import { getFacultyLabel } from "@/features/profile/server/utils";
 import {
   getCachedUserBasicInfo,
   getCachedUnreadNotifications,
@@ -17,11 +15,6 @@ import NavigationMenu from "@/shared/ui/NavigationMenu";
 import TopbarSearch from "@/shared/ui/TopbarSearch";
 import TopbarNotifications from "@/shared/ui/TopbarNotifications";
 import RightPanelWidgets from "@/features/dashboard/components/RightPanelWidgets";
-import RightPanelSocialWidgets from "@/features/dashboard/components/RightPanelSocialWidgets";
-
-
-
-
 
 export default async function MainLayout({ children }) {
   const session = await getSession();
@@ -34,10 +27,6 @@ export default async function MainLayout({ children }) {
   const lang = cookieStore.get("language")?.value || "en";
   const t = getServerTranslator(lang);
 
-
-
-  // Fetch user info + notifications unconditionally; social widget data
-  // only when the right panel will actually be rendered.
   const [currentUser, unreadNotifications] =
     await Promise.all([
       getCachedUserBasicInfo(session.userId),
@@ -109,7 +98,6 @@ export default async function MainLayout({ children }) {
             <TopbarSearch />
           </div>
           <RightPanelWidgets userId={session.userId} />
-          <RightPanelSocialWidgets userId={session.userId} lang={lang} />
         </aside>
       </div>
     </>

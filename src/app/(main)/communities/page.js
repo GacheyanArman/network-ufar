@@ -221,6 +221,14 @@ export default async function CommunitiesPage({ searchParams }) {
             <UiIcon name="plus" size={18} />
             Create
           </Link>
+          <Link
+            href="/study-groups"
+            className="btn btn-outline"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid var(--border-color)", background: "var(--bg-card)", textDecoration: "none" }}
+          >
+            <UiIcon name="users" size={18} />
+            Study Groups
+          </Link>
         </form>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useTransition, useCallback, useRef } from "react";
 import UiIcon from "@/shared/ui/UiIcon";
+import Link from "next/link";
 import { translations } from "@/shared/i18n/i18n";
 import {
   getMyMaterials,
@@ -676,6 +677,23 @@ export default function MaterialsPageClient({
             >
               <UiIcon name="plus" /> Request material
             </button>
+            <Link
+              href="/library"
+              className="btn btn-outline"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 20px",
+                borderRadius: 8,
+                fontWeight: 600,
+                border: "1px solid var(--border-color)",
+                background: "var(--bg-card)",
+                textDecoration: "none"
+              }}
+            >
+              <UiIcon name="book" /> Browse Library
+            </Link>
           </div>
         </div>
         <div

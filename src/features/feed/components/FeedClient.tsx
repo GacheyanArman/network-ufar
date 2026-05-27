@@ -43,6 +43,7 @@ type FeedPost = {
   authorImage?: string | null;
   communityName?: string | null;
   likedByMe?: boolean;
+  savedByMe?: boolean;
   comments?: PostComment[];
   feedScore?: number;
   feedReason?: string;
@@ -64,10 +65,10 @@ const FILTER_OPTIONS: { value: FilterMode; label: string }[] = [
   { value: "materials", label: "Materials" },
 ];
 
-function renderFeedItem(item: UnifiedFeedItem) {
+function renderFeedItem(item: UnifiedFeedItem, currentUser: CurrentUser) {
   switch (item.type) {
     case "post":
-      return <PostCard key={`post-${item.id}`} post={item} />;
+      return <PostCard key={`post-${item.id}`} post={item} currentUser={currentUser} />;
     case "announcement":
       return (
         <div key={`ann-${item.id}`} style={{ position: "relative" }}>
@@ -89,7 +90,7 @@ function renderFeedItem(item: UnifiedFeedItem) {
           >
             📌 Announcement
           </div>
-          <PostCard post={item} />
+          <PostCard post={item} currentUser={currentUser} />
         </div>
       );
     case "event":
@@ -137,6 +138,7 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
         authorImage: newPost.authorImage ?? null,
         communityName: newPost.communityName ?? null,
         likedByMe: newPost.likedByMe ?? false,
+        savedByMe: newPost.savedByMe ?? false,
         comments: (newPost.comments ?? []).map((c) => ({
           id: c.id,
           postId: c.postId,
@@ -241,7 +243,7 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
             </div>
           ) : (
             <>
-              {displayed.map((item) => renderFeedItem(item))}
+              {displayed.map((item) => renderFeedItem(item, currentUser))}
 
               {hasMore && (
                 <div

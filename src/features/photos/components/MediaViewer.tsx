@@ -85,10 +85,12 @@ type MediaViewerProps = {
   // to the post-comment server actions instead of the photo-comment ones.
   postId?: string | null;
   currentUserId?: string | null;
-  onCloseAction: () => void;
+  onCloseAction?: () => void;
+  onClose?: () => void;
   items?: MediaItem[];
   currentIndex?: number;
   onNavigateAction?: (index: number) => void;
+  onNavigate?: (index: number) => void;
   // Optional handlers — if provided, override the built-in photo-specific
   // server actions. Useful when MediaViewer is opened for a post / story /
   // any non-photo entity. The handler is responsible for performing the
@@ -146,9 +148,11 @@ export default function MediaViewer({
   postId,
   currentUserId,
   onCloseAction,
+  onClose,
   items = [],
   currentIndex = 0,
   onNavigateAction,
+  onNavigate,
   onLikeAction,
   onSaveAction,
   onSubmitCommentAction,
@@ -160,6 +164,13 @@ export default function MediaViewer({
     () => true,
     () => false,
   );
+
+  const finalOnClose = useCallback(() => {
+    if (onCloseAction) onCloseAction();
+    else if (onClose) onClose();
+  }, [onCloseAction, onClose]);
+
+  const finalOnNavigate = onNavigateAction || onNavigate;
 
   const activeItem = items[currentIndex];
   const activeSrc = activeItem?.imageUrl || src;
@@ -186,17 +197,17 @@ export default function MediaViewer({
   const canNavigate =
     items.length > 1 &&
     typeof currentIndex === "number" &&
-    typeof onNavigateAction === "function";
+    typeof finalOnNavigate === "function";
 
   const goPrev = useCallback(() => {
-    if (!canNavigate) return;
-    onNavigateAction!(currentIndex === 0 ? items.length - 1 : currentIndex - 1);
-  }, [canNavigate, onNavigateAction, currentIndex, items.length]);
+    if (!canNavigate || !finalOnNavigate) return;
+    finalOnNavigate(currentIndex === 0 ? items.length - 1 : currentIndex - 1);
+  }, [canNavigate, finalOnNavigate, currentIndex, items.length]);
 
   const goNext = useCallback(() => {
-    if (!canNavigate) return;
-    onNavigateAction!(currentIndex === items.length - 1 ? 0 : currentIndex + 1);
-  }, [canNavigate, onNavigateAction, currentIndex, items.length]);
+    if (!canNavigate || !finalOnNavigate) return;
+    finalOnNavigate(currentIndex === items.length - 1 ? 0 : currentIndex + 1);
+  }, [canNavigate, finalOnNavigate, currentIndex, items.length]);
 
   // Interactive state
   const [liked, setLiked] = useState(activeItem?.isLiked ?? isLiked ?? false);
@@ -314,7 +325,7 @@ export default function MediaViewer({
     document.body.style.overflow = "hidden";
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCloseAction();
+      if (event.key === "Escape") finalOnClose();
       if (event.key === "ArrowLeft") goPrev();
       if (event.key === "ArrowRight") goNext();
     };
@@ -325,7 +336,7 @@ export default function MediaViewer({
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onCloseAction, goPrev, goNext]);
+  }, [finalOnClose, goPrev, goNext]);
 
   const handleLike = useCallback(() => {
     if (!currentUserId) {
@@ -667,12 +678,21 @@ export default function MediaViewer({
       role="dialog"
       aria-modal="true"
       aria-label={alt}
-      onClick={onCloseAction}
+      onClick={finalOnClose}
     >
       <div
         className="uf-photo-viewer"
         onClick={(event) => event.stopPropagation()}
       >
+        <button
+          type="button"
+          className="uf-photo-viewer-close"
+          onClick={finalOnClose}
+          aria-label="Close"
+        >
+          ×
+        </button>
+
         <section className="uf-photo-viewer-image-side">
           {items.length > 1 && (
             <div className="uf-photo-viewer-counter">
@@ -724,15 +744,6 @@ export default function MediaViewer({
         </section>
 
         <aside className="uf-photo-viewer-info">
-          <button
-            type="button"
-            className="uf-photo-viewer-close"
-            onClick={onCloseAction}
-            aria-label="Close"
-          >
-            ×
-          </button>
-
           <header className="uf-photo-viewer-author">
             <div className="uf-photo-viewer-avatar">
               {finalAuthorImage ? (

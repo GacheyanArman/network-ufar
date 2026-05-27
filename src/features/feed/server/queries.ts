@@ -11,6 +11,7 @@ import {
   photoLikes,
   photos,
   postLikes,
+  postSaves,
   posts,
   studyGroups,
   studyMaterials,
@@ -43,6 +44,7 @@ type FeedPost = {
   authorImage: string | null;
   communityName: string | null;
   likedByMe: boolean;
+  savedByMe: boolean;
   comments: FeedComment[];
   feedScore: number;
   feedReason: string;
@@ -152,6 +154,7 @@ export type FeedAnnouncementItem = {
   authorImage: string | null;
   communityName: string | null;
   likedByMe: boolean;
+  savedByMe: boolean;
   comments: FeedComment[];
   isPinned: boolean;
   feedScore: number;
@@ -547,7 +550,7 @@ export async function getUnifiedFeed(
     .filter((post: any) => post.postType !== "announcement" || !post.isPinned);
 
   const postIdsForLikes = filteredPosts.slice(0, limit).map((p: any) => p.id);
-  const [likedRows, commentRows] = postIdsForLikes.length > 0 ? await Promise.all([
+  const [likedRows, commentRows, savedRows] = postIdsForLikes.length > 0 ? await Promise.all([
     db.select({ postId: postLikes.postId }).from(postLikes)
       .where(and(inArray(postLikes.postId, postIdsForLikes), eq(postLikes.userId, userId))),
     db.select({
@@ -559,9 +562,12 @@ export async function getUnifiedFeed(
     .innerJoin(users, eq(comments.authorId, users.id))
     .where(inArray(comments.postId, postIdsForLikes))
     .orderBy(desc(comments.createdAt)),
-  ]) : [[], []];
+    db.select({ postId: postSaves.postId }).from(postSaves)
+      .where(and(inArray(postSaves.postId, postIdsForLikes), eq(postSaves.userId, userId))),
+  ]) : [[], [], []];
 
   const likedPostIdsSet = new Set((likedRows as any[]).map((r) => r.postId));
+  const savedPostIdsSet = new Set((savedRows as any[]).map((r) => r.postId));
   const commentsByPostMap = new Map<string, FeedComment[]>();
   for (const c of commentRows as any[]) {
     const list = commentsByPostMap.get(c.postId) || [];
@@ -584,6 +590,7 @@ export async function getUnifiedFeed(
       feedScore: result.score,
       feedReason: result.reason,
       likedByMe: likedPostIdsSet.has(post.id),
+      savedByMe: savedPostIdsSet.has(post.id),
       comments: commentsByPostMap.get(post.id) || [],
     });
   }
@@ -763,6 +770,7 @@ export async function getUnifiedFeed(
       authorImage: ann.authorImage,
       communityName: ann.communityName,
       likedByMe: likedPostIdsSet.has(ann.id),
+      savedByMe: savedPostIdsSet.has(ann.id),
       comments: commentsByPostMap.get(ann.id) || [],
       isPinned: ann.isPinned,
       feedScore: score,

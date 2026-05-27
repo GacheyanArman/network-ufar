@@ -2,16 +2,11 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { db } from "@/shared/db/db";
 import {
-  users,
   studyMaterials,
-  posts,
-  events,
-  communities,
-  communityMembers,
   courseEnrollments,
   courses,
 } from "@/shared/db/schema";
-import { eq, and, desc, asc, gte, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import {
   getCachedUserSchedule,
   getCachedUpcomingDeadlines,
@@ -19,7 +14,6 @@ import {
 import UiIcon from "@/shared/ui/UiIcon";
 import { Card } from "@/shared/ui/Card";
 import {
-  Badge,
   EmptyState,
   PageHeader,
   PageShell,
@@ -119,51 +113,10 @@ export default async function TodayDashboard({
         ),
       )
       .orderBy(desc(studyMaterials.createdAt))
-      .limit(4);
+      .limit(2);
   }
 
-  let pinnedAnnouncements = await db
-    .select({
-      id: posts.id,
-      content: posts.content,
-      authorName: users.fullName,
-      createdAt: posts.createdAt,
-    })
-    .from(posts)
-    .innerJoin(users, eq(posts.authorId, users.id))
-    .where(and(eq(posts.postType, "announcement"), eq(posts.isPinned, true)))
-    .orderBy(desc(posts.pinnedAt))
-    .limit(2);
 
-  let eventsThisWeek = await db
-    .select({
-      id: events.id,
-      title: events.title,
-      startTime: events.startTime,
-      location: events.location,
-    })
-    .from(events)
-    .where(and(gte(events.startTime, now), eq(events.status, "approved")))
-    .orderBy(asc(events.startTime))
-    .limit(3);
-
-  let myCommunities = await db
-    .select({
-      id: communities.id,
-      name: communities.name,
-      avatar: communities.avatar,
-      role: communityMembers.role,
-    })
-    .from(communityMembers)
-    .innerJoin(communities, eq(communityMembers.communityId, communities.id))
-    .where(
-      and(
-        eq(communityMembers.userId, userId),
-        eq(communities.status, "approved"),
-      ),
-    )
-    .orderBy(desc(communityMembers.createdAt))
-    .limit(4);
 
   let nextClass = null;
   for (let i = 0; i < mySchedule.length; i++) {
@@ -214,19 +167,9 @@ export default async function TodayDashboard({
           label={t("emptyStates.materials.upload")}
         />
         <QuickActionLink
-          href="/courses"
+          href="/feed"
           icon="message-circle"
           label={t("communities.questions")}
-        />
-        <QuickActionLink
-          href="/study-groups"
-          icon="users"
-          label={t("studyGroups.createGroup")}
-        />
-        <QuickActionLink
-          href="/lost-found"
-          icon="search"
-          label={t("lostFound.reportItem")}
         />
       </div>
 
@@ -366,111 +309,7 @@ export default async function TodayDashboard({
           )}
         </section>
 
-        {/* Section 4: Campus Announcements */}
-        {pinnedAnnouncements.length > 0 && (
-          <section className="dashboard-section dashboard-section-wide">
-            <h2 className="dash-section-title">
-              <UiIcon name="bell" size={20} color="var(--french-gold)" /> {t("communities.announcements")}
-            </h2>
-            <div className="dash-announcements-grid">
-              {pinnedAnnouncements.map((a: any) => (
-                <Card
-                  key={a.id}
-                  padding="md"
-                  className="dash-announcement-card"
-                >
-                  <div className="dash-announcement-meta">
-                    <strong>{a.authorName}</strong> •{" "}
-                    {new Date(a.createdAt).toLocaleDateString(localeStr)}
-                  </div>
-                  <p className="dash-announcement-body">{a.content}</p>
-                </Card>
-              ))}
-            </div>
-          </section>
-        )}
 
-        {/* Section 5: Events This Week */}
-        <section className="dashboard-section">
-          <h2 className="dash-section-title">
-            <UiIcon name="calendar" size={20} color="var(--french-gold)" /> {t("today.eventsThisWeek")}
-          </h2>
-          {eventsThisWeek.length > 0 ? (
-            <div className="dash-list">
-              {eventsThisWeek.map((e: any) => (
-                <Link
-                  key={e.id}
-                  href={`/events/${e.id}`}
-                  className="dash-link-reset"
-                >
-                  <Card padding="sm" interactive>
-                    <div className="dash-event-row">
-                      <div className="dash-event-title">{e.title}</div>
-                      <div className="dash-event-meta">
-                        <span>{new Date(e.startTime).toLocaleDateString(localeStr)}</span>
-                        <span>•</span>
-                        <span>{e.location || "TBA"}</span>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <Card padding="md">
-              <EmptyState
-                icon="calendar"
-                title={t("today.noEvents")}
-                action={
-                  <Link href="/events">
-                    <Button variant="outline" size="sm">
-                      {t("emptyStates.explore.browseEvents")}
-                    </Button>
-                  </Link>
-                }
-              />
-            </Card>
-          )}
-        </section>
-
-        {/* Section 6: My Communities */}
-        <section className="dashboard-section">
-          <h2 className="dash-section-title">
-            <UiIcon name="group" size={20} color="var(--french-gold)" /> {t("communities.myCommunities")}
-          </h2>
-          {myCommunities.length > 0 ? (
-            <div className="dash-list">
-              {myCommunities.map((c: any) => (
-                <Link
-                  key={c.id}
-                  href={`/communities/${c.id}`}
-                  className="dash-link-reset"
-                >
-                  <Card padding="sm" interactive>
-                    <div className="dash-community-row">
-                      <div className="dash-community-title">{c.name}</div>
-                      <Badge variant="gray">{c.role}</Badge>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <Card padding="md">
-              <EmptyState
-                icon="group"
-                title={t("communities.noCommunities")}
-                action={
-                  <Link href="/communities">
-                    <Button variant="outline" size="sm">
-                      {t("communities.browseCommunities")}
-                    </Button>
-                  </Link>
-                }
-              />
-            </Card>
-          )}
-        </section>
       </div>
     </PageShell>
   );

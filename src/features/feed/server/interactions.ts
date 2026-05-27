@@ -7,6 +7,7 @@ import {
   comments,
   commentLikes,
   postLikes,
+  postSaves,
   posts,
   users,
 } from "@/shared/db/schema";
@@ -447,5 +448,48 @@ export async function deleteComment(
 
   return {
     ok: true,
+  };
+}
+
+export async function toggleSavePost(
+  formData: FormData
+): Promise<ActionResult<{ saved: boolean }>> {
+  const userId = await requireUserId();
+
+  const { postId } = parseFormDataWith(postIdFormSchema, formData);
+
+  const post = await getPost(postId);
+  if (!post) {
+    throw new Error("Post not found");
+  }
+
+  const [existingSave] = await db
+    .select({ id: postSaves.id })
+    .from(postSaves)
+    .where(and(eq(postSaves.postId, postId), eq(postSaves.userId, userId)))
+    .limit(1);
+
+  if (existingSave) {
+    await db.delete(postSaves).where(eq(postSaves.id, existingSave.id));
+    await revalidatePostPlaces(post);
+    return {
+      ok: true,
+      saved: false,
+    };
+  }
+
+  await db
+    .insert(postSaves)
+    .values({
+      postId,
+      userId,
+    })
+    .onConflictDoNothing();
+
+  await revalidatePostPlaces(post);
+
+  return {
+    ok: true,
+    saved: true,
   };
 }

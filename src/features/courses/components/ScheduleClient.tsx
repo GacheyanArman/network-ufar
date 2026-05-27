@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createScheduleEntry, deleteScheduleEntry } from "@/features/courses/server/schedule";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import UiIcon from "@/shared/ui/UiIcon";
 
 const DAYS_OF_WEEK = [
@@ -73,12 +74,22 @@ export default function ScheduleClient({ entries, currentUserId }: ScheduleClien
               View and manage your weekly class schedule
             </p>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn btn-primary"
-          >
-            Add Class
-          </button>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <Link
+              href="/calendar"
+              className="btn btn-secondary"
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none" }}
+            >
+              <UiIcon name="calendar" size={16} />
+              Academic Calendar
+            </Link>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="btn btn-primary"
+            >
+              Add Class
+            </button>
+          </div>
         </div>
       </div>
 

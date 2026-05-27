@@ -319,6 +319,7 @@ export default async function PublicProfilePage({ params, searchParams }) {
                   email={safeEmail}
                   friendsCount={friendsCount}
                   followingCount={Number(followingRow?.value || 0)}
+                  isOwn={false}
                 />
               </div>
 
@@ -430,16 +431,18 @@ export default async function PublicProfilePage({ params, searchParams }) {
 
                 <div className="uf-card uf-about-card">
                   <h3>Personal info</h3>
-                  <InfoBlock label="Full name" value={safeName} />
-                  <InfoBlock label="Username" value={safeUsername} />
-                  <InfoBlock label="Email" value={safeEmail} />
-                  <InfoBlock label="Faculty" value={safeFaculty} />
-                  {profileUser.year && <InfoBlock label="Year" value={profileUser.year} />}
-                  {profileUser.studyGroup && <InfoBlock label="Study Group" value={profileUser.studyGroup} />}
-                  {profileUser.languages && <InfoBlock label="Languages" value={profileUser.languages} />}
-                  {profileUser.interests && <InfoBlock label="Interests" value={profileUser.interests} />}
-                  {profileUser.lookingFor && <InfoBlock label="Looking For" value={profileUser.lookingFor} />}
-                  <InfoBlock label="Joined" value={joinedAt} />
+                  <div className="uf-personal-info-list">
+                    <InfoBlock label="Full name" value={safeName} />
+                    <InfoBlock label="Username" value={safeUsername} />
+                    <InfoBlock label="Email" value={safeEmail} />
+                    <InfoBlock label="Faculty" value={safeFaculty} />
+                    {profileUser.year && <InfoBlock label="Year" value={profileUser.year} />}
+                    {profileUser.studyGroup && <InfoBlock label="Study Group" value={profileUser.studyGroup} />}
+                    {profileUser.languages && <InfoBlock label="Languages" value={profileUser.languages} />}
+                    {profileUser.interests && <InfoBlock label="Interests" value={profileUser.interests} />}
+                    {profileUser.lookingFor && <InfoBlock label="Looking For" value={profileUser.lookingFor} />}
+                    <InfoBlock label="Joined" value={joinedAt} />
+                  </div>
                 </div>
               </section>
             ) : null}
@@ -646,7 +649,11 @@ const profileStyles = `
   white-space: nowrap;
 }
 
-.uf-profile-info-row:hover p {
+.uf-profile-info-row.clickable {
+  cursor: pointer;
+}
+
+.uf-profile-info-row.clickable:hover p {
   color: #0b3aa8;
 }
 
@@ -828,9 +835,27 @@ const profileStyles = `
   font-weight: 900;
 }
 
+.uf-personal-info-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+
+@media (max-width: 580px) {
+  .uf-personal-info-list {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
 .uf-info-block {
-  padding: 14px 0;
-  border-top: 1px solid #e7edf5;
+  padding: 10px 0;
+  border-top: none;
+  border-bottom: 1px solid #e7edf5;
+}
+
+.uf-info-block:last-child {
+  border-bottom: none;
 }
 
 .uf-info-block span {

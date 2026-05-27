@@ -6,7 +6,7 @@ import { Fragment, useOptimistic, useState, useTransition } from "react";
 import MediaViewer from "@/features/photos/components/MediaViewer";
 import CommentSection from "@/features/feed/components/CommentSection";
 import { deletePost } from "@/features/feed/server/actions";
-import { toggleLike } from "@/features/feed/server/interactions";
+import { toggleLike, toggleSavePost } from "@/features/feed/server/interactions";
 
 type MediaType = "image" | "video";
 
@@ -41,6 +41,7 @@ type PostCardPost = {
   authorName: string;
   authorImage?: string | null;
   likedByMe?: boolean | null;
+  savedByMe?: boolean | null;
   isOptimistic?: boolean;
   communityName?: string | null;
   comments?: Comment[];
@@ -79,7 +80,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
       likesCount: Number(post.likesCount || 0),
       repostedByMe: false,
       repostsCount: Number(post.repostsCount || 0),
-      savedByMe: false,
+      savedByMe: Boolean(post.savedByMe),
       isHidden: false,
     } satisfies OptimisticState,
     (current: OptimisticState, action: OptimisticAction): OptimisticState => {
@@ -181,8 +182,19 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
   }
 
   function handleSave() {
+    if (isPending || post.isOptimistic) return;
+
+    const formData = new FormData();
+    formData.append("postId", post.id);
+
     startTransition(() => {
       updateOptimistic({ type: "save" });
+
+      void toggleSavePost(formData).catch(() => {
+        startTransition(() => {
+          updateOptimistic({ type: "save" });
+        });
+      });
     });
   }
 
@@ -303,6 +315,20 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
                     Copy link
                   </button>
 
+                  {post.imageUrl ? (
+                    <a
+                      href={post.imageUrl}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="uf-post-menu-item"
+                      style={{ textDecoration: "none" }}
+                    >
+                      <Icon name="download" />
+                      Download
+                    </a>
+                  ) : null}
+
                   {isOwnPost ? (
                     <form
                       action={async (formData) => {
@@ -401,6 +427,16 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
 
           <footer className="uf-post-actions">
             <ActionButton
+              type="like"
+              label="Like"
+              icon="heart"
+              value={state.likesCount}
+              active={state.likedByMe}
+              onClick={handleLike}
+              disabled={isPending || post.isOptimistic}
+            />
+
+            <ActionButton
               type="reply"
               label="Comments"
               icon="reply"
@@ -418,23 +454,6 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
             />
 
             <ActionButton
-              type="like"
-              label="Like"
-              icon="heart"
-              value={state.likesCount}
-              active={state.likedByMe}
-              onClick={handleLike}
-              disabled={isPending || post.isOptimistic}
-            />
-
-            <ActionButton
-              type="views"
-              label="Views"
-              icon="views"
-              value={Number(post.viewsCount || 0)}
-            />
-
-            <ActionButton
               type="bookmark"
               label="Bookmark"
               icon="bookmark"
@@ -449,6 +468,14 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
               icon="share"
               onClick={handleShare}
               hideValue
+            />
+
+            <ActionButton
+              type="views"
+              label="Views"
+              icon="views"
+              value={Number(post.viewsCount || 0)}
+              style={{ marginLeft: "auto" }}
             />
           </footer>
 
@@ -500,6 +527,7 @@ function ActionButton({
   active = false,
   disabled = false,
   hideValue = false,
+  style,
   onClick,
 }: {
   type: "reply" | "repost" | "like" | "views" | "bookmark" | "share";
@@ -509,6 +537,7 @@ function ActionButton({
   active?: boolean;
   disabled?: boolean;
   hideValue?: boolean;
+  style?: React.CSSProperties;
   onClick?: () => void;
 }) {
   return (
@@ -517,6 +546,7 @@ function ActionButton({
       className={`uf-post-action ${type} ${active ? "active" : ""}`}
       aria-label={label}
       disabled={disabled}
+      style={style}
       onClick={onClick}
     >
       <span className="uf-post-action-icon">
@@ -690,7 +720,8 @@ type IconName =
   | "more"
   | "trash"
   | "link"
-  | "flag";
+  | "flag"
+  | "download";
 
 function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
   const paths: Record<IconName, string> = {
@@ -716,6 +747,8 @@ function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
       "M18.36 5.64c-1.95-1.95-5.11-1.95-7.07 0L9.88 7.05l1.41 1.41 1.42-1.41c1.17-1.17 3.07-1.17 4.24 0s1.17 3.07 0 4.24l-2.83 2.83c-1.17 1.17-3.07 1.17-4.24 0l-1.41 1.41c1.95 1.95 5.11 1.95 7.07 0l2.83-2.83c1.95-1.95 1.95-5.11-.01-7.06zM7.05 16.95c-1.17-1.17-1.17-3.07 0-4.24l2.83-2.83c1.17-1.17 3.07-1.17 4.24 0l1.41-1.41c-1.95-1.95-5.11-1.95-7.07 0l-2.83 2.83c-1.95 1.95-1.95 5.11 0 7.07 1.95 1.95 5.11 1.95 7.07 0l1.41-1.41-1.41-1.41-1.41 1.41c-1.17 1.17-3.07 1.17-4.24 0z",
     flag:
       "M5 3h12.5c.83 0 1.5.67 1.5 1.5v8c0 .83-.67 1.5-1.5 1.5H7v7H5V3zm2 2v7h10V5H7z",
+    download:
+      "M19.36 10.46L17.95 9.05L13 14V3H11V14L6.05 9.05L4.64 10.46L12 17.82L19.36 10.46ZM20 20H4V22H20V20Z",
   };
 
   return (

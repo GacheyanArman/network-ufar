@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Exec(rm)",
+      "Exec(find)",
+      "Exec(grep)",
+      "Exec(npx tsc)",
+      "Exec(node)",
+      "Exec(mkdir)",
+      "Exec(npm run)",
+      "Exec(npx eslint)",
+      "Exec(ls)",
+      "Exec(npx next)",
+      "Exec(curl)",
+      "Exec(head)",
+      "Exec(git stash)",
+      "Exec(awk)",
+      "Exec(git diff)",
+      "Exec(sed)",
+      "Exec(wc)",
+      "Exec(python)",
+      "Exec(cat)",
+      "Exec(cp)",
+      "Exec(tee)"
+    ]
+  }
+}

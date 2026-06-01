@@ -144,7 +144,11 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
     }
   );
 
+<<<<<<< HEAD
   const filterBy: FilterMode = "all";
+=======
+  const [filterBy, setFilterBy] = useState<FilterMode>("all");
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   const filtered = filterItems(items, filterBy);
   const [displayed, setDisplayed] = useState<UnifiedFeedItem[]>(filtered.slice(0, 15));
   const [hasMore, setHasMore] = useState(filtered.length > 15);
@@ -185,6 +189,16 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
     return () => observer.disconnect();
   }, [hasMore, isLoading, loadMore]);
 
+<<<<<<< HEAD
+=======
+  const TABS: { value: FilterMode; label: string; icon: string }[] = [
+    { value: "all", label: t("feed.tabAll") || "All", icon: "" },
+    { value: "questions", label: t("feed.tabQuestions") || "Questions", icon: "❓" },
+    { value: "announcements", label: t("feed.tabAnnouncements") || "Announcements", icon: "📢" },
+    { value: "my_courses", label: t("feed.tabMyCourses") || "My Courses", icon: "📚" },
+  ];
+
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   return (
     <div className="feed-container">
       {/* Post Composer */}
@@ -192,6 +206,25 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
         <PostComposer currentUser={currentUser} onOptimisticPost={addOptimisticPost} />
       </div>
 
+<<<<<<< HEAD
+=======
+      {/* Filter Tabs */}
+      <div className="feed-tabs" role="tablist" aria-label="Feed filters">
+        {TABS.map((tab) => (
+          <button
+            key={tab.value}
+            role="tab"
+            aria-selected={filterBy === tab.value}
+            onClick={() => setFilterBy(tab.value)}
+            className={`feed-tab ${filterBy === tab.value ? "feed-tab--active" : ""}`}
+          >
+            {tab.icon && <span className="feed-tab-icon">{tab.icon}</span>}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       {/* Feed Items */}
       <div className="feed-items">
         {displayed.length === 0 ? (

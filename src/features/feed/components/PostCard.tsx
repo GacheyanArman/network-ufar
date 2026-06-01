@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 import Image from "next/image";
+<<<<<<< HEAD
 import { Fragment, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import MediaViewer from "@/features/photos/components/MediaViewer";
 import CommentSection from "@/features/feed/components/CommentSection";
 import ShareToChatModal from "@/features/feed/components/ShareToChatModal";
+=======
+import { Fragment, useOptimistic, useState, useTransition } from "react";
+import MediaViewer from "@/features/photos/components/MediaViewer";
+import CommentSection from "@/features/feed/components/CommentSection";
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 import { deletePost } from "@/features/feed/server/actions";
 import { toggleLike, toggleSavePost } from "@/features/feed/server/interactions";
 
@@ -72,6 +78,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+<<<<<<< HEAD
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [showComments, setShowComments] = useState(false);
@@ -94,6 +101,10 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
     return () =>
       document.removeEventListener("mousedown", handleClickOutside);
   }, [isMenuOpen]);
+=======
+  const [isPending, startTransition] = useTransition();
+  const [showComments, setShowComments] = useState(false);
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
   const [state, updateOptimistic] = useOptimistic(
     {
@@ -229,15 +240,43 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
     setShowComments((prev) => !prev);
   }
 
+<<<<<<< HEAD
   function handleShare() {
     setIsMenuOpen(false);
     setIsShareOpen(true);
+=======
+  async function handleShare() {
+    const url =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/profile/${post.authorId}`
+        : "";
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: authorName,
+          text: post.content,
+          url,
+        });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1400);
+      }
+    } catch {
+      // user cancelled share
+    }
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   }
 
   async function handleCopyLink() {
     const url =
       typeof window !== "undefined"
+<<<<<<< HEAD
         ? `${window.location.origin}/feed/${post.id}`
+=======
+        ? `${window.location.origin}/profile/${post.authorId}`
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         : "";
 
     try {
@@ -297,7 +336,11 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
               ) : null}
             </div>
 
+<<<<<<< HEAD
             <div className="uf-post-menu-wrap" ref={menuWrapRef}>
+=======
+            <div className="uf-post-menu-wrap">
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               <button
                 type="button"
                 className="uf-post-menu-btn"
@@ -383,7 +426,11 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
                   padding: 0,
                   margin: "12px 0 0",
                   background: "transparent",
+<<<<<<< HEAD
                   cursor: "pointer",
+=======
+                  cursor: "zoom-in",
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                   borderRadius: "18px",
                   overflow: "hidden",
                 }}
@@ -429,6 +476,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
           )}
 
           <footer className="uf-post-actions">
+<<<<<<< HEAD
             <div className="uf-post-actions-left">
               <ActionButton
                 type="like"
@@ -467,6 +515,59 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
                 hideValue
               />
             </div>
+=======
+            <ActionButton
+              type="like"
+              label="Like"
+              icon="heart"
+              value={state.likesCount}
+              active={state.likedByMe}
+              onClick={handleLike}
+              disabled={isPending || post.isOptimistic}
+            />
+
+            <ActionButton
+              type="reply"
+              label="Comments"
+              icon="reply"
+              value={Number(post.commentsCount || 0)}
+              onClick={handleToggleComments}
+            />
+
+            <ActionButton
+              type="repost"
+              label="Repost"
+              icon="repost"
+              value={state.repostsCount}
+              active={state.repostedByMe}
+              onClick={handleRepost}
+            />
+
+            <ActionButton
+              type="bookmark"
+              label="Bookmark"
+              icon="bookmark"
+              active={state.savedByMe}
+              onClick={handleSave}
+              hideValue
+            />
+
+            <ActionButton
+              type="share"
+              label="Share"
+              icon="share"
+              onClick={handleShare}
+              hideValue
+            />
+
+            <ActionButton
+              type="views"
+              label="Views"
+              icon="views"
+              value={Number(post.viewsCount || 0)}
+              style={{ marginLeft: "auto" }}
+            />
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </footer>
 
           {showComments && (
@@ -483,6 +584,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
         {copied ? <div className="uf-post-toast">Link copied</div> : null}
       </article>
 
+<<<<<<< HEAD
       {isShareOpen && (
         <ShareToChatModal
           url={
@@ -495,6 +597,8 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
         />
       )}
 
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       {isViewerOpen && post.imageUrl && (
         <MediaViewer
           src={post.imageUrl}
@@ -740,7 +844,11 @@ function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
       ? "M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5z"
       : "M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5zM6.5 4c-.276 0-.5.22-.5.5v14.56l6-4.29 6 4.29V4.5c0-.28-.224-.5-.5-.5h-11z",
     share:
+<<<<<<< HEAD
       "M2.01 21L23 12 2.01 3 2 10l15 2-15 2z",
+=======
+      "M12 2.59l5.7 5.7-1.41 1.42L13 6.41V16h-2V6.41l-3.3 3.3-1.41-1.42L12 2.59zM21 15l-.02 3.51c0 1.38-1.12 2.49-2.5 2.49H5.5C4.11 21 3 19.88 3 18.5V15h2v3.5c0 .28.22.5.5.5h12.98c.28 0 .5-.22.5-.5L19 15h2z",
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     more:
       "M3 12c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm7 0c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm7 0c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z",
     trash:
@@ -768,13 +876,18 @@ const postCardStyles = `
   gap: 12px;
   padding: 16px 18px;
   background: #ffffff;
+<<<<<<< HEAD
   border: 1px solid #e6edf5;
   border-radius: 16px;
+=======
+  border-bottom: 1px solid #e6edf5;
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   color: #0f172a;
   text-align: left;
   transition: background-color 160ms ease;
 }
 
+<<<<<<< HEAD
 /* Space between consecutive feed posts so cards don't touch */
 .feed-post-wrapper + .feed-post-wrapper {
   margin-top: 14px;
@@ -782,6 +895,21 @@ const postCardStyles = `
 
 .uf-post:hover {
   background: #ffffff;
+=======
+.uf-post:first-child {
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.uf-post:last-child {
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  border-bottom: none;
+}
+
+.uf-post:hover {
+  background: #f8fafc;
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 }
 
 .uf-post.is-sending {
@@ -789,6 +917,7 @@ const postCardStyles = `
   pointer-events: none;
 }
 
+<<<<<<< HEAD
 /* Disable the global button shimmer/glow inside feed posts */
 .uf-post button::after,
 .uf-post-action::after,
@@ -798,6 +927,8 @@ const postCardStyles = `
   background: none !important;
 }
 
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 .uf-post-avatar-col {
   min-width: 0;
 }
@@ -925,7 +1056,10 @@ const postCardStyles = `
 
 .uf-post-menu form {
   margin: 0;
+<<<<<<< HEAD
   display: contents;
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 }
 
 .uf-post-menu-item {
@@ -1025,13 +1159,20 @@ const postCardStyles = `
 
 .uf-post-actions {
   margin-top: 12px;
+<<<<<<< HEAD
   display: flex;
   align-items: center;
   justify-content: space-between;
+=======
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: center;
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   gap: 2px;
   max-width: 560px;
 }
 
+<<<<<<< HEAD
 .uf-post-actions-left,
 .uf-post-actions-right {
   display: flex;
@@ -1039,6 +1180,8 @@ const postCardStyles = `
   gap: 4px;
 }
 
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 .uf-post-action {
   min-width: 0;
   height: 36px;

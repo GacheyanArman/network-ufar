@@ -12,7 +12,9 @@
     "test:setup": "playwright install --with-deps chromium"
   },
   "dependencies": {
+
     "@modelcontextprotocol/server-filesystem": "^2026.1.14",
+
     "@neondatabase/serverless": "^1.1.0",
     "@paralleldrive/cuid2": "^3.3.0",
     "@upstash/redis": "^1.38.0",

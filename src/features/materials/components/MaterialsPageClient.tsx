@@ -1,6 +1,10 @@
 "use client";
 
+<<<<<<< HEAD
 import { useState, useEffect, useMemo, useTransition, useCallback } from "react";
+=======
+import { useState, useMemo, useTransition, useCallback } from "react";
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 import UiIcon from "@/shared/ui/UiIcon";
 import {
   toggleSaveMaterial,
@@ -108,6 +112,7 @@ export default function MaterialsPageClient({
   const [activeTab, setActiveTab] = useState<"browse" | "saved" | "requests">("browse");
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+<<<<<<< HEAD
 
   // Lock background (body) scrolling while the upload modal is open
   useEffect(() => {
@@ -118,11 +123,16 @@ export default function MaterialsPageClient({
       document.body.style.overflow = previousOverflow;
     };
   }, [isUploadModalOpen]);
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
   const [uploadSourceType, setUploadSourceType] = useState<"file" | "link">("file");
+<<<<<<< HEAD
   const [uploadFileName, setUploadFileName] = useState("");
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   const [showOptionalUploadFields, setShowOptionalUploadFields] = useState(false);
 
   // ------------------- Filtering & Sorting -------------------
@@ -242,7 +252,13 @@ export default function MaterialsPageClient({
         className="card"
         style={{
           padding: "24px 32px",
+<<<<<<< HEAD
           color: "var(--text-primary)",
+=======
+          background: "linear-gradient(135deg, var(--french-navy) 0%, #1e293b 100%)",
+          borderRadius: 16,
+          color: "white",
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           marginBottom: 24,
           display: "flex",
           justifyContent: "space-between",
@@ -252,10 +268,17 @@ export default function MaterialsPageClient({
         }}
       >
         <div>
+<<<<<<< HEAD
           <h1 style={{ fontSize: "1.6rem", fontWeight: 800, margin: "0 0 4px", color: "var(--french-navy)" }}>
             Study Materials
           </h1>
           <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", margin: 0, maxWidth: 480 }}>
+=======
+          <h1 style={{ fontSize: "1.6rem", fontWeight: 800, margin: "0 0 4px", color: "white" }}>
+            Study Materials
+          </h1>
+          <p style={{ fontSize: "0.88rem", opacity: 0.85, margin: 0, maxWidth: 480 }}>
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             Share and download lecture notes, summaries, exam preparation guides, and academic files.
           </p>
         </div>
@@ -438,9 +461,13 @@ export default function MaterialsPageClient({
                 border: "1px dashed var(--border-color)",
               }}
             >
+<<<<<<< HEAD
               <div style={{ display: "flex", justifyContent: "center", color: "var(--text-muted)", opacity: 0.4, marginBottom: 12 }}>
                 <UiIcon name="folder" size={48} />
               </div>
+=======
+              <div style={{ fontSize: "2.5rem", marginBottom: 12, opacity: 0.6 }}>📁</div>
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--french-navy)", margin: "0 0 6px" }}>
                 {activeTab === "saved" ? "No saved materials" : "No materials found"}
               </h3>
@@ -850,6 +877,7 @@ export default function MaterialsPageClient({
               </div>
 
               {uploadSourceType === "file" ? (
+<<<<<<< HEAD
                 <label htmlFor="material-file-input" className="material-file-drop">
                   <UiIcon name="upload" size={26} color="var(--french-gold)" />
                   <span className="material-file-drop-title">
@@ -865,13 +893,22 @@ export default function MaterialsPageClient({
                     name="file"
                     required
                     onChange={(e) => setUploadFileName(e.target.files?.[0]?.name ?? "")}
+=======
+                <input
+                  type="file"
+                  name="file"
+                  required
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                   style={{
                     fontSize: "0.85rem",
                     color: "var(--text-secondary)",
                     width: "100%",
                   }}
                 />
+<<<<<<< HEAD
                 </label>
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               ) : (
                 <input
                   type="url"

@@ -182,7 +182,7 @@ export default function SearchBar() {
           ref={inputRef}
           type="text"
           className="uf-search-input"
-          placeholder={language === "fr" ? "Rechercher…" : language === "hy" ? "Որոնել…" : "Search…"}
+          placeholder={t("searchPage.inputPlaceholder") || "Search…"}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}

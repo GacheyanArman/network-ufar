@@ -66,6 +66,7 @@ export default function CoursesHub({
             </span>
           )}
         </div>
+<<<<<<< HEAD
         {false && (
         <Link
           href="/calendar"
@@ -77,6 +78,16 @@ export default function CoursesHub({
           <UiIcon name="plus" size={12} />
         </Link>
         )}
+=======
+        <Link
+          href="/calendar"
+          className="btn btn-secondary"
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none", fontSize: "0.82rem" }}
+        >
+          <UiIcon name="calendar" size={14} />
+          Academic Calendar
+        </Link>
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       </div>
 
       {/* Tabs */}
@@ -86,20 +97,30 @@ export default function CoursesHub({
           aria-selected={tab === "courses"}
           onClick={() => setTab("courses")}
           className={`courses-tab ${tab === "courses" ? "courses-tab--active" : ""}`}
+<<<<<<< HEAD
           style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
         >
           <UiIcon name="graduation" size={16} />
           My Courses
+=======
+        >
+          📚 My Courses
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         </button>
         <button
           role="tab"
           aria-selected={tab === "schedule"}
           onClick={() => setTab("schedule")}
           className={`courses-tab ${tab === "schedule" ? "courses-tab--active" : ""}`}
+<<<<<<< HEAD
           style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
         >
           <UiIcon name="calendar" size={16} />
           Weekly Schedule
+=======
+        >
+          🗓️ Weekly Schedule
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         </button>
       </div>
 
@@ -114,6 +135,7 @@ export default function CoursesHub({
 }
 
 function CoursesGrid({ courses }: { courses: EnrolledCourse[] }) {
+<<<<<<< HEAD
   return (
     <div className="card courses-card">
       {courses.length === 0 ? (
@@ -121,12 +143,19 @@ function CoursesGrid({ courses }: { courses: EnrolledCourse[] }) {
         <div className="course-empty-icon" style={{ display: "flex", justifyContent: "center", color: "var(--text-muted)", opacity: 0.4 }}>
           <UiIcon name="graduation" size={48} />
         </div>
+=======
+  if (courses.length === 0) {
+    return (
+      <div className="course-empty">
+        <div className="course-empty-icon">📚</div>
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         <p className="course-empty-text" style={{ fontWeight: 600, fontSize: "1rem", color: "var(--french-navy)", marginBottom: 6 }}>
           No courses enrolled yet
         </p>
         <p className="course-empty-text">
           Your enrolled courses will appear here when the semester starts.
         </p>
+<<<<<<< HEAD
         <Link href="/calendar" className="btn btn-primary course-empty-cta">
           <UiIcon name="calendar" size={14} />
           View Academic Calendar
@@ -135,6 +164,14 @@ function CoursesGrid({ courses }: { courses: EnrolledCourse[] }) {
         </div>
       ) : (
         <div className="courses-grid">
+=======
+      </div>
+    );
+  }
+
+  return (
+    <div className="courses-grid">
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       {courses.map((c) => (
         <Link
           key={c.courseId}
@@ -177,8 +214,11 @@ function CoursesGrid({ courses }: { courses: EnrolledCourse[] }) {
           )}
         </Link>
       ))}
+<<<<<<< HEAD
         </div>
       )}
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     </div>
   );
 }

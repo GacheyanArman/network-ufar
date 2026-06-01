@@ -3,16 +3,13 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Language } from "@/shared/i18n/i18n";
 
-const TWEMOJI_BASE =
-  "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/";
-
 export default function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage();
 
-  const languages: { code: Language; emoji: string; code2: string }[] = [
-    { code: "en", emoji: "🇬🇧", code2: "1f1ec-1f1e7" },
-    { code: "fr", emoji: "🇫🇷", code2: "1f1eb-1f1f7" },
-    { code: "hy", emoji: "🇦🇲", code2: "1f1e6-1f1f2" },
+  const languages: { code: Language; flag: string }[] = [
+    { code: "en", flag: "🇬🇧" },
+    { code: "fr", flag: "🇫🇷" },
+    { code: "hy", flag: "🇦🇲" },
   ];
 
   return (
@@ -31,13 +28,7 @@ export default function LanguageSwitcher() {
                 : "Հայերեն"
           }
         >
-          <img
-            src={TWEMOJI_BASE + lang.code2 + ".svg"}
-            alt={lang.emoji}
-            className="lang-flag-img"
-            width={22}
-            height={22}
-          />
+          {lang.flag}
         </button>
       ))}
 
@@ -63,14 +54,6 @@ export default function LanguageSwitcher() {
           opacity: 0.55;
           padding: 0;
           line-height: 1;
-        }
-
-        .lang-flag-img {
-          width: 20px;
-          height: 20px;
-          display: block;
-          object-fit: contain;
-          pointer-events: none;
         }
 
         .lang-flag-btn:hover {

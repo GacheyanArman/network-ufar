@@ -15,7 +15,6 @@ import NavigationMenu from "@/shared/ui/NavigationMenu";
 import TopbarSearch from "@/shared/ui/TopbarSearch";
 import TopbarNotifications from "@/shared/ui/TopbarNotifications";
 import RightPanelWidgets from "@/features/dashboard/components/RightPanelWidgets";
-import MobileBottomNav from "@/shared/ui/MobileBottomNav";
 
 export default async function MainLayout({ children }) {
   const session = await getSession();
@@ -101,8 +100,6 @@ export default async function MainLayout({ children }) {
           <RightPanelWidgets userId={session.userId} />
         </aside>
       </div>
-
-      <MobileBottomNav />
     </>
   );
 }

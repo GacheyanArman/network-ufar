@@ -4,7 +4,10 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { updateProfile } from "@/features/profile/server/actions";
 import { useLanguage } from "@/contexts/LanguageContext";
+<<<<<<< HEAD
 import { translations } from "@/shared/i18n/i18n";
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
 const editProfileText = {
   en: {
@@ -18,8 +21,17 @@ const editProfileText = {
     username: "Username",
     usernamePlaceholder: "username",
     faculty: "Faculty",
+<<<<<<< HEAD
     year: "Academic Year",
     email: "Email",
+=======
+    facultyPlaceholder: "Computer Science, Law, Management...",
+    gender: "Gender",
+    relationshipStatus: "Relationship Status",
+    birthDate: "Birth Date",
+    email: "Email",
+    privacyLevel: "Privacy Level",
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     bio: "Bio",
     bioPlaceholder: "Write a short bio...",
     notSpecified: "Not specified",
@@ -28,6 +40,24 @@ const editProfileText = {
     saveChanges: "Save changes",
     onlyImages: "Only image files are allowed.",
     imageTooLarge: "Image is too large. Max size is 5MB.",
+<<<<<<< HEAD
+=======
+    privacyPublic: "Public - Everyone can see my posts",
+    privacyFriends: "Friends Only - Only friends can see my posts",
+    privacyPrivate: "Private - Only I can see my posts",
+    genderOptions: {
+      male: "Male",
+      female: "Female",
+      other: "Other",
+      prefer_not_to_say: "Prefer not to say",
+    },
+    relationshipOptions: {
+      single: "Single",
+      in_relationship: "In a relationship",
+      complicated: "Complicated",
+      prefer_not_to_say: "Prefer not to say",
+    },
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   },
 
   fr: {
@@ -44,8 +74,17 @@ const editProfileText = {
     username: "Nom d’utilisateur",
     usernamePlaceholder: "nom_utilisateur",
     faculty: "Faculté",
+<<<<<<< HEAD
     year: "Année universitaire",
     email: "E-mail",
+=======
+    facultyPlaceholder: "Informatique, Droit, Management...",
+    gender: "Genre",
+    relationshipStatus: "Statut relationnel",
+    birthDate: "Date de naissance",
+    email: "E-mail",
+    privacyLevel: "Niveau de confidentialité",
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     bio: "Bio",
     bioPlaceholder: "Écrivez une courte bio...",
     notSpecified: "Non indiqué",
@@ -54,6 +93,24 @@ const editProfileText = {
     saveChanges: "Enregistrer les modifications",
     onlyImages: "Seules les images sont autorisées.",
     imageTooLarge: "L’image est trop volumineuse. Taille max : 5 Mo.",
+<<<<<<< HEAD
+=======
+    privacyPublic: "Public - Tout le monde peut voir mes publications",
+    privacyFriends: "Amis seulement - Seuls mes amis peuvent voir mes publications",
+    privacyPrivate: "Privé - Moi seul peux voir mes publications",
+    genderOptions: {
+      male: "Homme",
+      female: "Femme",
+      other: "Autre",
+      prefer_not_to_say: "Préfère ne pas dire",
+    },
+    relationshipOptions: {
+      single: "Célibataire",
+      in_relationship: "En couple",
+      complicated: "Compliqué",
+      prefer_not_to_say: "Préfère ne pas dire",
+    },
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   },
 
   hy: {
@@ -70,8 +127,17 @@ const editProfileText = {
     username: "Օգտանուն",
     usernamePlaceholder: "օգտանուն",
     faculty: "Ֆակուլտետ",
+<<<<<<< HEAD
     year: "Ուսումնական տարի",
     email: "Էլ. փոստ",
+=======
+    facultyPlaceholder: "Համակարգչային գիտություն, Իրավունք, Կառավարում...",
+    gender: "Սեռ",
+    relationshipStatus: "Հարաբերությունների կարգավիճակ",
+    birthDate: "Ծննդյան ամսաթիվ",
+    email: "Էլ. փոստ",
+    privacyLevel: "Գաղտնիության մակարդակ",
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     bio: "Կենսագրություն",
     bioPlaceholder: "Գրեք կարճ կենսագրություն...",
     notSpecified: "Նշված չէ",
@@ -80,6 +146,7 @@ const editProfileText = {
     saveChanges: "Պահպանել փոփոխությունները",
     onlyImages: "Թույլատրվում են միայն պատկերներ։",
     imageTooLarge: "Պատկերը չափազանց մեծ է։ Առավելագույն չափը՝ 5 ՄԲ։",
+<<<<<<< HEAD
   },
 };
 
@@ -102,6 +169,32 @@ const YEARS = [
   "y4",
   "master",
   "phd",
+=======
+    privacyPublic: "Հրապարակային - Բոլորը կարող են տեսնել իմ գրառումները",
+    privacyFriends: "Միայն ընկերներ - Միայն ընկերները կարող են տեսնել իմ գրառումները",
+    privacyPrivate: "Անձնական - Միայն ես կարող եմ տեսնել իմ գրառումները",
+    genderOptions: {
+      male: "Արական",
+      female: "Իգական",
+      other: "Այլ",
+      prefer_not_to_say: "Չեմ ցանկանում նշել",
+    },
+    relationshipOptions: {
+      single: "Ամուրի",
+      in_relationship: "Հարաբերությունների մեջ",
+      complicated: "Բարդ է",
+      prefer_not_to_say: "Չեմ ցանկանում նշել",
+    },
+  },
+};
+
+const genderValues = ["male", "female", "other", "prefer_not_to_say"];
+const relationshipValues = [
+  "single",
+  "in_relationship",
+  "complicated",
+  "prefer_not_to_say",
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 ];
 
 const editProfileStyles = `
@@ -507,10 +600,13 @@ export default function ProfileEditForm({ user, error }) {
   const { language } = useLanguage();
   const text = editProfileText[language] || editProfileText.en;
 
+<<<<<<< HEAD
   const lang = translations[language] || translations.en;
   const facultyLabels = lang.onboarding?.faculty || {};
   const yearLabels = lang.onboarding?.year || {};
 
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   const avatarInputRef = useRef(null);
 
   const [avatarPreview, setAvatarPreview] = useState(user.image || "");
@@ -629,6 +725,7 @@ export default function ProfileEditForm({ user, error }) {
 
                 <label className="uf-edit-field">
                   <span className="uf-edit-label">{text.faculty}</span>
+<<<<<<< HEAD
                   <select
                     className="uf-edit-select"
                     name="faculty"
@@ -658,6 +755,18 @@ export default function ProfileEditForm({ user, error }) {
                     ))}
                   </select>
                 </label>
+=======
+                  <input
+                    className="uf-edit-input"
+                    name="faculty"
+                    defaultValue={user.faculty || ""}
+                    placeholder={text.facultyPlaceholder}
+                  />
+                </label>
+
+
+
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
 
                 <label className="uf-edit-field">
@@ -668,6 +777,22 @@ export default function ProfileEditForm({ user, error }) {
                     disabled
                   />
                 </label>
+<<<<<<< HEAD
+=======
+
+                <label className="uf-edit-field">
+                  <span className="uf-edit-label">{text.privacyLevel}</span>
+                  <select
+                    className="uf-edit-select"
+                    name="privacyLevel"
+                    defaultValue={user.privacyLevel || "public"}
+                  >
+                    <option value="public">{text.privacyPublic}</option>
+                    <option value="friends">{text.privacyFriends}</option>
+                    <option value="private">{text.privacyPrivate}</option>
+                  </select>
+                </label>
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               </div>
 
               <label className="uf-edit-field uf-edit-field-full">

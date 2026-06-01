@@ -13,8 +13,11 @@ import {
   communityMembers,
   academicCalendar,
   users,
+<<<<<<< HEAD
   courses,
   courseEnrollments,
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
 import {
@@ -178,7 +181,10 @@ function readEventInputFromForm(fd: FormData) {
     maxAttendees: fd.get("maxAttendees") as any,
     enableWaitlist: fd.get("enableWaitlist") !== "false",
     communityId: String(fd.get("communityId") ?? ""),
+<<<<<<< HEAD
     courseId: String(fd.get("courseId") ?? ""),
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     reminderOffsets: String(fd.get("reminderOffsets") ?? ""),
   };
 }
@@ -311,10 +317,14 @@ export type EventsFilter =
   | "this_week"
   | "my_events"
   | "community"
+<<<<<<< HEAD
   | "past"
   | "my_courses"
   | "university"
   | "clubs_groups";
+=======
+  | "past";
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
 export type EventListFilters = {
   filter?: EventsFilter;
@@ -373,6 +383,7 @@ export async function getEventsList(filters: EventListFilters = {}) {
     case "this_week":
       conditions.push(overlapsWeek);
       break;
+<<<<<<< HEAD
     case "my_courses":
       conditions.push(ongoingOrFuture);
       if (!userId) return [];
@@ -397,6 +408,8 @@ export async function getEventsList(filters: EventListFilters = {}) {
       conditions.push(ongoingOrFuture);
       conditions.push(isNotNull(events.communityId));
       break;
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     case "my_events":
       // Organized/co-organized/RSVP'd events are post-filtered below.
       break;
@@ -485,14 +498,20 @@ export async function getEventsList(filters: EventListFilters = {}) {
       communityId: events.communityId,
       communityName: communities.name,
       communityIsPrivate: communities.isPrivate,
+<<<<<<< HEAD
       courseId: events.courseId,
       courseCode: courses.code,
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       createdAt: events.createdAt,
     })
     .from(events)
     .innerJoin(users, eq(events.organizerId, users.id))
     .leftJoin(communities, eq(events.communityId, communities.id))
+<<<<<<< HEAD
     .leftJoin(courses, eq(events.courseId, courses.id))
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(...order)
     .limit(120);
@@ -597,8 +616,11 @@ export async function getEventsList(filters: EventListFilters = {}) {
       organizerImage: e.organizerImage,
       communityId: e.communityId,
       communityName: e.communityName,
+<<<<<<< HEAD
       courseId: e.courseId,
       courseCode: e.courseCode,
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       createdAt: e.createdAt ? e.createdAt.toISOString() : null,
       goingCount: c.going,
       maybeCount: c.interested,
@@ -680,14 +702,20 @@ export async function getEventDetail(eventId: string) {
       communityId: events.communityId,
       communityName: communities.name,
       communityIsPrivate: communities.isPrivate,
+<<<<<<< HEAD
       courseId: events.courseId,
       courseCode: courses.code,
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       createdAt: events.createdAt,
     })
     .from(events)
     .innerJoin(users, eq(events.organizerId, users.id))
     .leftJoin(communities, eq(events.communityId, communities.id))
+<<<<<<< HEAD
     .leftJoin(courses, eq(events.courseId, courses.id))
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     .where(eq(events.id, eventId))
     .limit(1);
   if (!event) return null;
@@ -761,8 +789,11 @@ export async function getEventDetail(eventId: string) {
       createdAt: event.createdAt?.toISOString() ?? null,
       imageUrl: event.coverImageUrl || event.imageUrl,
       coverImageUrl: event.coverImageUrl || event.imageUrl,
+<<<<<<< HEAD
       courseId: event.courseId,
       courseCode: event.courseCode,
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     },
     coOrganizers: coOrgs,
     rsvpCounts: counts ?? { going: 0, interested: 0, waitlisted: 0 },
@@ -892,7 +923,10 @@ export async function createEvent(formData: FormData) {
       coverMediumUrl,
       organizerId: userId,
       communityId: v.communityId || null,
+<<<<<<< HEAD
       courseId: v.courseId || null,
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       maxAttendees:
         Number.isFinite(maxAttendeesNum) && maxAttendeesNum! > 0
           ? maxAttendeesNum
@@ -902,8 +936,11 @@ export async function createEvent(formData: FormData) {
     });
 
     revalidatePath("/events");
+<<<<<<< HEAD
     revalidatePath("/today");
     revalidatePath("/");
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     return { success: true };
   } catch (error) {
     console.error("Error creating event:", error);
@@ -1008,7 +1045,10 @@ export async function updateEvent(formData: FormData) {
           ? { imageUrl: coverUrl, coverImageUrl: coverUrl, coverThumbnailUrl: coverThumbnailUrl ?? null, coverMediumUrl: coverMediumUrl ?? null }
           : {}),
         communityId: nextCommunityId,
+<<<<<<< HEAD
         courseId: v.courseId || null,
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         maxAttendees:
           Number.isFinite(maxAttendeesNum) && maxAttendeesNum! > 0
             ? maxAttendeesNum
@@ -1042,8 +1082,11 @@ export async function updateEvent(formData: FormData) {
 
     revalidatePath("/events");
     revalidatePath(`/events/${eventId}`);
+<<<<<<< HEAD
     revalidatePath("/today");
     revalidatePath("/");
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     return { success: true };
   } catch (error) {
     console.error("Error updating event:", error);
@@ -1089,8 +1132,11 @@ export async function deleteEvent(formData: FormData) {
       );
     await db.delete(events).where(eq(events.id, eventId));
     revalidatePath("/events");
+<<<<<<< HEAD
     revalidatePath("/today");
     revalidatePath("/");
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     return { success: true };
   } catch (error) {
     console.error("Error deleting event:", error);

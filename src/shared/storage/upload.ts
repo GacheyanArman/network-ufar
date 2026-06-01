@@ -148,6 +148,7 @@ export async function saveUploadFile(
   return result?.url ?? null;
 }
 
+<<<<<<< HEAD
 type SaveImageAsDataUriOptions = {
   maxSize?: number;
   allowedMimePrefix?: string;
@@ -208,6 +209,8 @@ export async function saveImageAsDataUri(
   return `data:${file.type};base64,${buffer.toString("base64")}`;
 }
 
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 export async function saveUploadFileWithMeta(
   file: File | null | undefined,
   options: SaveUploadFileOptions = {}

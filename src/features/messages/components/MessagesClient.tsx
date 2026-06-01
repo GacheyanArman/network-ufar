@@ -60,7 +60,10 @@ export default function MessagesClient({
   );
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
+<<<<<<< HEAD
     // eslint-disable-next-line react-hooks/set-state-in-effect
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     setIsClient(true);
   }, []);
   const [hasMore, setHasMore] = useState(initialHistory.length >= 30);

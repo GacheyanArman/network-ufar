@@ -8,7 +8,10 @@ import { translations } from "@/shared/i18n/i18n";
 import { getFacultyLabel } from "@/features/profile/server/utils";
 import UiIcon from "@/shared/ui/UiIcon";
 import SearchBar from "@/features/search/components/SearchBar";
+<<<<<<< HEAD
 import BackButton from "@/shared/ui/BackButton";
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
 export default async function SearchPage({ searchParams }) {
   const session = await getSession();
@@ -27,8 +30,11 @@ export default async function SearchPage({ searchParams }) {
       <div className="uf-search-page">
         <style>{searchPageStyles}</style>
 
+<<<<<<< HEAD
         <BackButton fallback="/feed" />
 
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         <div className="uf-search-header">
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
@@ -66,8 +72,11 @@ export default async function SearchPage({ searchParams }) {
     <div className="uf-search-page">
       <style>{searchPageStyles}</style>
 
+<<<<<<< HEAD
       <BackButton fallback="/feed" />
 
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       <div className="uf-search-header">
         <h1>{t.resultsTitle}</h1>
         <p>

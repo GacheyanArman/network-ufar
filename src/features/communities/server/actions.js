@@ -59,6 +59,7 @@ export async function createCommunity(formData) {
   const rules = clean(formData.get("rules"), 2000);
   const facultyTag = clean(formData.get("facultyTag"), 80) || null;
   const yearTag = clean(formData.get("yearTag"), 20) || null;
+<<<<<<< HEAD
 
   const groupType = clean(formData.get("groupType"), 40) || "interest_group";
   const userInterests = cleanCsv(formData.get("interests"), 240) || "";
@@ -71,6 +72,9 @@ export async function createCommunity(formData) {
 
   const interests = cleanInterests ? `${groupType}, ${cleanInterests}` : groupType;
 
+=======
+  const interests = cleanCsv(formData.get("interests"), 240) || null;
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   const isPrivate = formData.get("isPrivate") === "true" || formData.get("isPrivate") === "on";
   const avatarFile = formData.get("avatar");
   const hasAvatar =
@@ -79,7 +83,11 @@ export async function createCommunity(formData) {
     "size" in avatarFile &&
     avatarFile.size > 0;
 
+<<<<<<< HEAD
   if (!name) throw new Error("Group name is required");
+=======
+  if (!name) throw new Error("Community name is required");
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
   const avatarResult = hasAvatar
     ? await saveUploadFileWithMeta(avatarFile, {
@@ -127,7 +135,11 @@ export async function updateCommunity(formData) {
   const patch = {};
   if (formData.has("name")) {
     const name = clean(formData.get("name"), 80);
+<<<<<<< HEAD
     if (!name) throw new Error("Group name is required");
+=======
+    if (!name) throw new Error("Community name is required");
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     patch.name = name;
   }
   if (formData.has("description"))
@@ -138,6 +150,7 @@ export async function updateCommunity(formData) {
     patch.facultyTag = clean(formData.get("facultyTag"), 80) || null;
   if (formData.has("yearTag"))
     patch.yearTag = clean(formData.get("yearTag"), 20) || null;
+<<<<<<< HEAD
 
   if (formData.has("groupType") || formData.has("interests")) {
     const groupType = clean(formData.get("groupType"), 40) || "interest_group";
@@ -162,6 +175,10 @@ export async function updateCommunity(formData) {
 
     patch.interests = cleanInterests ? `${groupType}, ${cleanInterests}` : groupType;
   }
+=======
+  if (formData.has("interests"))
+    patch.interests = cleanCsv(formData.get("interests"), 240) || null;
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   if (formData.has("isPrivate")) {
     const v = formData.get("isPrivate");
     patch.isPrivate = v === "true" || v === "on";

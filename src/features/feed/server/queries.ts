@@ -782,6 +782,7 @@ export async function getUnifiedFeed(
 
   return { currentUser, items: finalItems };
 }
+<<<<<<< HEAD
 
 export type SinglePost = {
   id: string;
@@ -910,3 +911,5 @@ export async function getPostById(
     currentUser,
   };
 }
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6

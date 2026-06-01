@@ -24,9 +24,18 @@ export const POST_TYPE_LABELS = {
 
 // --------- Tab configuration ---------
 export const COMMUNITY_TABS = [
+<<<<<<< HEAD
   { id: "all", label: "Posts", icon: "news" },
   { id: "materials", label: "Materials", icon: "book", postType: "material" },
   { id: "events", label: "Events", icon: "calendar", postType: "event" },
+=======
+  { id: "all", label: "All Posts", icon: "news" },
+  { id: "questions", label: "Questions", icon: "message", postType: "question" },
+  { id: "study_groups", label: "Study Groups", icon: "users", postType: "study_group" },
+  { id: "materials", label: "Materials", icon: "book", postType: "material" },
+  { id: "events", label: "Events", icon: "calendar", postType: "event" },
+  { id: "announcements", label: "Announcements", icon: "bell", postType: "announcement" },
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 ];
 
 export function resolveTab(tabId) {

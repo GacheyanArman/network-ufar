@@ -33,6 +33,7 @@ export default function Avatar({ src, thumbnailUrl = undefined, alt = "User", si
     );
   }
 
+<<<<<<< HEAD
   const resolvedSrc = thumbnailUrl || src;
 
   // Images stored directly in the database arrive as base64 data URIs.
@@ -60,6 +61,8 @@ export default function Avatar({ src, thumbnailUrl = undefined, alt = "User", si
     );
   }
 
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   return (
     <Image
       src={thumbnailUrl || src}

@@ -1,6 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/shared/db/db";
+<<<<<<< HEAD
 import { courses, courseEnrollments, studyMaterials, schedule, users, faculties, events } from "@/shared/db/schema";
+=======
+import { courses, courseEnrollments, studyMaterials, schedule, users, faculties } from "@/shared/db/schema";
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 import { getSession } from "@/shared/auth/session";
 import { eq, and } from "drizzle-orm";
 import { PageShell } from "@/shared/ui/Layout";
@@ -80,6 +84,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
     .where(eq(schedule.courseCode, courseData.code))
     .orderBy(schedule.dayOfWeek, schedule.startTime);
 
+<<<<<<< HEAD
   // 5. Loads events for this course
   const courseEvents = await db
     .select({
@@ -108,13 +113,18 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ c
     endTime: e.endTime ? e.endTime.toISOString() : null,
   }));
 
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   return (
     <PageShell>
       <CourseDetail
         course={courseData}
         materials={materialsData}
         scheduleItems={scheduleItems}
+<<<<<<< HEAD
         events={serializedEvents}
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       />
     </PageShell>
   );

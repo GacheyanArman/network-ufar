@@ -5,10 +5,15 @@ import {
   studyMaterials,
   courseEnrollments,
   courses,
+<<<<<<< HEAD
   events,
   communities,
 } from "@/shared/db/schema";
 import { eq, and, desc, inArray, asc, gte } from "drizzle-orm";
+=======
+} from "@/shared/db/schema";
+import { eq, and, desc, inArray } from "drizzle-orm";
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 import {
   getCachedUserSchedule,
   getCachedUpcomingDeadlines,
@@ -149,6 +154,7 @@ export default async function TodayDashboard({
       upcomingDeadlines.push(cachedDeadlines[i]);
     }
   }
+<<<<<<< HEAD
   let upcomingEvents = await db
     .select({
       id: events.id,
@@ -172,6 +178,8 @@ export default async function TodayDashboard({
     )
     .orderBy(asc(events.startTime))
     .limit(3);
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
   return (
     <PageShell variant="wide" className="dashboard-page">
@@ -334,6 +342,7 @@ export default async function TodayDashboard({
           )}
         </section>
 
+<<<<<<< HEAD
         {/* Section 4: Upcoming Events */}
         <section className="dashboard-section">
           <h2 className="dash-section-title">
@@ -397,6 +406,8 @@ export default async function TodayDashboard({
           )}
         </section>
 
+=======
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
       </div>
     </PageShell>

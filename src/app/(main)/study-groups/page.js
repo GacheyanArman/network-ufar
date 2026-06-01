@@ -83,6 +83,13 @@ export default async function StudyGroupsPage({ searchParams }) {
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>
+<<<<<<< HEAD
+=======
+        <Link href="/study-groups/create" className="btn btn-primary">
+          <UiIcon name="plus" size={16} />
+          {t.createGroup}
+        </Link>
+>>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       </div>
 
       <div className="uf-sg-filters">

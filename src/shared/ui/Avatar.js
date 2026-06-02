@@ -33,36 +33,6 @@ export default function Avatar({ src, thumbnailUrl = undefined, alt = "User", si
     );
   }
 
-<<<<<<< HEAD
-  const resolvedSrc = thumbnailUrl || src;
-
-  // Images stored directly in the database arrive as base64 data URIs.
-  // next/image cannot optimize data: URLs, so render a plain <img> to
-  // guarantee the avatar is always visible to everyone.
-  if (typeof resolvedSrc === "string" && resolvedSrc.startsWith("data:")) {
-    const dataImgStyle = {
-      width: size,
-      height: size,
-      borderRadius: "50%",
-      objectFit: "cover",
-    };
-
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={resolvedSrc}
-        alt={alt}
-        width={size}
-        height={size}
-        loading="lazy"
-        className={`avatar ${className}`}
-        style={dataImgStyle}
-      />
-    );
-  }
-
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   return (
     <Image
       src={thumbnailUrl || src}

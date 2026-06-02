@@ -9,11 +9,7 @@ import { db } from "@/shared/db/db";
 import { users } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
 import { profileSchema } from "@/shared/validations/validations";
-<<<<<<< HEAD
-import { saveImageAsDataUri } from "@/shared/storage/upload";
-=======
 import { saveUploadFileWithMeta } from "@/shared/storage/upload";
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
 function getJwtSecretKey() {
   const secret = process.env.JWT_SECRET;
@@ -39,19 +35,6 @@ async function saveProfileImage(file, type) {
   }
 
   try {
-<<<<<<< HEAD
-    // Store the image directly in the database as a compressed base64 data URI
-    // so it is always visible to everyone, without depending on an external
-    // blob store URL being reachable. Avatars use the small "thumb" variant;
-    // covers use the larger "medium" variant.
-    const dataUri = await saveImageAsDataUri(file, {
-      maxSize: 5 * 1024 * 1024,
-      allowedMimePrefix: "image/",
-      variant: type === "avatar" ? "thumb" : "medium",
-    });
-
-    return dataUri ?? null;
-=======
     const result = await saveUploadFileWithMeta(file, {
       subdir: "profile",
       prefix: type,
@@ -62,7 +45,6 @@ async function saveProfileImage(file, type) {
     });
 
     return result?.url ?? null;
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   } catch (error) {
     fail(error.message || "Failed to upload image.");
   }
@@ -81,13 +63,10 @@ export async function updateProfile(formData) {
       email: users.email,
       image: users.image,
       coverImage: users.coverImage,
-<<<<<<< HEAD
       gender: users.gender,
       relationshipStatus: users.relationshipStatus,
       birthDate: users.birthDate,
       privacyLevel: users.privacyLevel,
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     })
     .from(users)
     .where(eq(users.id, session.userId))
@@ -101,7 +80,6 @@ export async function updateProfile(formData) {
   const usernameRaw = clean(formData.get("username")).replace(/^@/, "");
   const username = usernameRaw ? usernameRaw.toLowerCase() : "";
   const faculty = clean(formData.get("faculty")) || "";
-<<<<<<< HEAD
   const year = clean(formData.get("year")) || "";
   const bio = clean(formData.get("bio")) || "";
 
@@ -112,13 +90,6 @@ export async function updateProfile(formData) {
     ? clean(formData.get("birthDate"))
     : (currentUser.birthDate ? currentUser.birthDate.toISOString().split("T")[0] : "");
   const privacyLevel = formData.has("privacyLevel") ? clean(formData.get("privacyLevel")) : (currentUser.privacyLevel || "public");
-=======
-  const bio = clean(formData.get("bio")) || "";
-  const gender = clean(formData.get("gender")) || "";
-  const relationshipStatus = clean(formData.get("relationshipStatus")) || "";
-  const birthDateRaw = clean(formData.get("birthDate"));
-  const privacyLevel = clean(formData.get("privacyLevel")) || "public";
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
   const avatarFile = formData.get("avatarFile");
   const coverFile = formData.get("coverFile");
@@ -128,10 +99,7 @@ export async function updateProfile(formData) {
     fullName,
     username,
     faculty,
-<<<<<<< HEAD
     year,
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     bio,
     gender,
     relationshipStatus,
@@ -171,10 +139,7 @@ export async function updateProfile(formData) {
       fullName: validatedData.fullName,
       username: validatedData.username || null,
       faculty: validatedData.faculty || null,
-<<<<<<< HEAD
       year: validatedData.year || null,
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       bio: validatedData.bio || null,
       gender: validatedData.gender || null,
       relationshipStatus: validatedData.relationshipStatus || null,

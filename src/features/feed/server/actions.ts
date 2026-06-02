@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { db } from "@/shared/db/db";
 import { posts, photos } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
@@ -169,6 +169,7 @@ export async function createPost(
 
     revalidatePath("/");
     revalidatePath("/profile");
+    revalidateTag(`feed-${userId}`, {});
 
     return {
       ok: true,
@@ -206,4 +207,5 @@ export async function deletePost(formData: FormData): Promise<void> {
 
   revalidatePath("/");
   revalidatePath("/profile");
+  revalidateTag(`feed-${userId}`, {});
 }

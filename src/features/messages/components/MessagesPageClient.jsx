@@ -25,10 +25,7 @@ export default function MessagesPageClient({
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-<<<<<<< HEAD
     // eslint-disable-next-line react-hooks/set-state-in-effect
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     setIsClient(true);
   }, []);
 
@@ -94,7 +91,6 @@ export default function MessagesPageClient({
   const isSearching = query.trim().length >= 2;
   const showResults = isSearching;
 
-<<<<<<< HEAD
   const localizations = {
     en: {
       noMessages: "No messages yet",
@@ -162,8 +158,6 @@ export default function MessagesPageClient({
       )
     : [];
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   return (
     <>
       <div className={`tg-messenger ${!isSidebarOpen ? 'tg-sidebar-hidden' : ''}`}>
@@ -184,11 +178,7 @@ export default function MessagesPageClient({
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   className="tg-search-input"
-<<<<<<< HEAD
                   placeholder={dict.searchPlaceholder}
-=======
-                  placeholder="Search"
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                   autoComplete="off"
                 />
                 {query && (
@@ -205,7 +195,6 @@ export default function MessagesPageClient({
             </div>
           </div>
 
-<<<<<<< HEAD
           <div className="tg-tabs-container">
             <button
               type="button"
@@ -229,13 +218,10 @@ export default function MessagesPageClient({
             </button>
           </div>
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           <div className="tg-chat-list">
             {/* Search results take over the list while user is typing. */}
             {showResults ? (
               <>
-<<<<<<< HEAD
                 {localDirectMatches.length > 0 && (
                   <>
                     <div className="tg-section-title">{dict.direct}</div>
@@ -323,18 +309,11 @@ export default function MessagesPageClient({
                   {searching ? "Searching People…" : `People suggestions`}
                 </div>
                 {liveResults.length === 0 && localDirectMatches.length === 0 && localGroupMatches.length === 0 && !searching ? (
-=======
-                <div className="tg-section-title">
-                  {searching ? "Searching…" : `Results (${liveResults.length})`}
-                </div>
-                {liveResults.length === 0 && !searching ? (
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                   <div className="tg-empty-state">
                     <div className="tg-empty-icon">
                       <UiIcon name="search" size={36} />
                     </div>
                     <h3>No matches</h3>
-<<<<<<< HEAD
                     <p>Try a different name or course chat.</p>
                   </div>
                 ) : (
@@ -383,44 +362,6 @@ export default function MessagesPageClient({
                     </p>
                   </div>
                 ) : (
-=======
-                    <p>Try a different name or faculty.</p>
-                  </div>
-                ) : (
-                  liveResults.map((user) => (
-                    <Link
-                      key={user.id}
-                      href={`/messages?user=${user.id}`}
-                      className="tg-chat-item"
-                      onClick={() => setQuery("")}
-                    >
-                      <div className="tg-chat-avatar">
-                        {user.image ? (
-                          <Image src={user.image} alt={user.fullName} width={52} height={52} />
-                        ) : (
-                          <span>{user.fullName?.[0] || "U"}</span>
-                        )}
-                      </div>
-
-                      <div className="tg-chat-content">
-                        <div className="tg-chat-top">
-                          <h3 className="tg-chat-name">{user.fullName}</h3>
-                        </div>
-                        <div className="tg-chat-bottom">
-                          <p className="tg-chat-preview">
-                            {user.faculty ? getFacultyLabel(user.faculty, language) : "Student"}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </>
-            ) : (
-              <>
-                {/* Group Chats Section */}
-                {userGroupChats.length > 0 &&
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                   userGroupChats.map((group) => (
                     <Link
                       key={group.id}
@@ -439,7 +380,6 @@ export default function MessagesPageClient({
                         <div className="tg-chat-top">
                           <h3 className="tg-chat-name">{group.name}</h3>
                           <span className="tg-chat-time">
-<<<<<<< HEAD
                             {isClient && group.lastMessage
                               ? new Date(group.lastMessage.createdAt).toLocaleTimeString([], {
                                   hour: "2-digit",
@@ -448,14 +388,10 @@ export default function MessagesPageClient({
                               : isClient
                               ? new Date(group.createdAt).toLocaleDateString()
                               : ""}
-=======
-                            {isClient ? new Date(group.createdAt).toLocaleDateString() : ""}
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                           </span>
                         </div>
                         <div className="tg-chat-bottom">
                           <p className="tg-chat-preview">
-<<<<<<< HEAD
                             {group.lastMessage ? `${group.lastMessage.senderName}: ` : ""}
                             {group.lastMessage ? group.lastMessage.content : ""}
                           </p>
@@ -471,35 +407,16 @@ export default function MessagesPageClient({
             ) : (
               <>
                 {/* Direct Messages Section */}
-=======
-                            {group.faculty ? getFacultyLabel(group.faculty, language) : "Group chat"}
-                            {group.course && ` • ${group.course}`}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-
-                {/* Direct Messages */}
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                 {conversations.length === 0 ? (
                   <div className="tg-empty-state">
                     <div className="tg-empty-icon">
                       <UiIcon name="message" size={48} />
                     </div>
-<<<<<<< HEAD
                     <h3>{dict.noMessages}</h3>
                     <p>{dict.startConversation}</p>
                   </div>
                 ) : (
                   conversations.map(({ user, lastMessage, unreadCount }) => (
-=======
-                    <h3>No messages yet</h3>
-                    <p>Search for a student to start chatting</p>
-                  </div>
-                ) : (
-                  conversations.map(({ user, lastMessage }) => (
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                     <Link
                       key={user.id}
                       href={`/messages?user=${user.id}`}
@@ -517,11 +434,7 @@ export default function MessagesPageClient({
                         <div className="tg-chat-top">
                           <h3 className="tg-chat-name">{user.fullName}</h3>
                           <span className="tg-chat-time">
-<<<<<<< HEAD
                             {isClient && lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
-=======
-                            {isClient ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                               hour: "2-digit",
                               minute: "2-digit",
                             }) : ""}
@@ -529,18 +442,12 @@ export default function MessagesPageClient({
                         </div>
                         <div className="tg-chat-bottom">
                           <p className="tg-chat-preview">
-<<<<<<< HEAD
                             {lastMessage ? (lastMessage.senderId === sessionUserId ? "You: " : "") : ""}
                             {lastMessage ? lastMessage.content : ""}
                           </p>
                           {unreadCount > 0 && (
                             <span className="tg-unread-badge">{unreadCount}</span>
                           )}
-=======
-                            {lastMessage.senderId === sessionUserId && "You: "}
-                            {lastMessage.content}
-                          </p>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                         </div>
                       </div>
                     </Link>

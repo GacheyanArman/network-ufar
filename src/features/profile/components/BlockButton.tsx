@@ -57,7 +57,6 @@ export default function BlockButton({ userId, userName, isBlocked: initialBlocke
         type="button"
         onClick={handleBlock}
         disabled={isPending}
-<<<<<<< HEAD
         className={isBlocked ? "public-btn public-btn-secondary" : "public-btn public-btn-danger-outline"}
         style={{
           width: "100%",
@@ -71,17 +70,6 @@ export default function BlockButton({ userId, userName, isBlocked: initialBlocke
           background: isBlocked ? "#ffffff" : "#fff5f5",
           color: isBlocked ? "#0b3aa8" : "#dc2626",
           transition: "all 0.2s ease",
-=======
-        className={isBlocked ? "btn-secondary" : "btn-danger"}
-        style={{
-          padding: "8px 16px",
-          borderRadius: "8px",
-          border: "none",
-          fontWeight: 700,
-          fontSize: "14px",
-          cursor: isPending ? "not-allowed" : "pointer",
-          opacity: isPending ? 0.6 : 1,
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         }}
       >
         {isPending ? "..." : isBlocked ? "Unblock" : "Block User"}

@@ -21,11 +21,6 @@ import {
   getPeopleYouMayKnow,
 } from "@/features/feed/server/social";
 
-<<<<<<< HEAD
-const jumpLinkStyle = { color: "inherit", textDecoration: "none", cursor: "pointer", display: "block", width: "100%", height: "100%" };
-
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 function avatar(user) {
   return (
     <div
@@ -185,11 +180,7 @@ export default async function FriendsPage() {
               fontWeight: "600",
             }}
           >
-<<<<<<< HEAD
-            <a href="#uf-suggestions" style={jumpLinkStyle}>Suggestions</a>
-=======
             Suggestions
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </div>
 
           <div
@@ -200,11 +191,7 @@ export default async function FriendsPage() {
               borderBottom: "3px solid transparent",
             }}
           >
-<<<<<<< HEAD
-            <a href="#uf-all-friends" style={jumpLinkStyle}>All Friends ({friends.length})</a>
-=======
             All Friends ({friends.length})
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </div>
         </div>
       </div>
@@ -401,11 +388,7 @@ export default async function FriendsPage() {
               fontSize: "0.85rem",
             }}
           >
-<<<<<<< HEAD
-            <span id="uf-suggestions" />Smart suggestions based on your faculty, friends, followers and
-=======
             Smart suggestions based on your faculty, friends, followers and
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             communities.
           </p>
         </div>
@@ -578,10 +561,6 @@ export default async function FriendsPage() {
           </div>
         )}
       </section>
-<<<<<<< HEAD
-      <span id="uf-all-friends" />
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       </div>
     </PageShell>
   );

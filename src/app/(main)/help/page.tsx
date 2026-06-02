@@ -199,7 +199,7 @@ export default async function HelpPage() {
                   </div>
                   <div>
                     <span style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>{content.phoneLabel}</span>
-                    <span style={{ fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>+37491082813</span>
+                    <span style={{ fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>+374 91 08-28-12</span>
                   </div>
                 </div>
 

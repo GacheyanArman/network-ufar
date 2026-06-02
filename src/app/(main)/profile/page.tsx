@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/shared/db/db";
 import { getSession } from "@/shared/auth/session";
@@ -11,18 +11,17 @@ import {
   posts,
   studyMaterials,
   studyMaterialSaves,
-  postSaves,
-  postLikes,
   courseEnrollments,
   courses,
   semesters,
+  notificationPreferences,
 } from "@/shared/db/schema";
 import PostComposer from "@/features/feed/components/PostComposer";
 import ProfilePostsClient from "@/features/profile/components/ProfilePostsClient";
-import SavedPostsClient from "@/features/profile/components/SavedPostsClient";
 import UiIcon from "@/shared/ui/UiIcon";
 import { getFacultyLabel } from "@/features/profile/server/utils";
 import { translations } from "@/shared/i18n/i18n";
+import ProfileSettingsClient from "@/features/profile/components/ProfileSettingsClient";
 
 interface PageProps {
   searchParams: Promise<{
@@ -135,8 +134,8 @@ export default async function ProfilePage({ searchParams }: PageProps) {
     };
   });
 
-  // ─── My Posts (all posts) ───
-  const myPostsOnly = serializedPosts;
+  // ─── My Posts ───
+  const myPostsOnly = serializedPosts.filter((p: any) => p.postType !== "question");
 
   // ─── Saved Materials ───
   const savedMaterials = await db
@@ -176,67 +175,21 @@ export default async function ProfilePage({ searchParams }: PageProps) {
     .where(eq(studyMaterials.ownerId, currentUserId))
     .orderBy(desc(studyMaterials.createdAt));
 
-  // ─── Saved Posts ───
-  const savedPostRows = await db
-    .select({
-      id: posts.id,
-      content: posts.content,
-      imageUrl: posts.imageUrl,
-      createdAt: posts.createdAt,
-      authorId: posts.authorId,
-      likesCount: posts.likesCount,
-      commentsCount: posts.commentsCount,
-      authorName: users.fullName,
-      authorImage: users.image,
-      authorAvatarUrl: users.avatarUrl,
-    })
-    .from(postSaves)
-    .innerJoin(posts, eq(postSaves.postId, posts.id))
-    .innerJoin(users, eq(posts.authorId, users.id))
-    .where(eq(postSaves.userId, currentUserId))
-    .orderBy(desc(postSaves.createdAt));
+  // ─── Notification preferences ───
+  const [prefRow] = await db
+    .select()
+    .from(notificationPreferences)
+    .where(eq(notificationPreferences.userId, currentUserId))
+    .limit(1);
 
-  const savedPostIds = savedPostRows.map((p: any) => p.id);
-  const likedSavedRows =
-    savedPostIds.length > 0
-      ? await db
-          .select({ postId: postLikes.postId })
-          .from(postLikes)
-          .where(
-            and(
-              inArray(postLikes.postId, savedPostIds),
-              eq(postLikes.userId, currentUserId)
-            )
-          )
-      : [];
-  const likedSavedSet = new Set(
-    (likedSavedRows as any[]).map((r) => r.postId)
-  );
-
-  const savedPostsSerialized = savedPostRows.map((p: any) => {
-    const imageUrl = p.imageUrl || null;
-    const mediaType = imageUrl
-      ? /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(imageUrl)
-        ? "video"
-        : "image"
-      : null;
-    return {
-      id: p.id,
-      content: p.content || "",
-      imageUrl,
-      mediaType: mediaType as "image" | "video" | null,
-      createdAt: p.createdAt
-        ? p.createdAt.toISOString()
-        : new Date().toISOString(),
-      authorId: p.authorId,
-      authorName: p.authorName || "User",
-      authorImage: p.authorImage || p.authorAvatarUrl || null,
-      likesCount: p.likesCount || 0,
-      commentsCount: p.commentsCount || 0,
-      likedByMe: likedSavedSet.has(p.id),
-      savedByMe: true,
-    };
-  });
+  const prefs = {
+    academic: prefRow?.academic ?? true,
+    events: prefRow?.events ?? true,
+    photos: prefRow?.photos ?? true,
+    messages: prefRow?.messages ?? true,
+    materials: prefRow?.materials ?? true,
+    social: prefRow?.social ?? true,
+  };
 
   // ─── Computed values ───
   const safeName = currentUser.fullName || "Student";
@@ -265,7 +218,6 @@ export default async function ProfilePage({ searchParams }: PageProps) {
 
   const TABS = [
     { key: "posts", label: "My Posts" },
-    { key: "saved-posts", label: "Saved Posts" },
     { key: "saved", label: "Saved Materials" },
     { key: "uploads", label: "My Uploads" },
   ];
@@ -307,37 +259,37 @@ export default async function ProfilePage({ searchParams }: PageProps) {
                 <p>{safeUsername}</p>
               </div>
 
-              <div className="uf-profile-badges">
-                <div className="uf-profile-badge">
+              <div className="uf-profile-info-list">
+                <div className="uf-profile-info-item">
                   <span className="uf-inline-icon">
                     <UiIcon name="graduation" size={15} />
                   </span>
-                  <strong>{safeFaculty}</strong>
+                  <span>{safeFaculty}</span>
                 </div>
 
                 {safeYear ? (
-                  <div className="uf-profile-badge">
+                  <div className="uf-profile-info-item">
                     <span className="uf-inline-icon">
                       <UiIcon name="calendar" size={15} />
                     </span>
-                    <strong>{safeYear}</strong>
+                    <span>{safeYear}</span>
                   </div>
                 ) : null}
 
                 {currentUser.studyGroup ? (
-                  <div className="uf-profile-badge">
+                  <div className="uf-profile-info-item">
                     <span className="uf-inline-icon">
                       <UiIcon name="group" size={15} />
                     </span>
-                    <strong>Group: {currentUser.studyGroup}</strong>
+                    <span>Group: {currentUser.studyGroup}</span>
                   </div>
                 ) : null}
 
-                <div className="uf-profile-badge uf-profile-badge-subtle">
+                <div className="uf-profile-info-item subtle">
                   <span className="uf-inline-icon">
                     <UiIcon name="clock" size={15} />
                   </span>
-                  <strong>Joined {joinedAt}</strong>
+                  <span>Joined {joinedAt}</span>
                 </div>
               </div>
 
@@ -363,9 +315,9 @@ export default async function ProfilePage({ searchParams }: PageProps) {
                 </div>
               ) : null}
 
-              <div className="uf-profile-info">
+              <div className="uf-profile-contact-info" style={{ marginBottom: 20 }}>
                 {safeEmail ? (
-                  <div className="uf-profile-info-row">
+                  <div className="uf-profile-info-item">
                     <span className="uf-inline-icon">
                       <svg
                         width="15"
@@ -379,7 +331,7 @@ export default async function ProfilePage({ searchParams }: PageProps) {
                         <polyline points="22,6 12,13 2,6" />
                       </svg>
                     </span>
-                    <p>{safeEmail}</p>
+                    <span>{safeEmail}</span>
                   </div>
                 ) : null}
               </div>
@@ -437,39 +389,12 @@ export default async function ProfilePage({ searchParams }: PageProps) {
               </section>
             ) : null}
 
-            {/* ─── Saved Posts tab ─── */}
-            {currentTab === "saved-posts" ? (
-              <section className="uf-profile-feed">
-                {savedPostsSerialized.length === 0 ? (
-                  <div className="uf-card uf-profile-empty">
-                    <div className="uf-empty-icon">
-                      <UiIcon name="bookmark" size={40} />
-                    </div>
-                    <h2>No saved posts yet</h2>
-                    <p>
-                      Tap the bookmark on any post to save it here for later.
-                    </p>
-                    <Link href="/feed" className="uf-empty-action-btn">
-                      Browse feed
-                    </Link>
-                  </div>
-                ) : (
-                  <SavedPostsClient
-                    posts={savedPostsSerialized}
-                    currentUser={currentUser}
-                  />
-                )}
-              </section>
-            ) : null}
-
             {/* ─── Saved Materials tab ─── */}
             {currentTab === "saved" ? (
               <section className="uf-materials-section">
                 {savedMaterials.length === 0 ? (
                   <div className="uf-card uf-profile-empty">
-                    <div className="uf-empty-icon">
-                      <UiIcon name="bookmark" size={40} />
-                    </div>
+                    <div className="uf-empty-icon">📑</div>
                     <h2>No saved materials yet</h2>
                     <p>
                       Bookmark study materials and they will appear here for
@@ -497,9 +422,7 @@ export default async function ProfilePage({ searchParams }: PageProps) {
               <section className="uf-materials-section">
                 {myUploads.length === 0 ? (
                   <div className="uf-card uf-profile-empty">
-                    <div className="uf-empty-icon">
-                      <UiIcon name="upload" size={40} />
-                    </div>
+                    <div className="uf-empty-icon">📤</div>
                     <h2>No uploads yet</h2>
                     <p>
                       Share your lecture notes, summaries, or exam prep files
@@ -692,7 +615,8 @@ const profileStyles = `
 }
 
 .uf-profile-heading {
-  margin-bottom: 18px;
+  margin-bottom: 22px;
+  text-align: left;
 }
 
 .uf-profile-heading h1 {
@@ -706,55 +630,45 @@ const profileStyles = `
 
 .uf-profile-heading p {
   margin: 6px 0 0;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-secondary);
   font-weight: 600;
 }
 
-.uf-profile-badges {
+.uf-profile-info-list {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.uf-profile-info-item {
+  display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin-bottom: 18px;
+  color: #0f172a;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
-.uf-profile-card .uf-inline-icon {
-  width: 18px;
-  flex: 0 0 18px;
-  display: inline-flex;
+.uf-profile-info-item .uf-inline-icon {
+  color: #64748b;
+  display: flex;
   align-items: center;
   justify-content: center;
+  width: 20px;
 }
 
-.uf-profile-badge {
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 10px;
-  background: #f4f7fb;
-  color: #0f172a;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  border: 1px solid #e3ebf5;
-}
-
-.uf-profile-badge-subtle {
-  background: transparent;
-  border-color: transparent;
+.uf-profile-info-item.subtle {
   color: var(--text-secondary);
-  font-weight: 700;
-  font-size: 13px;
-  min-height: 34px;
-  padding: 0 12px;
+  font-weight: 500;
 }
 
 .uf-profile-bio {
-  margin: 0 0 18px;
+  margin: 0 0 22px;
   color: #334155;
-  font-size: 14px;
+  font-size: 14.5px;
   line-height: 1.55;
   word-break: break-word;
 }
@@ -808,10 +722,9 @@ const profileStyles = `
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 12px;
   color: #475569;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .uf-profile-info-row span {

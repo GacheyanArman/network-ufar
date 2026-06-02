@@ -128,7 +128,6 @@ function extractHashtags(text?: string | null) {
   return text.match(/#[\p{L}\p{N}_]+/gu)?.slice(0, 6) || [];
 }
 
-<<<<<<< HEAD
 // Recursively count all comments (top-level + replies).
 function countCommentsDeep(list: MediaComment[]): number {
   return list.reduce((acc, c) => acc + 1 + countCommentsDeep(c.replies || []), 0);
@@ -152,8 +151,6 @@ function normalizeServerComment(r: any): MediaComment {
   };
 }
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 export default function MediaViewer({
   src,
   type = "image",
@@ -272,37 +269,7 @@ export default function MediaViewer({
     setTimeout(() => setToast(null), 2200);
   }, []);
 
-<<<<<<< HEAD
 
-=======
-  // Recursively count all comments (top-level + replies).
-  const countCommentsDeep = useCallback(
-    (list: MediaComment[]): number =>
-      list.reduce((acc, c) => acc + 1 + countCommentsDeep(c.replies || []), 0),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  // Map a server-returned comment row into our internal MediaComment shape.
-  const normalizeServerComment = useCallback(
-    (r: any): MediaComment => ({
-      id: r.id,
-      content: r.content,
-      authorName: r.authorName,
-      authorImage: r.authorImage,
-      createdAt: r.createdAt,
-      userId: r.userId ?? r.authorId ?? null,
-      parentId: r.parentId ?? null,
-      likesCount: Number(r.likesCount || 0),
-      isLikedByMe: Boolean(r.isLikedByMe),
-      replies: Array.isArray(r.replies)
-        ? r.replies.map(normalizeServerComment)
-        : [],
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
   // Reset state when navigating to a different photo.
   // Uses the "store previous prop" pattern instead of an effect.
@@ -348,11 +315,7 @@ export default function MediaViewer({
     return () => {
       cancelled = true;
     };
-<<<<<<< HEAD
   }, [finalPhotoId, postId]);
-=======
-  }, [finalPhotoId, postId, normalizeServerComment, countCommentsDeep]);
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -444,11 +407,7 @@ export default function MediaViewer({
     } catch {
       // If the refresh fails just leave the optimistic state in place.
     }
-<<<<<<< HEAD
   }, [postId, finalPhotoId]);
-=======
-  }, [postId, finalPhotoId, normalizeServerComment, countCommentsDeep]);
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
   const handleSubmitComment = useCallback(() => {
     const text = commentText.trim();
@@ -907,8 +866,6 @@ export default function MediaViewer({
                 <UiIcon name="share" size={18} />
               </span>
             </button>
-<<<<<<< HEAD
-=======
 
             <button
               type="button"
@@ -944,7 +901,6 @@ export default function MediaViewer({
                 <UiIcon name="download" size={18} />
               </span>
             </button>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </div>
 
           <div style={{ padding: "0 0 4px", fontSize: 14, fontWeight: 800 }}>

@@ -33,7 +33,6 @@ type CourseData = {
   facultyName: string | null;
 };
 
-<<<<<<< HEAD
 type EventItem = {
   id: string;
   title: string;
@@ -44,23 +43,14 @@ type EventItem = {
   endTime: string | null;
 };
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 type CourseDetailProps = {
   course: CourseData;
   materials: MaterialItem[];
   scheduleItems: ScheduleItem[];
-<<<<<<< HEAD
   events: EventItem[];
 };
 
-type Tab = "overview" | "materials" | "schedule" | "events";
-=======
-};
-
-type Tab = "overview" | "materials" | "schedule";
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
-
+type Tab = "overview" | "materials" | "events";
 function materialIcon(type: string): string {
   switch (type) {
     case "notes": return "file-text";
@@ -72,24 +62,13 @@ function materialIcon(type: string): string {
   }
 }
 
-<<<<<<< HEAD
 export default function CourseDetail({ course, materials, scheduleItems, events }: CourseDetailProps) {
   const [tab, setTab] = useState<Tab>("overview");
 
   const TABS: { value: Tab; label: string; icon: string }[] = [
     { value: "overview", label: "Overview", icon: "book-open" },
     { value: "materials", label: "Materials", icon: "folder" },
-    { value: "schedule", label: "Schedule", icon: "clock" },
-    { value: "events", label: "Events", icon: "calendar" },
-=======
-export default function CourseDetail({ course, materials, scheduleItems }: CourseDetailProps) {
-  const [tab, setTab] = useState<Tab>("overview");
-
-  const TABS: { value: Tab; label: string; icon: string }[] = [
-    { value: "overview", label: "Overview", icon: "📋" },
-    { value: "materials", label: "Materials", icon: "📁" },
-    { value: "schedule", label: "Schedule", icon: "🗓️" },
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
+    { value: "events", label: "Deadlines & Exams", icon: "calendar" },
   ];
 
   return (
@@ -127,12 +106,9 @@ export default function CourseDetail({ course, materials, scheduleItems }: Cours
           <span className="course-detail-info-item">
             <UiIcon name="calendar" size={14} /> {scheduleItems.length} classes/week
           </span>
-<<<<<<< HEAD
           <span className="course-detail-info-item">
             <UiIcon name="calendar" size={14} /> {events.length} events
           </span>
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         </div>
       </div>
 
@@ -145,44 +121,28 @@ export default function CourseDetail({ course, materials, scheduleItems }: Cours
             aria-selected={tab === t.value}
             onClick={() => setTab(t.value)}
             className={`courses-tab ${tab === t.value ? "courses-tab--active" : ""}`}
-<<<<<<< HEAD
             style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
           >
             <UiIcon name={t.icon} size={16} /> {t.label}
-=======
-          >
-            {t.icon} {t.label}
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
       {tab === "overview" && (
-<<<<<<< HEAD
         <OverviewTab course={course} materials={materials} scheduleItems={scheduleItems} events={events} setTab={setTab} />
-=======
-        <OverviewTab course={course} materials={materials} scheduleItems={scheduleItems} />
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       )}
       {tab === "materials" && (
         <MaterialsTab materials={materials} />
       )}
-      {tab === "schedule" && (
-        <ScheduleTab scheduleItems={scheduleItems} />
-      )}
-<<<<<<< HEAD
       {tab === "events" && (
         <EventsTab events={events} />
       )}
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     </div>
   );
 }
 
 /* ── Overview Tab ── */
-<<<<<<< HEAD
 function OverviewTab({ course, materials, scheduleItems, events, setTab }: {
   course: CourseData;
   materials: MaterialItem[];
@@ -192,12 +152,6 @@ function OverviewTab({ course, materials, scheduleItems, events, setTab }: {
 }) {
   const recentMaterials = materials.slice(0, 3);
   const recentEvents = events.slice(0, 2);
-=======
-function OverviewTab({ course, materials, scheduleItems }: {
-  course: CourseData; materials: MaterialItem[]; scheduleItems: ScheduleItem[];
-}) {
-  const recentMaterials = materials.slice(0, 3);
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -211,7 +165,6 @@ function OverviewTab({ course, materials, scheduleItems }: {
         </div>
       )}
 
-<<<<<<< HEAD
       {/* Recent Events */}
       <div className="course-detail-section">
         <h3>Upcoming Course Events</h3>
@@ -283,20 +236,14 @@ function OverviewTab({ course, materials, scheduleItems }: {
         )}
       </div>
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       {/* Recent Materials */}
       <div className="course-detail-section">
         <h3>Latest Materials</h3>
         {recentMaterials.length === 0 ? (
           <div className="course-empty">
-<<<<<<< HEAD
             <div className="course-empty-icon" style={{ display: "flex", justifyContent: "center", color: "var(--text-muted)", opacity: 0.4 }}>
               <UiIcon name="folder" size={48} />
             </div>
-=======
-            <div className="course-empty-icon">📁</div>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             <p className="course-empty-text">No materials yet for this course.</p>
           </div>
         ) : (
@@ -306,11 +253,7 @@ function OverviewTab({ course, materials, scheduleItems }: {
             ))}
             {materials.length > 3 && (
               <button
-<<<<<<< HEAD
                 onClick={() => setTab("materials")}
-=======
-                onClick={() => {}}
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                 style={{
                   marginTop: 8, background: "none", border: "none",
                   color: "var(--french-blue)", fontSize: "0.82rem",
@@ -329,13 +272,9 @@ function OverviewTab({ course, materials, scheduleItems }: {
         <h3>Class Schedule</h3>
         {scheduleItems.length === 0 ? (
           <div className="course-empty">
-<<<<<<< HEAD
             <div className="course-empty-icon" style={{ display: "flex", justifyContent: "center", color: "var(--text-muted)", opacity: 0.4 }}>
               <UiIcon name="clock" size={48} />
             </div>
-=======
-            <div className="course-empty-icon">🗓️</div>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             <p className="course-empty-text">No classes scheduled for this course.</p>
           </div>
         ) : (
@@ -381,13 +320,9 @@ function MaterialsTab({ materials }: { materials: MaterialItem[] }) {
     return (
       <div className="course-detail-section">
         <div className="course-empty">
-<<<<<<< HEAD
           <div className="course-empty-icon" style={{ display: "flex", justifyContent: "center", color: "var(--text-muted)", opacity: 0.4 }}>
             <UiIcon name="folder" size={48} />
           </div>
-=======
-          <div className="course-empty-icon">📁</div>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           <p className="course-empty-text" style={{ fontWeight: 600, marginBottom: 4 }}>
             No materials yet for this course.
           </p>
@@ -405,63 +340,6 @@ function MaterialsTab({ materials }: { materials: MaterialItem[] }) {
       {materials.map((m) => (
         <MaterialRow key={m.id} material={m} />
       ))}
-    </div>
-  );
-}
-
-/* ── Schedule Tab ── */
-function ScheduleTab({ scheduleItems }: { scheduleItems: ScheduleItem[] }) {
-  if (scheduleItems.length === 0) {
-    return (
-      <div className="course-detail-section">
-        <div className="course-empty">
-<<<<<<< HEAD
-          <div className="course-empty-icon" style={{ display: "flex", justifyContent: "center", color: "var(--text-muted)", opacity: 0.4 }}>
-            <UiIcon name="clock" size={48} />
-          </div>
-=======
-          <div className="course-empty-icon">🗓️</div>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
-          <p className="course-empty-text">No classes scheduled for this course.</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="course-detail-section">
-      <h3>Weekly Schedule</h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {scheduleItems.map((s, i) => (
-          <div
-            key={i}
-            style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "12px 16px", borderRadius: 10,
-              background: "var(--bg-hover)",
-              border: "1px solid var(--border-color-light)",
-            }}
-          >
-            <div style={{
-              width: 44, height: 44, borderRadius: 10,
-              background: "var(--french-blue)", color: "white",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 800, fontSize: "0.78rem",
-            }}>
-              {DAYS_SHORT[s.dayOfWeek]}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>
-                {s.startTime} – {s.endTime}
-              </div>
-              <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                {s.room ? `Room ${s.room}` : "Room TBD"}
-                {s.instructor ? ` · ${s.instructor}` : ""}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -490,7 +368,6 @@ function MaterialRow({ material }: { material: MaterialItem }) {
     </a>
   );
 }
-<<<<<<< HEAD
 
 /* ── Events Tab ── */
 function EventsTab({ events }: { events: EventItem[] }) {
@@ -585,5 +462,3 @@ function EventsTab({ events }: { events: EventItem[] }) {
     </div>
   );
 }
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6

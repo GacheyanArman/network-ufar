@@ -33,12 +33,7 @@ function MobileNavItem({ href, icon, translationKey }: MobileNavItemProps) {
     if (pathname === href) {
       isActive = true;
     } else if (href !== "/" && pathname && pathname.startsWith(href)) {
-      // Prevent highlighting /profile if we are on /profile?tab=settings
-      if (href === "/profile" && searchParams && searchParams.get("tab") === "settings") {
-        isActive = false;
-      } else {
-        isActive = true;
-      }
+      isActive = true;
     }
   }
 

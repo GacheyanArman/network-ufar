@@ -20,11 +20,7 @@ export default async function CreateCommunityPage() {
     >
       <Link href="/communities" className="uf-community-back">
         <UiIcon name="arrow-left" size={18} />
-<<<<<<< HEAD
         Back to Groups
-=======
-        Back to Communities
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       </Link>
 
       <div className="card" style={{ padding: 28 }}>
@@ -38,11 +34,7 @@ export default async function CreateCommunityPage() {
               letterSpacing: "-0.02em",
             }}
           >
-<<<<<<< HEAD
             Create Group
-=======
-            Create Community
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </h1>
           <p
             style={{
@@ -51,12 +43,7 @@ export default async function CreateCommunityPage() {
               fontSize: 15,
             }}
           >
-<<<<<<< HEAD
             Start a space for discussions, study groups, materials, and events.
-=======
-            Start a space for discussions, questions, study groups, materials
-            and events.
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </p>
         </div>
 
@@ -65,11 +52,7 @@ export default async function CreateCommunityPage() {
           style={{ display: "flex", flexDirection: "column", gap: 18 }}
         >
           <Field
-<<<<<<< HEAD
             label="Group name"
-=======
-            label="Community name"
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             name="name"
             required
             maxLength={80}
@@ -77,7 +60,6 @@ export default async function CreateCommunityPage() {
             hint="Choose a clear, descriptive name that students can easily find."
           />
 
-<<<<<<< HEAD
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label
               style={{
@@ -110,19 +92,13 @@ export default async function CreateCommunityPage() {
             </select>
           </div>
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           <Field
             label="Description"
             name="description"
             textarea
             rows={3}
             maxLength={500}
-<<<<<<< HEAD
             placeholder="What is this group about?"
-=======
-            placeholder="What is this community about?"
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           />
 
           <Field
@@ -161,11 +137,7 @@ export default async function CreateCommunityPage() {
             name="interests"
             maxLength={240}
             placeholder="finance, startups, crypto"
-<<<<<<< HEAD
             hint="Used to recommend this group to relevant students."
-=======
-            hint="Used to recommend this community to relevant students."
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           />
 
           <label
@@ -194,11 +166,7 @@ export default async function CreateCommunityPage() {
                   color: "var(--text-primary)",
                 }}
               >
-<<<<<<< HEAD
                 Make group private
-=======
-                Make community private
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               </div>
               <div
                 style={{
@@ -266,11 +234,7 @@ export default async function CreateCommunityPage() {
               Cancel
             </Link>
             <button type="submit" className="btn btn-primary">
-<<<<<<< HEAD
               Create Group
-=======
-              Create Community
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             </button>
           </div>
         </form>

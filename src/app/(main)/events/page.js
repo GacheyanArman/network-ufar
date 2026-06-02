@@ -1,10 +1,6 @@
 import { redirect } from "next/navigation";
 import { db } from "@/shared/db/db";
-<<<<<<< HEAD
 import { communities, communityMembers, courses, courseEnrollments } from "@/shared/db/schema";
-=======
-import { communities, communityMembers } from "@/shared/db/schema";
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 import { getSession } from "@/shared/auth/session";
 import { eq, inArray } from "drizzle-orm";
 import { getEventsList } from "@/features/events/server/actions";
@@ -63,7 +59,6 @@ export default async function EventsPage() {
       ? filterCommunities.filter((c) => manageableCommunityIds.includes(c.id))
       : [];
 
-<<<<<<< HEAD
   const myCourses = await db
     .select({
       id: courses.id,
@@ -74,18 +69,13 @@ export default async function EventsPage() {
     .innerJoin(courses, eq(courseEnrollments.courseId, courses.id))
     .where(eq(courseEnrollments.userId, session.userId));
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   return (
     <PageShell>
       <EventsPageClient
         events={initialEvents}
         myCommunities={myCommunities}
         filterCommunities={filterCommunities}
-<<<<<<< HEAD
         myCourses={myCourses}
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         currentUserId={session.userId}
       />
     </PageShell>

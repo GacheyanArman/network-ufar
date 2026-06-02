@@ -6,14 +6,14 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Materials page", () => {
   test("loads the materials list page", async ({ page }) => {
-    const response = await page.goto("/materials", { waitUntil: "domcontentloaded" });
+    const response = await page.goto("/study-materials", { waitUntil: "domcontentloaded" });
 
     await expect(page).not.toHaveURL(/login/);
     expect(response?.status()).toBe(200);
   });
 
   test("renders material cards or empty state", async ({ page }) => {
-    await page.goto("/materials");
+    await page.goto("/study-materials");
 
     // Either material cards OR an empty state message should appear
     const hasMaterials = await page
@@ -34,7 +34,7 @@ test.describe("Materials page", () => {
   });
 
   test("upload button or link is visible", async ({ page }) => {
-    await page.goto("/materials");
+    await page.goto("/study-materials");
 
     const uploadButton = page.getByRole("button", { name: /upload|share material/i })
       .or(page.getByRole("link", { name: /upload|share material/i }));
@@ -43,7 +43,7 @@ test.describe("Materials page", () => {
   });
 
   test("search/filter inputs are present", async ({ page }) => {
-    await page.goto("/materials");
+    await page.goto("/study-materials");
 
     const searchInput = page.getByPlaceholder(/search|filter/i)
       .or(page.getByRole("searchbox"));
@@ -55,9 +55,9 @@ test.describe("Materials page", () => {
   });
 
   test("clicking a material card navigates to detail page", async ({ page }) => {
-    await page.goto("/materials");
+    await page.goto("/study-materials");
 
-    const firstCard = page.locator("a[href*='/materials/']").first();
+    const firstCard = page.locator("a[href*='/study-materials/']").first();
     const exists = await firstCard.isVisible({ timeout: 8_000 }).catch(() => false);
 
     if (!exists) {
@@ -66,7 +66,7 @@ test.describe("Materials page", () => {
     }
 
     await firstCard.click();
-    await page.waitForURL(/\/materials\/.+/, { timeout: 8_000 });
+    await page.waitForURL(/\/study-materials\/.+/, { timeout: 8_000 });
     await expect(page).not.toHaveURL(/login|error/);
   });
 });

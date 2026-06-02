@@ -907,6 +907,7 @@ export const events = pgTable("event", {
   coverMediumUrl: text("cover_medium_url"),
   organizerId: text("organizer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   communityId: text("community_id").references(() => communities.id, { onDelete: "cascade" }),
+  courseId: text("course_id").references(() => courses.id, { onDelete: "set null" }),
   maxAttendees: integer("max_attendees"),
   // Enables an automatic waitlist when `going` is full.
   enableWaitlist: boolean("enable_waitlist").default(true).notNull(),
@@ -926,6 +927,7 @@ export const events = pgTable("event", {
   startTimeIdx: index("event_start_time_idx").on(table.startTime),
   organizerIdx: index("event_organizer_idx").on(table.organizerId),
   communityIdx: index("event_community_idx").on(table.communityId),
+  courseIdx: index("event_course_idx").on(table.courseId),
   statusIdx: index("event_status_idx").on(table.status),
 }));
 

@@ -1,7 +1,7 @@
 "use server";
 
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { db } from "@/shared/db/db";
 import {
   comments,
@@ -100,6 +100,7 @@ export async function toggleLike(
       .where(eq(posts.id, postId));
 
     await revalidatePostPlaces(post);
+    revalidateTag(`feed-${userId}`, {});
 
     return {
       ok: true,
@@ -132,6 +133,7 @@ export async function toggleLike(
   });
 
   await revalidatePostPlaces(post);
+  revalidateTag(`feed-${userId}`, {});
 
   return {
     ok: true,
@@ -250,6 +252,7 @@ export async function addComment(
   }
 
   await revalidatePostPlaces(post);
+  revalidateTag(`feed-${userId}`, {});
 
   return {
     ok: true,
@@ -445,6 +448,7 @@ export async function deleteComment(
     authorId: comment.postAuthorId,
     communityId: comment.communityId,
   });
+  revalidateTag(`feed-${userId}`, {});
 
   return {
     ok: true,
@@ -472,6 +476,7 @@ export async function toggleSavePost(
   if (existingSave) {
     await db.delete(postSaves).where(eq(postSaves.id, existingSave.id));
     await revalidatePostPlaces(post);
+    revalidateTag(`feed-${userId}`, {});
     return {
       ok: true,
       saved: false,
@@ -487,6 +492,7 @@ export async function toggleSavePost(
     .onConflictDoNothing();
 
   await revalidatePostPlaces(post);
+  revalidateTag(`feed-${userId}`, {});
 
   return {
     ok: true,

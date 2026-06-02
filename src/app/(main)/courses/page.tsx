@@ -1,104 +1,124 @@
 import { db } from "@/shared/db/db";
-import { courseEnrollments, courses, semesters } from "@/shared/db/schema";
+import { courseEnrollments, courses, semesters, studyMaterials } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
-import { eq, and } from "drizzle-orm";
-import Link from "next/link";
-import UiIcon from "@/shared/ui/UiIcon";
+import { eq, and, count } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { Card } from "@/shared/ui/Card";
-import { Badge, EmptyState, PageHeader } from "@/shared/ui/Layout";
+import { getCachedUserSchedule } from "@/shared/cache/cache";
+import CoursesHub from "@/features/courses/components/CoursesHub";
+import { getCampusNow, CAMPUS_TZ } from "@/features/dashboard/server/today-utils";
+import { PageHeader } from "@/shared/ui/Layout";
+import Link from "next/link";
 import { Button } from "@/shared/ui/Button";
 
-type CourseEnrollment = {
-  courseId: string;
-  courseName: string;
-  courseCode: string;
-  role: string | null;
-};
+const DAYS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default async function CoursesDashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
+  const userId = session.userId as string;
 
   // Get current semester
-  const [currentSem] = await db.select().from(semesters).where(eq(semesters.isActive, true)).limit(1);
+  const [currentSem] = await db
+    .select()
+    .from(semesters)
+    .where(eq(semesters.isActive, true))
+    .limit(1);
 
-  let enrollments: CourseEnrollment[] = [];
+  let enrollmentsRaw = [];
   if (currentSem) {
-    enrollments = await db
+    enrollmentsRaw = await db
       .select({
         courseId: courses.id,
         courseName: courses.name,
         courseCode: courses.code,
+        courseDescription: courses.description,
+        courseCredits: courses.credits,
+        facultyId: courses.facultyId,
         role: courseEnrollments.role,
       })
       .from(courseEnrollments)
       .innerJoin(courses, eq(courseEnrollments.courseId, courses.id))
       .where(
         and(
-          eq(courseEnrollments.userId, session.userId as string),
+          eq(courseEnrollments.userId, userId),
           eq(courseEnrollments.semesterId, currentSem.id)
         )
       );
   }
 
-  return (
-    <div style={{ padding: "32px 16px", maxWidth: "1200px", margin: "0 auto" }}>
-      <PageHeader
-        title="My Courses"
-        description={currentSem ? currentSem.name : "No active semester"}
-        action={
-          <Link href="/onboarding">
-            <Button variant="outline" size="sm">Update Enrolment</Button>
-          </Link>
-        }
-      />
+  // Get materials count
+  const materialsData = await db
+    .select({ courseId: studyMaterials.courseId, total: count(studyMaterials.id) })
+    .from(studyMaterials)
+    .groupBy(studyMaterials.courseId);
+  
+  const materialsMap = new Map(materialsData.map((m: any) => [m.courseId, m.total]));
 
-      {enrollments.length === 0 ? (
-        <Card padding="lg">
-          <EmptyState
-            icon="book"
-            title="Not enrolled in any courses"
-            description="You haven't added any courses for the current semester."
-            action={
-              <Link href="/onboarding">
-                <Button variant="primary">Update Courses</Button>
-              </Link>
-            }
-          />
-        </Card>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
-          {enrollments.map((enr) => (
-            <Link
-              key={enr.courseId}
-              href={`/courses/${enr.courseId}`}
-              style={{ textDecoration: "none" }}
-            >
-              <Card padding="md" interactive>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                  <Badge variant="navy">{enr.courseCode}</Badge>
-                  {enr.role && enr.role !== "student" && (
-                    <Badge variant="gold">{enr.role.toUpperCase()}</Badge>
-                  )}
-                </div>
-                <h2 style={{ fontSize: "1.2rem", margin: "0 0 16px", color: "var(--french-navy)", fontWeight: 700 }}>
-                  {enr.courseName}
-                </h2>
-                <div style={{ display: "flex", gap: "12px", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <UiIcon name="file-text" size={16} /> Materials
-                  </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <UiIcon name="message-square" size={16} /> Discussions
-                  </span>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
+  // Get user schedule and campus time
+  const mySchedule = await getCachedUserSchedule(userId);
+  const campus = getCampusNow(CAMPUS_TZ);
+
+  const enrichedEnrollments = enrollmentsRaw.map((enr: any) => {
+    // Find course schedule entries
+    const courseSchedule = mySchedule.filter((s: any) => s.courseCode === enr.courseCode);
+    
+    // Default status for courses in active semester
+    const status: "active" | "finished" | "upcoming" = "active";
+    
+    let instructor: string | null = null;
+    let nextClassSnippet: string | null = null;
+    let scheduleSnippet: string | null = null;
+
+    if (courseSchedule.length > 0) {
+      instructor = courseSchedule.find((s: any) => s.instructor)?.instructor || null;
+      
+      const todayClasses = courseSchedule.filter((s: any) => s.dayOfWeek === campus.dayOfWeek);
+      const futureToday = todayClasses.find((s: any) => s.startTime >= campus.timeStr);
+      
+      if (futureToday) {
+         nextClassSnippet = `Today ${futureToday.startTime} - ${futureToday.endTime}`;
+      } else {
+         const nextDay = courseSchedule.find((s: any) => s.dayOfWeek > campus.dayOfWeek) || courseSchedule[0];
+         if (nextDay) {
+           nextClassSnippet = `${DAYS_SHORT[nextDay.dayOfWeek]} ${nextDay.startTime} - ${nextDay.endTime}`;
+         }
+      }
+
+      const first = courseSchedule[0];
+      scheduleSnippet = `${DAYS_SHORT[first.dayOfWeek]} ${first.startTime} - ${first.endTime}`;
+    }
+
+    return {
+      courseId: enr.courseId,
+      courseName: enr.courseName,
+      courseCode: enr.courseCode,
+      courseDescription: enr.courseDescription,
+      courseCredits: enr.courseCredits,
+      facultyName: null, 
+      role: enr.role || "student",
+      materialsCount: materialsMap.get(enr.courseId) || 0,
+      scheduleSnippet,
+      instructor,
+      status,
+      nextClassSnippet,
+    };
+  });
+
+  return (
+    <>
+      {/* We can place the top header here or let CoursesHub handle it. 
+          The user wanted it cohesive. CoursesHub already has a header, 
+          but if we want to keep PageHeader, we can just use the Hub for content.
+          Since I redesigned CoursesHub to have its own header, I'll pass the data.
+      */}
+      <div style={{ padding: "0", maxWidth: "100%", margin: "0 auto" }}>
+        <CoursesHub
+          enrolledCourses={enrichedEnrollments as any}
+          scheduleEntries={mySchedule as any}
+          currentUserId={userId}
+          activeSemesterName={currentSem ? currentSem.name : null}
+        />
+      </div>
+    </>
   );
 }
-

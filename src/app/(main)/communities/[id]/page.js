@@ -248,7 +248,6 @@ export default async function CommunityDetailPage({ params, searchParams }) {
   }
 
   const rules = parseRules(communityRow.rules);
-<<<<<<< HEAD
   const allInterests = String(communityRow.interests || "")
     .split(/[,;]+/)
     .map((s) => s.trim())
@@ -268,25 +267,13 @@ export default async function CommunityDetailPage({ params, searchParams }) {
   };
   const typeLabel = typeLabels[groupType];
 
-=======
-  const interests = String(communityRow.interests || "")
-    .split(/[,;]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const initial = communityRow.name.charAt(0).toUpperCase();
-
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   return (
     <div className="uf-community-page">
       {/* Header */}
       <header className="card uf-community-header">
         <Link href="/communities" className="uf-community-back">
           <UiIcon name="arrow-left" size={18} />
-<<<<<<< HEAD
           Back to Groups
-=======
-          Back to Communities
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         </Link>
 
         <div className="uf-community-top">
@@ -305,10 +292,7 @@ export default async function CommunityDetailPage({ params, searchParams }) {
                 className={`uf-privacy-badge ${
                   communityRow.isPrivate ? "private" : "public"
                 }`}
-<<<<<<< HEAD
                 style={{ marginRight: 8 }}
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               >
                 <UiIcon
                   name={communityRow.isPrivate ? "eye" : "users"}
@@ -316,7 +300,6 @@ export default async function CommunityDetailPage({ params, searchParams }) {
                 />
                 {communityRow.isPrivate ? "Private" : "Public"}
               </span>
-<<<<<<< HEAD
               <span
                 style={{
                   background: "var(--bg-soft, #f8fafc)",
@@ -332,8 +315,6 @@ export default async function CommunityDetailPage({ params, searchParams }) {
               >
                 {typeLabel}
               </span>
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             </h1>
 
             {communityRow.description ? (
@@ -406,15 +387,9 @@ export default async function CommunityDetailPage({ params, searchParams }) {
               <div className="uf-empty-icon">
                 <UiIcon name="eye" size={32} />
               </div>
-<<<<<<< HEAD
               <h3 className="uf-empty-title">This is a private group</h3>
               <p className="uf-empty-description">
                 Request to join to see discussions, events, and
-=======
-              <h3 className="uf-empty-title">This is a private community</h3>
-              <p className="uf-empty-description">
-                Request to join to see discussions, questions, events and
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                 materials shared by members.
               </p>
               <CommunityJoinButton
@@ -476,11 +451,7 @@ export default async function CommunityDetailPage({ params, searchParams }) {
             <div className="card uf-sidebar-card">
               <h3 className="uf-sidebar-title">
                 <UiIcon name="book" size={14} />
-<<<<<<< HEAD
                 Group rules
-=======
-                Community rules
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               </h3>
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 10 }}
@@ -569,11 +540,7 @@ export default async function CommunityDetailPage({ params, searchParams }) {
                   justifyContent: "center",
                 }}
               >
-<<<<<<< HEAD
                 Manage group
-=======
-                Manage community
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               </Link>
             </div>
           ) : null}

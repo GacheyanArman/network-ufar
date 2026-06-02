@@ -25,7 +25,6 @@ export default async function CommunitySettingsPage({ params }) {
   const ctx = await getCommunityContext(id, session.userId);
   if (!ctx.isOwner) redirect(`/communities/${id}`);
 
-<<<<<<< HEAD
   const firstInterest = (community.interests || "").split(",")[0]?.trim();
   const groupType = ["faculty_group", "year_group", "club", "student_council", "interest_group"].includes(firstInterest) ? firstInterest : "interest_group";
   const userInterests = (community.interests || "")
@@ -35,8 +34,6 @@ export default async function CommunitySettingsPage({ params }) {
     .filter(Boolean)
     .join(", ");
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   return (
     <div
       style={{
@@ -49,11 +46,7 @@ export default async function CommunitySettingsPage({ params }) {
     >
       <Link href={`/communities/${id}`} className="uf-community-back">
         <UiIcon name="arrow-left" size={18} />
-<<<<<<< HEAD
         Back to group
-=======
-        Back to community
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       </Link>
 
       <div className="card" style={{ padding: 28 }}>
@@ -66,11 +59,7 @@ export default async function CommunitySettingsPage({ params }) {
             color: "var(--text-primary)",
           }}
         >
-<<<<<<< HEAD
           Group settings
-=======
-          Community settings
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         </h1>
         <p
           style={{
@@ -79,11 +68,7 @@ export default async function CommunitySettingsPage({ params }) {
             fontSize: 15,
           }}
         >
-<<<<<<< HEAD
           Update your group details, rules, and privacy.
-=======
-          Update your community details, rules, and privacy.
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         </p>
 
         <form
@@ -93,18 +78,13 @@ export default async function CommunitySettingsPage({ params }) {
           <input type="hidden" name="communityId" value={id} />
 
           <Field
-<<<<<<< HEAD
             label="Group name"
-=======
-            label="Community name"
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             name="name"
             defaultValue={community.name}
             required
             maxLength={80}
           />
 
-<<<<<<< HEAD
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label
               style={{
@@ -138,8 +118,6 @@ export default async function CommunitySettingsPage({ params }) {
             </select>
           </div>
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           <Field
             label="Description"
             name="description"
@@ -184,11 +162,7 @@ export default async function CommunitySettingsPage({ params }) {
           <Field
             label="Interests (comma-separated)"
             name="interests"
-<<<<<<< HEAD
             defaultValue={userInterests}
-=======
-            defaultValue={community.interests || ""}
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             maxLength={240}
             placeholder="finance, marketing, crypto"
           />
@@ -220,11 +194,7 @@ export default async function CommunitySettingsPage({ params }) {
                   color: "var(--text-primary)",
                 }}
               >
-<<<<<<< HEAD
                 Private group
-=======
-                Private community
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               </div>
               <div
                 style={{
@@ -280,11 +250,7 @@ export default async function CommunitySettingsPage({ params }) {
             fontSize: 14,
           }}
         >
-<<<<<<< HEAD
           Deleting the group is irreversible. All posts, members and
-=======
-          Deleting the community is irreversible. All posts, members and
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           requests will be removed.
         </p>
         <form action={deleteCommunity}>
@@ -297,11 +263,7 @@ export default async function CommunitySettingsPage({ params }) {
               color: "var(--danger)",
             }}
           >
-<<<<<<< HEAD
             Delete group
-=======
-            Delete community
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </button>
         </form>
       </div>

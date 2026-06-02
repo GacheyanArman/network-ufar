@@ -21,6 +21,8 @@ export const profileSchema = z.object({
 
   faculty: z.string().trim().max(100).optional().or(z.literal("")),
 
+  year: z.string().trim().max(50).optional().or(z.literal("")),
+
   bio: z
     .string()
     .trim()
@@ -287,7 +289,11 @@ export const eventSchema = z
       "cultural",
       "other",
     ]),
-    location: z.string().trim().max(220).optional().or(z.literal("")),
+    location: z
+      .string()
+      .trim()
+      .min(1, "Location is required")
+      .max(220),
     startTime: z.string().min(1, "Start time is required"),
     endTime: z.string().optional().or(z.literal("")),
     maxAttendees: z
@@ -300,6 +306,7 @@ export const eventSchema = z
       }, "Max attendees must be a whole number between 0 and 10000"),
     enableWaitlist: z.boolean().optional(),
     communityId: z.string().trim().optional().or(z.literal("")),
+    courseId: z.string().trim().optional().or(z.literal("")),
     reminderOffsets: z
       .string()
       .optional()

@@ -1,10 +1,6 @@
 "use client";
 
 import { useState } from "react";
-<<<<<<< HEAD
-import { createPortal } from "react-dom";
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 import { createScheduleEntry, deleteScheduleEntry } from "@/features/courses/server/schedule";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -81,20 +77,12 @@ export default function ScheduleClient({ entries, currentUserId }: ScheduleClien
           <div style={{ display: "flex", gap: "10px" }}>
             <Link
               href="/calendar"
-<<<<<<< HEAD
-              className="btn btn-primary"
+              className="btn btn-outline"
               style={{ display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none", borderColor: "var(--french-blue)", color: "var(--french-blue)", fontWeight: 700 }}
             >
               <UiIcon name="calendar" size={16} />
               View Academic Calendar
               <UiIcon name="plus" size={14} />
-=======
-              className="btn btn-secondary"
-              style={{ display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none" }}
-            >
-              <UiIcon name="calendar" size={16} />
-              Academic Calendar
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             </Link>
             <button
               onClick={() => setIsModalOpen(true)}
@@ -244,14 +232,8 @@ export default function ScheduleClient({ entries, currentUserId }: ScheduleClien
         </div>
       )}
 
-<<<<<<< HEAD
-      {isModalOpen && typeof document !== "undefined" && createPortal(
-        <div
-          className="schedule-modal-overlay"
-=======
       {isModalOpen && (
         <div
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           style={{
             position: "fixed",
             top: 0,
@@ -270,11 +252,7 @@ export default function ScheduleClient({ entries, currentUserId }: ScheduleClien
             }
           }}
         >
-<<<<<<< HEAD
-          <div className="card schedule-modal-card" style={{ maxWidth: "600px", width: "90%", padding: "24px", maxHeight: "90vh", overflowY: "auto" }}>
-=======
           <div className="card" style={{ maxWidth: "600px", width: "90%", padding: "24px", maxHeight: "90vh", overflowY: "auto" }}>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             <h2 style={{ margin: "0 0 16px", fontSize: "20px", fontWeight: 900 }}>
               Add Class to Schedule
             </h2>
@@ -405,12 +383,7 @@ export default function ScheduleClient({ entries, currentUserId }: ScheduleClien
               </div>
             </form>
           </div>
-<<<<<<< HEAD
-        </div>,
-        document.body
-=======
         </div>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       )}
     </div>
   );

@@ -1,36 +1,51 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { db } from "@/shared/db/db";
 import {
   studyMaterials,
   courseEnrollments,
   courses,
-<<<<<<< HEAD
   events,
   communities,
 } from "@/shared/db/schema";
 import { eq, and, desc, inArray, asc, gte } from "drizzle-orm";
-=======
-} from "@/shared/db/schema";
-import { eq, and, desc, inArray } from "drizzle-orm";
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 import {
   getCachedUserSchedule,
   getCachedUpcomingDeadlines,
+  getCachedUnreadMessages,
+  getCachedUnreadNotifications,
 } from "@/shared/cache/cache";
-import UiIcon from "@/shared/ui/UiIcon";
-import { Card } from "@/shared/ui/Card";
-import {
-  EmptyState,
-  PageHeader,
-  PageShell,
-} from "@/shared/ui/Layout";
-import { Button } from "@/shared/ui/Button";
+import { PageHeader, PageShell } from "@/shared/ui/Layout";
 import { Language } from "@/shared/i18n/i18n";
 import { getServerTranslator } from "@/shared/i18n/server";
+import {
+  CAMPUS_TZ,
+  getCampusNow,
+  getGreeting,
+  getClassStatus,
+  validateLanguage,
+  langToLocale,
+} from "../server/today-utils";
+import type {
+  ScheduleItem,
+  ClassStatus,
+  MaterialItem,
+  EventItem,
+  DeadlineItem,
+} from "../server/today-utils";
 
-let DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+// ─── Sub-components ─────────────────────────────────────────────────────────
+import SummaryBar from "./SummaryBar";
+import NowNextCard from "./NowNextCard";
+import TodayScheduleList from "./TodayScheduleList";
+import DeadlineList from "./DeadlineList";
+import MaterialsList from "./MaterialsList";
+import EventsList from "./EventsList";
+import QuickActions from "./QuickActions";
 
+// ─── Day labels for future-class display ────────────────────────────────────
+const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+// ─── Props ──────────────────────────────────────────────────────────────────
 type TodayDashboardProps = {
   userId: string;
   currentUser: { fullName: string | null } | null;
@@ -40,67 +55,76 @@ export default async function TodayDashboard({
   userId,
   currentUser,
 }: TodayDashboardProps) {
-  // await the cookies, Next.js requires this now
-  let cookieStore = await cookies();
-  let langCookie = cookieStore.get("language");
-  
-  let lang = "en";
-  if (langCookie != undefined) {
-    lang = langCookie.value;
-  }
-  
-  let t = getServerTranslator(lang as Language);
-  
-  let localeStr = "en-US";
-  if (lang == "hy") {
-    localeStr = "hy-AM";
-  } else if (lang == "fr") {
-    localeStr = "fr-FR";
-  }
+  // ── Language & locale ──────────────────────────────────────────────────
+  const cookieStore = await cookies();
+  const lang = validateLanguage(cookieStore.get("language")?.value);
+  const t = getServerTranslator(lang as Language);
+  const locale = langToLocale(lang);
 
-  let now = new Date();
+  // ── Campus time ────────────────────────────────────────────────────────
+  const campus = getCampusNow(CAMPUS_TZ);
+  const now = campus.date;
 
-  let enrollments = await db
+  // ── User name ──────────────────────────────────────────────────────────
+  const firstName = currentUser?.fullName?.split(" ")[0] ?? "";
+  const greeting = getGreeting(campus.hour, lang, firstName);
+
+  // ── Enrolled courses ───────────────────────────────────────────────────
+  const enrollments = await db
     .select({ courseId: courseEnrollments.courseId })
     .from(courseEnrollments)
     .where(eq(courseEnrollments.userId, userId));
 
-  let resolvedName = "";
-  if (currentUser != null && currentUser.fullName != null) {
-    resolvedName = currentUser.fullName;
+  const myCourseIds: string[] = enrollments
+    .map((e: { courseId: string | null }) => e.courseId)
+    .filter((id: string | null): id is string => id != null);
+
+  // ── Schedule ───────────────────────────────────────────────────────────
+  const mySchedule = await getCachedUserSchedule(userId);
+
+  // Annotate today's classes with status
+  const todayClasses: Array<ScheduleItem & { status: ClassStatus }> = mySchedule
+    .filter((c: ScheduleItem) => c.dayOfWeek === campus.dayOfWeek)
+    .map((c: ScheduleItem) => ({
+      ...c,
+      status: getClassStatus(c as ScheduleItem, campus.dayOfWeek, campus.timeStr),
+    }));
+
+  // Mark the first "upcoming" class as "next"
+  const firstUpcomingIdx = todayClasses.findIndex((c) => c.status === "upcoming");
+  if (firstUpcomingIdx !== -1) {
+    todayClasses[firstUpcomingIdx].status = "next";
   }
 
-  let greeting = "Campus Hub";
-  if (resolvedName != "") {
-    let firstName = resolvedName.split(" ")[0];
-    greeting = t("today.title") + ", " + firstName;
-  }
-    
-  // explicitly define type to prevent TS7034
-  let myCourseIds: string[] = [];
-  for (let i = 0; i < enrollments.length; i++) {
-    if (enrollments[i].courseId != null) {
-      myCourseIds.push(enrollments[i].courseId as string);
-    }
+  // Find the next future class (for NowNextCard fallback)
+  let nextFutureClass: ScheduleItem | null = null;
+  let nextFutureLabel = "";
+  let isNextWeek = false;
+
+  // First: look in remaining days this week
+  const remainingThisWeek = mySchedule.find(
+    (c: ScheduleItem) => c.dayOfWeek > campus.dayOfWeek,
+  );
+  if (remainingThisWeek) {
+    nextFutureClass = remainingThisWeek as ScheduleItem;
+    nextFutureLabel = DAY_LABELS[remainingThisWeek.dayOfWeek] ?? "";
+  } else if (mySchedule.length > 0) {
+    // Wrap to next week
+    nextFutureClass = mySchedule[0] as ScheduleItem;
+    nextFutureLabel = DAY_LABELS[mySchedule[0].dayOfWeek] ?? "";
+    isNextWeek = true;
   }
 
-  let currentDayOfWeek = now.getDay() - 1;
-  if (now.getDay() == 0) {
-    currentDayOfWeek = 6;
-  }
-  
-  let currentTime = now.toTimeString().slice(0, 5);
+  // ── Deadlines ──────────────────────────────────────────────────────────
+  const cachedDeadlines = await getCachedUpcomingDeadlines(userId);
+  const deadlines: DeadlineItem[] = cachedDeadlines.map((d: any) => ({
+    id: d.id,
+    title: d.title,
+    eventType: d.eventType,
+    dueDate: d.dueDate,
+  }));
 
-  let mySchedule = await getCachedUserSchedule(userId);
-  let cachedDeadlines = await getCachedUpcomingDeadlines(userId);
-
-  type MaterialItem = {
-    id: string;
-    title: string;
-    type: string | null;
-    courseCode: string | null;
-    createdAt: Date | null;
-  };
+  // ── Materials ──────────────────────────────────────────────────────────
   let newMaterials: MaterialItem[] = [];
   if (myCourseIds.length > 0) {
     newMaterials = await db
@@ -120,42 +144,11 @@ export default async function TodayDashboard({
         ),
       )
       .orderBy(desc(studyMaterials.createdAt))
-      .limit(2);
+      .limit(3);
   }
 
-
-
-  let nextClass = null;
-  for (let i = 0; i < mySchedule.length; i++) {
-    if (mySchedule[i].dayOfWeek == currentDayOfWeek && mySchedule[i].startTime >= currentTime) {
-      nextClass = mySchedule[i];
-      break;
-    }
-  }
-  
-  let isNextWeek = false;
-  if (nextClass == null) {
-    for (let i = 0; i < mySchedule.length; i++) {
-      if (mySchedule[i].dayOfWeek > currentDayOfWeek) {
-        nextClass = mySchedule[i];
-        break;
-      }
-    }
-  }
-  
-  if (nextClass == null && mySchedule.length > 0) {
-    nextClass = mySchedule[0];
-    isNextWeek = true;
-  }
-
-  let upcomingDeadlines: typeof cachedDeadlines = [];
-  for (let i = 0; i < cachedDeadlines.length; i++) {
-    if (i < 3) {
-      upcomingDeadlines.push(cachedDeadlines[i]);
-    }
-  }
-<<<<<<< HEAD
-  let upcomingEvents = await db
+  // ── Events ─────────────────────────────────────────────────────────────
+  const upcomingEvents: EventItem[] = await db
     .select({
       id: events.id,
       title: events.title,
@@ -173,264 +166,76 @@ export default async function TodayDashboard({
       and(
         gte(events.startTime, now),
         eq(events.status, "approved"),
-        eq(events.isCancelled, false)
-      )
+        eq(events.isCancelled, false),
+      ),
     )
     .orderBy(asc(events.startTime))
     .limit(3);
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
+  // ── Unread counts ──────────────────────────────────────────────────────
+  const [unreadMessages, unreadNotifications] = await Promise.all([
+    getCachedUnreadMessages(userId),
+    getCachedUnreadNotifications(userId),
+  ]);
+
+  // ── Summary counts ─────────────────────────────────────────────────────
+  const classesTodayCount = todayClasses.length;
+
+  // ── Render ─────────────────────────────────────────────────────────────
   return (
     <PageShell variant="wide" className="dashboard-page">
       <PageHeader
         title={greeting}
-        description={now.toLocaleDateString(localeStr, {
+        description={now.toLocaleDateString(locale, {
           weekday: "long",
           month: "long",
           day: "numeric",
         })}
       />
 
-      {/* Quick Actions */}
-      <div className="dashboard-quick-actions">
-        <QuickActionLink
-          href="/study-materials"
-          icon="upload"
-          label={t("emptyStates.materials.upload")}
-        />
-        <QuickActionLink
-          href="/feed"
-          icon="message-circle"
-          label={t("communities.questions")}
-        />
-      </div>
+      {/* Summary stats bar */}
+      <SummaryBar
+        classesToday={classesTodayCount}
+        deadlinesCount={deadlines.length}
+        materialsCount={newMaterials.length}
+        unreadMessages={unreadMessages}
+        t={t}
+      />
+
+      {/* Hero: Now / Next Class */}
+      <NowNextCard
+        todayClasses={todayClasses}
+        nextFutureClass={nextFutureClass}
+        nextFutureLabel={nextFutureLabel}
+        t={t}
+      />
+
+      {/* Quick actions */}
+      <QuickActions t={t} />
 
       <div className="dashboard-grid">
-        {/* Section 1: Next Class */}
-        <section className="dashboard-section">
-          <h2 className="dash-section-title">
-            <UiIcon name="book-open" size={20} color="var(--french-gold)" /> {t("today.nextClass")}
-          </h2>
-          <Card padding="none">
-            {nextClass != null ? (
-              <div className="dash-next-class">
-                <div>
-                  <div className="dash-next-class-code">
-                    {nextClass.courseCode || nextClass.courseName}
-                  </div>
-                  <div className="dash-next-class-room">
-                    {t("today.room")}: {nextClass.room || "TBA"}
-                  </div>
-                </div>
-                <div className="dash-next-class-meta">
-                  <div className="dash-next-class-time">{nextClass.startTime}</div>
-                  <div className="dash-next-class-day">
-                    {nextClass.dayOfWeek == currentDayOfWeek && isNextWeek == false
-                      ? t("today.title")
-                      : DAY_LABELS[nextClass.dayOfWeek]}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <EmptyState
-                icon="calendar"
-                title={t("today.noClasses")}
-                action={
-                  <Link href="/schedule">
-                    <Button variant="outline" size="sm">
-                      {t("today.seeSchedule")}
-                    </Button>
-                  </Link>
-                }
-              />
-            )}
-          </Card>
-        </section>
+        {/* Today's schedule */}
+        <TodayScheduleList classes={todayClasses} t={t} />
 
-        {/* Section 2: Upcoming Deadlines */}
-        <section className="dashboard-section">
-          <h2 className="dash-section-title">
-            <UiIcon name="clock" size={20} color="var(--french-gold)" /> {t("today.deadlines")}
-          </h2>
-          {upcomingDeadlines.length > 0 ? (
-            <div className="dash-list">
-              {upcomingDeadlines.map((d: any) => (
-                <Card key={d.id} padding="sm" interactive>
-                  <div className="dash-deadline-row">
-                    <div className="dash-deadline-date">
-                      <div className="dash-deadline-month">
-                        {new Date(d.dueDate).toLocaleString(localeStr, {
-                          month: "short",
-                        })}
-                      </div>
-                      <div className="dash-deadline-day">
-                        {new Date(d.dueDate).getDate()}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="dash-deadline-title">{d.title}</div>
-                      <div className="dash-deadline-type">{d.eventType}</div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card padding="md">
-              <EmptyState icon="check-circle" title={t("today.noDeadlines")} />
-            </Card>
-          )}
-        </section>
+        {/* Deadlines & exams */}
+        <DeadlineList
+          deadlines={deadlines}
+          locale={locale}
+          lang={lang}
+          t={t}
+        />
 
-        {/* Section 3: New Materials */}
-        <section className="dashboard-section">
-          <h2 className="dash-section-title">
-            <UiIcon name="folder" size={20} color="var(--french-gold)" /> {t("today.newMaterials")}
-          </h2>
-          {newMaterials.length > 0 ? (
-            <div className="dash-list">
-              {newMaterials.map((m) => (
-                <Link
-                  key={m.id}
-                  href={`/study-materials/${m.id}`}
-                  className="dash-link-reset"
-                >
-                  <Card padding="sm" interactive>
-                    <div className="dash-material-row">
-                      <div className="dash-material-icon">
-                        <UiIcon name="file-text" size={18} />
-                      </div>
-                      <div className="dash-material-meta">
-                        <div className="dash-material-title">{m.title}</div>
-                        <div className="dash-material-sub">
-                          <span className="dash-accent">
-                            {m.courseCode || "General"}
-                          </span>{" "}
-                          • {m.type}
-                        </div>
-                      </div>
-                      <UiIcon name="chevron-right" size={18} color="var(--text-muted)" />
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <Card padding="md">
-              <EmptyState
-                icon="folder"
-                title={t("today.noMaterials")}
-                description={
-                  myCourseIds.length > 0
-                    ? t("today.noMaterials")
-                    : t("emptyStates.materials.noUploadedHint")
-                }
-                action={
-                  <Link
-                    href={myCourseIds.length > 0 ? "/study-materials" : "/courses?tab=enroll"}
-                  >
-                    <Button variant="outline" size="sm">
-                      {myCourseIds.length > 0
-                        ? t("emptyStates.materials.browse")
-                        : t("nav.courses")}
-                    </Button>
-                  </Link>
-                }
-              />
-            </Card>
-          )}
-        </section>
+        {/* New study materials */}
+        <MaterialsList
+          materials={newMaterials}
+          hasCourses={myCourseIds.length > 0}
+          lang={lang}
+          t={t}
+        />
 
-<<<<<<< HEAD
-        {/* Section 4: Upcoming Events */}
-        <section className="dashboard-section">
-          <h2 className="dash-section-title">
-            <UiIcon name="calendar" size={20} color="var(--french-gold)" /> {t("today.eventsThisWeek") || "Upcoming Events"}
-          </h2>
-          {upcomingEvents.length > 0 ? (
-            <div className="dash-list">
-              {upcomingEvents.map((ev: any) => (
-                <Link
-                  key={ev.id}
-                  href={`/events/${ev.id}`}
-                  className="dash-link-reset"
-                >
-                  <Card padding="sm" interactive>
-                    <div className="dash-material-row" style={{ display: "flex", gap: 10 }}>
-                      <div className="dash-deadline-date" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 46, background: "var(--bg-hover)", borderRadius: 8, padding: "4px 8px" }}>
-                        <div className="dash-deadline-month" style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", color: "var(--french-blue)" }}>
-                          {new Date(ev.startTime).toLocaleString(localeStr, {
-                            month: "short",
-                          })}
-                        </div>
-                        <div className="dash-deadline-day" style={{ fontSize: "1.05rem", fontWeight: 900 }}>
-                          {new Date(ev.startTime).getDate()}
-                        </div>
-                      </div>
-                      <div className="dash-material-meta" style={{ flex: 1 }}>
-                        <div className="dash-material-title" style={{ fontWeight: 700, fontSize: "0.88rem" }}>{ev.title}</div>
-                        <div className="dash-material-sub" style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: 2 }}>
-                          {new Date(ev.startTime).toLocaleTimeString(localeStr, {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                          {ev.location && ` • ${ev.location}`}
-                          {(ev.courseCode || ev.communityName) && (
-                            <span className="dash-accent" style={{ marginLeft: 6, fontWeight: 700, color: "var(--french-blue)" }}>
-                              [{ev.courseCode || ev.communityName}]
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <UiIcon name="chevron-right" size={18} color="var(--text-muted)" />
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <Card padding="md">
-              <EmptyState
-                icon="calendar"
-                title={t("today.noEvents") || "No upcoming events"}
-                action={
-                  <Link href="/events">
-                    <Button variant="outline" size="sm">
-                      {t("emptyStates.explore.browseEvents") || "Browse events"}
-                    </Button>
-                  </Link>
-                }
-              />
-            </Card>
-          )}
-        </section>
-
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
-
+        {/* Campus events */}
+        <EventsList events={upcomingEvents} locale={locale} t={t} />
       </div>
     </PageShell>
-  );
-}
-
-function QuickActionLink({
-  href,
-  icon,
-  label,
-}: {
-  href: string;
-  icon: string;
-  label: string;
-}) {
-  return (
-    <Link href={href} className="dash-link-reset">
-      <Card padding="sm" interactive className="dash-quick-action">
-        <div className="dash-quick-action-icon">
-          <UiIcon name={icon} size={18} />
-        </div>
-        <span className="dash-quick-action-label">{label}</span>
-      </Card>
-    </Link>
   );
 }

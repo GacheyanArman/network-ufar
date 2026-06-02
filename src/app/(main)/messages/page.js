@@ -1,14 +1,7 @@
-<<<<<<< HEAD
 import { asc, desc, eq, inArray, or, and, ilike, isNull, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/shared/db/db";
 import { messages, users, groupChats, groupChatMembers, messageReads } from "@/shared/db/schema";
-=======
-import { asc, desc, eq, inArray, or, and, ilike, isNull } from "drizzle-orm";
-import { redirect } from "next/navigation";
-import { db } from "@/shared/db/db";
-import { messages, users, groupChats, groupChatMembers } from "@/shared/db/schema";
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 import { getSession } from "@/shared/auth/session";
 import MessagesClient from "@/features/messages/components/MessagesClient";
 import MessagesPageClient from "@/features/messages/components/MessagesPageClient";
@@ -111,7 +104,6 @@ export default async function MessagesPage({ searchParams }) {
 
   const usersById = new Map(partnerRows.map((user) => [user.id, user]));
 
-<<<<<<< HEAD
   // Get unread counts for direct conversations
   const dmUnreadRows = partnerIds.length > 0
     ? await db
@@ -185,13 +177,10 @@ export default async function MessagesPage({ searchParams }) {
   }
 
   // Enrich conversations and group chats with unreadCount and lastMessage
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   const conversations = partnerIds
     .map((id) => ({
       user: usersById.get(id),
       lastMessage: conversationsMap.get(id),
-<<<<<<< HEAD
       unreadCount: dmUnreadMap.get(id) || 0,
     }))
     .filter((item) => item.user);
@@ -212,11 +201,6 @@ export default async function MessagesPage({ searchParams }) {
     };
   });
 
-=======
-    }))
-    .filter((item) => item.user);
-
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   const searchUsers = q
     ? await db
         .select({
@@ -353,11 +337,7 @@ export default async function MessagesPage({ searchParams }) {
         activeGroupId={selectedGroupId || undefined}
       />
       <MessagesPageClient
-<<<<<<< HEAD
         userGroupChats={enrichedGroupChats}
-=======
-        userGroupChats={userGroupChats}
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         conversations={conversations}
         searchUsers={searchUsers}
         selectedUserId={selectedUserId}
@@ -1560,7 +1540,6 @@ const messagesStyles = `
 .tg-chat-area {
   position: relative;
 }
-<<<<<<< HEAD
 
 /* Simplification UI styles */
 .tg-tabs-container {
@@ -1619,6 +1598,4 @@ const messagesStyles = `
   margin-left: auto;
   flex-shrink: 0;
 }
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 `;

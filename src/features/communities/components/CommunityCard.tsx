@@ -20,15 +20,11 @@ type CommunityCardProps = {
     isPrivate?: boolean | null;
     facultyTag?: string | null;
     yearTag?: string | null;
-<<<<<<< HEAD
     interests?: string | null;
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   };
   joinState: JoinState;
 };
 
-<<<<<<< HEAD
 const typeLabels: Record<string, string> = {
   faculty_group: "Faculty Group",
   year_group: "Year Group",
@@ -45,8 +41,6 @@ const typeStyles: Record<string, { bg: string; color: string }> = {
   interest_group: { bg: "var(--bg-hover, #f1f5f9)", color: "var(--text-secondary, #475569)" },
 };
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 export default function CommunityCard({
   community,
   joinState,
@@ -54,7 +48,6 @@ export default function CommunityCard({
   const initial = community.name.charAt(0).toUpperCase();
   const isPrivate = Boolean(community.isPrivate);
 
-<<<<<<< HEAD
   const firstInterest = (community.interests || "").split(",")[0]?.trim();
   let groupType = "interest_group";
   if (["faculty_group", "year_group", "club", "student_council", "interest_group"].includes(firstInterest)) {
@@ -69,8 +62,6 @@ export default function CommunityCard({
   const typeLabel = typeLabels[groupType];
   const styleMeta = typeStyles[groupType] || typeStyles.interest_group;
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   return (
     <div
       className="card"
@@ -120,7 +111,6 @@ export default function CommunityCard({
             {community.name}
           </Link>
 
-<<<<<<< HEAD
           <span
             style={{
               background: styleMeta.bg,
@@ -139,8 +129,6 @@ export default function CommunityCard({
             {typeLabel}
           </span>
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           {isPrivate ? (
             <span className="uf-privacy-badge private">
               <UiIcon name="eye" size={12} />

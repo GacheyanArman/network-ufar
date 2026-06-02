@@ -148,69 +148,6 @@ export async function saveUploadFile(
   return result?.url ?? null;
 }
 
-<<<<<<< HEAD
-type SaveImageAsDataUriOptions = {
-  maxSize?: number;
-  allowedMimePrefix?: string;
-  variant?: "thumb" | "medium";
-};
-
-/**
- * Validates and compresses an image, then returns it as a base64 data URI
- * (e.g. "data:image/webp;base64,....") instead of uploading to external storage.
- *
- * Use this for small, always-available assets (avatars, covers) that must be
- * persisted directly in the database and rendered everywhere without depending
- * on a blob store URL being reachable.
- */
-export async function saveImageAsDataUri(
-  file: File | null | undefined,
-  options: SaveImageAsDataUriOptions = {}
-): Promise<string | null> {
-  const {
-    maxSize = MAX_UPLOAD_SIZE,
-    allowedMimePrefix = "image/",
-    variant = "medium",
-  } = options;
-
-  if (!file || typeof file.size !== "number" || file.size === 0) {
-    return null;
-  }
-
-  if (file.size > maxSize) {
-    throw new Error(
-      `Payload Too Large. Max size is ${Math.floor(maxSize / 1024 / 1024)}MB.`
-    );
-  }
-
-  validateMimeType(file, allowedMimePrefix, undefined);
-
-  const isValidMagic = await verifyMagicBytes(file, file.type);
-  if (!isValidMagic) {
-    throw new Error(`File content does not match declared type: ${file.type}`);
-  }
-
-  const arrayBuf = await file.arrayBuffer();
-  const isImg = isImageMime(file.type) && file.type !== "image/svg+xml";
-
-  if (isImg) {
-    try {
-      const processed = await processImage(arrayBuf, file.type);
-      const buffer =
-        variant === "thumb" ? processed.thumbnailBuffer : processed.mediumBuffer;
-      const mime = variant === "thumb" ? "image/webp" : `image/${processed.format}`;
-      return `data:${mime};base64,${buffer.toString("base64")}`;
-    } catch (imgErr) {
-      console.error("Image processing failed for data URI, using raw:", imgErr);
-    }
-  }
-
-  const buffer = Buffer.from(arrayBuf);
-  return `data:${file.type};base64,${buffer.toString("base64")}`;
-}
-
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 export async function saveUploadFileWithMeta(
   file: File | null | undefined,
   options: SaveUploadFileOptions = {}

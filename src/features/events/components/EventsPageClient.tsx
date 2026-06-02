@@ -2,11 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-<<<<<<< HEAD
-import { useCallback, useEffect, useMemo, useState, useTransition, useRef } from "react";
-=======
 import { useCallback, useMemo, useState, useTransition, useRef } from "react";
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 import UiIcon from "@/shared/ui/UiIcon";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/shared/i18n/i18n";
@@ -20,19 +16,13 @@ import {
 } from "@/features/events/server/actions";
 
 type Community = { id: string; name: string };
-<<<<<<< HEAD
 type Course = { id: string; name: string; code: string };
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
 type Props = {
   events: EventListItem[];
   myCommunities: Community[];
   filterCommunities?: Community[];
-<<<<<<< HEAD
   myCourses: Course[];
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   currentUserId: string;
 };
 
@@ -64,19 +54,11 @@ const PRIMARY_CATEGORIES = [
 
 const FILTERS: { value: EventsFilter; labelKey: string }[] = [
   { value: "upcoming", labelKey: "events.filters.upcoming" },
-<<<<<<< HEAD
   { value: "this_week", labelKey: "events.filters.thisWeek" },
   { value: "my_courses", labelKey: "events.filters.myCourses" },
   { value: "university", labelKey: "events.filters.university" },
   { value: "clubs_groups", labelKey: "events.filters.clubsGroups" },
   { value: "my_events", labelKey: "events.filters.myEvents" },
-=======
-  { value: "today", labelKey: "events.filters.today" },
-  { value: "this_week", labelKey: "events.filters.thisWeek" },
-  { value: "my_events", labelKey: "events.filters.myEvents" },
-  { value: "community", labelKey: "events.filters.community" },
-  { value: "past", labelKey: "events.filters.past" },
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 ];
 
 const REMINDER_OPTIONS = [
@@ -111,7 +93,6 @@ function interpolate(
   );
 }
 
-<<<<<<< HEAD
 function getFilterLabel(t: (key: string) => string, value: string, lang: string) {
   if (value === "my_courses") {
     if (lang === "hy") return "Իմ դասընթացները";
@@ -137,8 +118,6 @@ function getFilterLabel(t: (key: string) => string, value: string, lang: string)
   return t(`events.filters.${value}`);
 }
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 const deleteAction = deleteEvent as unknown as (
   fd: FormData,
 ) => void | Promise<void>;
@@ -147,10 +126,7 @@ export default function EventsPageClient({
   events: initialEvents,
   myCommunities,
   filterCommunities = myCommunities,
-<<<<<<< HEAD
   myCourses = [],
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   currentUserId,
 }: Props) {
   const { t, locale, language } = useLanguage();
@@ -163,19 +139,6 @@ export default function EventsPageClient({
   const [loading, startLoading] = useTransition();
   const [showCreate, setShowCreate] = useState(false);
 
-<<<<<<< HEAD
-  // Lock background (body) scrolling while the create panel is open
-  useEffect(() => {
-    if (!showCreate) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [showCreate]);
-
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   const refetch = useCallback(
     (f: {
       filter: EventsFilter;
@@ -275,11 +238,7 @@ export default function EventsPageClient({
             gap: 12,
           }}
         >
-<<<<<<< HEAD
           <div style={{ flex: "1 1 auto", minWidth: 280 }}>
-=======
-          <div>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             <h1
               style={{
                 margin: "0 0 4px",
@@ -335,7 +294,6 @@ export default function EventsPageClient({
           }}
         />
 
-<<<<<<< HEAD
         <div style={{ height: "1px", background: "var(--border-color-light)" }} />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -463,78 +421,6 @@ export default function EventsPageClient({
               </div>
             </div>
           </>
-=======
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            flexWrap: "wrap",
-            overflowX: "auto",
-          }}
-        >
-          {FILTERS.map((f) => (
-            <button
-              key={f.value}
-              type="button"
-              onClick={() => handleFilter(f.value)}
-              style={pillStyle(filter === f.value)}
-            >
-              {t(f.labelKey)}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            onClick={() => handleCategory("")}
-            style={pillStyle(category === "")}
-          >
-            {t("events.categories.all")}
-          </button>
-          {PRIMARY_CATEGORIES.map((c) => {
-            const m = CATEGORY_META[c];
-            return (
-              <button
-                key={c}
-                type="button"
-                onClick={() => handleCategory(c)}
-                style={pillStyle(category === c, m.color, m.bg)}
-              >
-                <UiIcon name={m.icon} size={14} /> {t(`events.categories.${c}`)}
-              </button>
-            );
-          })}
-        </div>
-
-        {filter === "community" && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={() => handleCommunity("")}
-              style={pillStyle(communityId === "")}
-            >
-              {t("events.allMyCommunities")}
-            </button>
-            {filterCommunities.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => handleCommunity(c.id)}
-                style={pillStyle(communityId === c.id)}
-              >
-                {c.name}
-              </button>
-            ))}
-            {filterCommunities.length === 0 && (
-              <span
-                style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}
-              >
-                {t("events.noCommunitiesJoined")}
-              </span>
-            )}
-          </div>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         )}
       </section>
 
@@ -567,10 +453,7 @@ export default function EventsPageClient({
       {showCreate && (
         <CreateEventModal
           myCommunities={myCommunities}
-<<<<<<< HEAD
           myCourses={myCourses}
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           onClose={() => setShowCreate(false)}
           onCreated={() => {
             setShowCreate(false);
@@ -821,7 +704,6 @@ function EventCard({
                 <UiIcon name="users" size={12} /> {e.communityName}
               </span>
             )}
-<<<<<<< HEAD
             {e.courseCode && (
               <span
                 style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
@@ -829,8 +711,6 @@ function EventCard({
                 <UiIcon name="book" size={12} /> {e.courseCode}
               </span>
             )}
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             <span
               style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
             >
@@ -1148,15 +1028,11 @@ function EmptyState({ title, message, actionLabel, onAction }: { title: string; 
 
 function CreateEventModal({
   myCommunities,
-<<<<<<< HEAD
   myCourses,
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   onClose,
   onCreated,
 }: {
   myCommunities: Community[];
-<<<<<<< HEAD
   myCourses: Course[];
   onClose: () => void;
   onCreated: () => void;
@@ -1166,20 +1042,6 @@ function CreateEventModal({
   const [error, setError] = useState<string | null>(null);
   const [eventType, setEventType] = useState<string>("social");
   const [target, setTarget] = useState<string>("");
-=======
-  onClose: () => void;
-  onCreated: () => void;
-}) {
-  const { t } = useLanguage();
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [reminders, setReminders] = useState<Set<number>>(new Set());
-  const [eventType, setEventType] = useState<string>("social");
-  const [enableWaitlist, setEnableWaitlist] = useState(true);
-  const [capacityMode, setCapacityMode] = useState<"unlimited" | "limited">(
-    "unlimited",
-  );
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -1204,22 +1066,9 @@ function CreateEventModal({
     try {
       const fd = new FormData(e.currentTarget);
       fd.set("eventType", eventType);
-<<<<<<< HEAD
       fd.set("reminderOffsets", "");
       fd.set("enableWaitlist", "false");
       fd.delete("maxAttendees");
-=======
-      fd.set(
-        "reminderOffsets",
-        Array.from(reminders)
-          .sort((a, b) => b - a)
-          .join(","),
-      );
-      fd.set("enableWaitlist", enableWaitlist ? "true" : "false");
-      if (capacityMode === "unlimited") {
-        fd.delete("maxAttendees");
-      }
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       if (coverFile) {
         fd.set("coverFile", coverFile);
       }
@@ -1228,15 +1077,7 @@ function CreateEventModal({
       if (dateStr) fd.set("startTime", `${dateStr}T${timeStr}`);
       fd.delete("startDate");
       fd.delete("startTimeOnly");
-<<<<<<< HEAD
       fd.delete("endTime");
-=======
-      const endDateStr = (fd.get("endDate") as string) || "";
-      const endTimeStr = (fd.get("endTimeOnly") as string) || "";
-      if (endDateStr)
-        fd.set("endTime", `${endDateStr}T${endTimeStr || "23:59"}`);
-      else fd.delete("endTime");
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       fd.delete("endDate");
       fd.delete("endTimeOnly");
 
@@ -1253,7 +1094,6 @@ function CreateEventModal({
     }
   };
 
-<<<<<<< HEAD
   const hostLabel = language === "hy" 
     ? "Դասընթաց կամ Խումբ (ըստ ցանկության)" 
     : language === "fr" 
@@ -1266,8 +1106,6 @@ function CreateEventModal({
       ? "Aucun (Événement général)"
       : "None (General Event)";
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   return (
     <div
       onMouseDown={onClose}
@@ -1407,23 +1245,9 @@ function CreateEventModal({
             </Field>
           </div>
 
-<<<<<<< HEAD
           <Field label={t("events.form.location")}>
             <input
               required
-=======
-          <div style={twoCol}>
-            <Field label={t("events.form.endDate")}>
-              <input type="date" name="endDate" style={fieldStyle} />
-            </Field>
-            <Field label={t("events.form.endTime")}>
-              <input type="time" name="endTimeOnly" style={fieldStyle} />
-            </Field>
-          </div>
-
-          <Field label={t("events.form.location")}>
-            <input
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               name="location"
               style={fieldStyle}
               placeholder={t("events.form.locationPlaceholder")}
@@ -1439,57 +1263,6 @@ function CreateEventModal({
             />
           </Field>
 
-<<<<<<< HEAD
-=======
-          <Field label={t("events.form.capacity")}>
-            <div
-              style={{
-                display: "flex",
-                gap: 6,
-                flexWrap: "wrap",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setCapacityMode("unlimited")}
-                style={pillStyle(capacityMode === "unlimited")}
-              >
-                <UiIcon name="infinity" size={14} />{" "}
-                {t("events.form.capacityUnlimited")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setCapacityMode("limited")}
-                style={pillStyle(capacityMode === "limited")}
-              >
-                <UiIcon name="users" size={14} />{" "}
-                {t("events.form.capacityLimited")}
-              </button>
-            </div>
-            {capacityMode === "limited" && (
-              <div style={{ marginTop: 8 }}>
-                <input
-                  type="number"
-                  name="maxAttendees"
-                  min={1}
-                  required
-                  style={fieldStyle}
-                  placeholder={t("events.form.maxAttendeesPlaceholder")}
-                />
-                <p
-                  style={{
-                    margin: "4px 0 0",
-                    fontSize: "0.75rem",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  {t("events.form.capacityHelp")}
-                </p>
-              </div>
-            )}
-          </Field>
-
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           <Field label={t("events.form.coverImage")}>
             <input
               ref={coverInputRef}
@@ -1577,7 +1350,6 @@ function CreateEventModal({
             </div>
           </Field>
 
-<<<<<<< HEAD
           <Field label={hostLabel}>
             <select
               value={target}
@@ -1614,75 +1386,6 @@ function CreateEventModal({
               name="courseId"
               value={target.startsWith("course:") ? target.split(":")[1] : ""}
             />
-=======
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: "0.85rem",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={enableWaitlist}
-              onChange={(e) => setEnableWaitlist(e.target.checked)}
-            />
-            {t("events.form.enableWaitlist")}
-          </label>
-
-          {myCommunities.length > 0 && (
-            <Field label={t("events.form.community")}>
-              <select name="communityId" style={fieldStyle} defaultValue="">
-                <option value="">{t("events.form.noCommunity")}</option>
-                {myCommunities.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          )}
-
-          <Field label={t("events.form.reminders")}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {REMINDER_OPTIONS.map((opt) => {
-                const active = reminders.has(opt.value);
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => {
-                      const n = new Set(reminders);
-                      if (active) n.delete(opt.value);
-                      else n.add(opt.value);
-                      setReminders(n);
-                    }}
-                    style={{
-                      borderRadius: 999,
-                      padding: "6px 12px",
-                      border: `1px solid ${
-                        active
-                          ? "var(--french-blue, #2563eb)"
-                          : "var(--border-color)"
-                      }`,
-                      background: active
-                        ? "var(--french-blue-soft, rgba(37,99,235,0.1))"
-                        : "var(--bg-main)",
-                      color: active
-                        ? "var(--french-blue, #2563eb)"
-                        : "var(--text-primary)",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      fontSize: "0.8rem",
-                    }}
-                  >
-                    <UiIcon name="bell" size={13} /> {t(opt.labelKey)}
-                  </button>
-                );
-              })}
-            </div>
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </Field>
 
           <div

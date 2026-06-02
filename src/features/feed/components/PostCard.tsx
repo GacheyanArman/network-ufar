@@ -2,16 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-<<<<<<< HEAD
 import { Fragment, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import MediaViewer from "@/features/photos/components/MediaViewer";
 import CommentSection from "@/features/feed/components/CommentSection";
-import ShareToChatModal from "@/features/feed/components/ShareToChatModal";
-=======
-import { Fragment, useOptimistic, useState, useTransition } from "react";
-import MediaViewer from "@/features/photos/components/MediaViewer";
-import CommentSection from "@/features/feed/components/CommentSection";
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 import { deletePost } from "@/features/feed/server/actions";
 import { toggleLike, toggleSavePost } from "@/features/feed/server/interactions";
 
@@ -78,33 +71,21 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-<<<<<<< HEAD
-  const [isShareOpen, setIsShareOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [showComments, setShowComments] = useState(false);
-  const menuWrapRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close the "..." menu when clicking anywhere outside of it.
+  // Close menu on outside click
   useEffect(() => {
     if (!isMenuOpen) return;
-
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        menuWrapRef.current &&
-        !menuWrapRef.current.contains(event.target as Node)
-      ) {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setIsMenuOpen(false);
       }
     }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, [isMenuOpen]);
-=======
-  const [isPending, startTransition] = useTransition();
-  const [showComments, setShowComments] = useState(false);
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
   const [state, updateOptimistic] = useOptimistic(
     {
@@ -240,11 +221,6 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
     setShowComments((prev) => !prev);
   }
 
-<<<<<<< HEAD
-  function handleShare() {
-    setIsMenuOpen(false);
-    setIsShareOpen(true);
-=======
   async function handleShare() {
     const url =
       typeof window !== "undefined"
@@ -266,17 +242,12 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
     } catch {
       // user cancelled share
     }
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   }
 
   async function handleCopyLink() {
     const url =
       typeof window !== "undefined"
-<<<<<<< HEAD
-        ? `${window.location.origin}/feed/${post.id}`
-=======
         ? `${window.location.origin}/profile/${post.authorId}`
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         : "";
 
     try {
@@ -293,7 +264,10 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
     <>
       <style>{postCardStyles}</style>
 
-      <article className={`uf-post ${post.isOptimistic ? "is-sending" : ""}`}>
+      <article 
+        className={`uf-post ${post.isOptimistic ? "is-sending" : ""}`}
+        style={{ zIndex: isMenuOpen ? 50 : 1 }}
+      >
         <div className="uf-post-avatar-col">
           <Link href={profileHref} className="uf-post-avatar-link">
             {post.authorImage ? (
@@ -336,11 +310,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
               ) : null}
             </div>
 
-<<<<<<< HEAD
-            <div className="uf-post-menu-wrap" ref={menuWrapRef}>
-=======
-            <div className="uf-post-menu-wrap">
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
+            <div className="uf-post-menu-wrap" ref={menuRef}>
               <button
                 type="button"
                 className="uf-post-menu-btn"
@@ -350,7 +320,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
                 <Icon name="more" />
               </button>
 
-              {isMenuOpen ? (
+              {isMenuOpen && (
                 <div className="uf-post-menu">
                   <button
                     type="button"
@@ -405,7 +375,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
                     </button>
                   )}
                 </div>
-              ) : null}
+              )}
             </div>
           </header>
 
@@ -426,11 +396,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
                   padding: 0,
                   margin: "12px 0 0",
                   background: "transparent",
-<<<<<<< HEAD
                   cursor: "pointer",
-=======
-                  cursor: "zoom-in",
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
                   borderRadius: "18px",
                   overflow: "hidden",
                 }}
@@ -476,7 +442,6 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
           )}
 
           <footer className="uf-post-actions">
-<<<<<<< HEAD
             <div className="uf-post-actions-left">
               <ActionButton
                 type="like"
@@ -515,59 +480,6 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
                 hideValue
               />
             </div>
-=======
-            <ActionButton
-              type="like"
-              label="Like"
-              icon="heart"
-              value={state.likesCount}
-              active={state.likedByMe}
-              onClick={handleLike}
-              disabled={isPending || post.isOptimistic}
-            />
-
-            <ActionButton
-              type="reply"
-              label="Comments"
-              icon="reply"
-              value={Number(post.commentsCount || 0)}
-              onClick={handleToggleComments}
-            />
-
-            <ActionButton
-              type="repost"
-              label="Repost"
-              icon="repost"
-              value={state.repostsCount}
-              active={state.repostedByMe}
-              onClick={handleRepost}
-            />
-
-            <ActionButton
-              type="bookmark"
-              label="Bookmark"
-              icon="bookmark"
-              active={state.savedByMe}
-              onClick={handleSave}
-              hideValue
-            />
-
-            <ActionButton
-              type="share"
-              label="Share"
-              icon="share"
-              onClick={handleShare}
-              hideValue
-            />
-
-            <ActionButton
-              type="views"
-              label="Views"
-              icon="views"
-              value={Number(post.viewsCount || 0)}
-              style={{ marginLeft: "auto" }}
-            />
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </footer>
 
           {showComments && (
@@ -584,21 +496,6 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
         {copied ? <div className="uf-post-toast">Link copied</div> : null}
       </article>
 
-<<<<<<< HEAD
-      {isShareOpen && (
-        <ShareToChatModal
-          url={
-            typeof window !== "undefined"
-              ? `${window.location.origin}/feed/${post.id}`
-              : `/feed/${post.id}`
-          }
-          text={post.content}
-          onCloseAction={() => setIsShareOpen(false)}
-        />
-      )}
-
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       {isViewerOpen && post.imageUrl && (
         <MediaViewer
           src={post.imageUrl}
@@ -844,11 +741,7 @@ function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
       ? "M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5z"
       : "M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5zM6.5 4c-.276 0-.5.22-.5.5v14.56l6-4.29 6 4.29V4.5c0-.28-.224-.5-.5-.5h-11z",
     share:
-<<<<<<< HEAD
-      "M2.01 21L23 12 2.01 3 2 10l15 2-15 2z",
-=======
-      "M12 2.59l5.7 5.7-1.41 1.42L13 6.41V16h-2V6.41l-3.3 3.3-1.41-1.42L12 2.59zM21 15l-.02 3.51c0 1.38-1.12 2.49-2.5 2.49H5.5C4.11 21 3 19.88 3 18.5V15h2v3.5c0 .28.22.5.5.5h12.98c.28 0 .5-.22.5-.5L19 15h2z",
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
+      "M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z",
     more:
       "M3 12c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm7 0c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm7 0c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z",
     trash:
@@ -876,40 +769,17 @@ const postCardStyles = `
   gap: 12px;
   padding: 16px 18px;
   background: #ffffff;
-<<<<<<< HEAD
   border: 1px solid #e6edf5;
   border-radius: 16px;
-=======
-  border-bottom: 1px solid #e6edf5;
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
+  margin-bottom: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   color: #0f172a;
   text-align: left;
-  transition: background-color 160ms ease;
-}
-
-<<<<<<< HEAD
-/* Space between consecutive feed posts so cards don't touch */
-.feed-post-wrapper + .feed-post-wrapper {
-  margin-top: 14px;
+  transition: box-shadow 160ms ease;
 }
 
 .uf-post:hover {
-  background: #ffffff;
-=======
-.uf-post:first-child {
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-}
-
-.uf-post:last-child {
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 16px;
-  border-bottom: none;
-}
-
-.uf-post:hover {
-  background: #f8fafc;
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .uf-post.is-sending {
@@ -917,18 +787,6 @@ const postCardStyles = `
   pointer-events: none;
 }
 
-<<<<<<< HEAD
-/* Disable the global button shimmer/glow inside feed posts */
-.uf-post button::after,
-.uf-post-action::after,
-.uf-post-menu-btn::after {
-  content: none !important;
-  display: none !important;
-  background: none !important;
-}
-
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 .uf-post-avatar-col {
   min-width: 0;
 }
@@ -1056,10 +914,6 @@ const postCardStyles = `
 
 .uf-post-menu form {
   margin: 0;
-<<<<<<< HEAD
-  display: contents;
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 }
 
 .uf-post-menu-item {
@@ -1159,29 +1013,23 @@ const postCardStyles = `
 
 .uf-post-actions {
   margin-top: 12px;
-<<<<<<< HEAD
   display: flex;
   align-items: center;
   justify-content: space-between;
-=======
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  align-items: center;
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
-  gap: 2px;
-  max-width: 560px;
 }
 
-<<<<<<< HEAD
-.uf-post-actions-left,
+.uf-post-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .uf-post-actions-right {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 .uf-post-action {
   min-width: 0;
   height: 36px;
@@ -1287,14 +1135,6 @@ const postCardStyles = `
   .uf-post-avatar {
     width: 42px;
     height: 42px;
-  }
-
-  .uf-post-actions {
-    grid-template-columns: repeat(6, minmax(32px, 1fr));
-  }
-
-  .uf-post-action {
-    justify-content: center;
   }
 
   .uf-post-action-icon {

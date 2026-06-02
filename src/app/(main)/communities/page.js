@@ -125,7 +125,6 @@ export default async function CommunitiesPage({ searchParams }) {
     .slice(0, 6)
     .map((x) => x.community);
 
-<<<<<<< HEAD
   function getGroupType(c) {
     const firstInterest = (c.interests || "").split(",")[0]?.trim();
     if (["faculty_group", "year_group", "club", "student_council", "interest_group"].includes(firstInterest)) {
@@ -166,30 +165,6 @@ export default async function CommunitiesPage({ searchParams }) {
     emptyTitle = "No clubs or councils";
     emptyDesc = "No student clubs or council groups have been created yet.";
   }
-=======
-  const recommendedIds = new Set(recommended.map((c) => c.id));
-
-  // Browse sections
-  const facultyCommunities = others.filter(
-    (c) =>
-      (c.facultyTag && !recommendedIds.has(c.id)) ||
-      ["Law", "Finance", "Marketing", "Management", "Informatics"].some((f) =>
-        c.name.includes(f)
-      )
-  );
-
-  const yearCommunities = others.filter(
-    (c) =>
-      c.yearTag ||
-      ["1st Year", "2nd Year", "3rd Year", "4th Year"].some((y) =>
-        c.name.includes(y)
-      )
-  );
-
-  const clubs = others.filter((c) =>
-    c.name.toLowerCase().includes("club")
-  );
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -204,11 +179,7 @@ export default async function CommunitiesPage({ searchParams }) {
             color: "var(--text-primary)",
           }}
         >
-<<<<<<< HEAD
           Groups
-=======
-          Communities
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         </h1>
         <p
           style={{
@@ -217,11 +188,7 @@ export default async function CommunitiesPage({ searchParams }) {
             fontSize: 15,
           }}
         >
-<<<<<<< HEAD
           Find and join faculty groups, year groups, clubs, and other student communities.
-=======
-          Find your faculty, year, clubs, study groups and student discussions.
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         </p>
 
         <form
@@ -249,11 +216,7 @@ export default async function CommunitiesPage({ searchParams }) {
               type="search"
               name="q"
               defaultValue={rawQuery}
-<<<<<<< HEAD
               placeholder="Search groups, faculty, clubs..."
-=======
-              placeholder="Search communities, faculty, topics..."
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               style={{
                 width: "100%",
                 height: 44,
@@ -265,10 +228,7 @@ export default async function CommunitiesPage({ searchParams }) {
               }}
             />
           </div>
-<<<<<<< HEAD
           {tab && <input type="hidden" name="tab" value={tab} />}
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           <button type="submit" className="btn btn-secondary">
             Search
           </button>
@@ -278,11 +238,7 @@ export default async function CommunitiesPage({ searchParams }) {
             style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
           >
             <UiIcon name="plus" size={18} />
-<<<<<<< HEAD
             Create Group
-=======
-            Create
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </Link>
           <Link
             href="/study-groups"
@@ -295,7 +251,6 @@ export default async function CommunitiesPage({ searchParams }) {
         </form>
       </div>
 
-<<<<<<< HEAD
       {/* Tabs */}
       {!query && (
         <div
@@ -339,39 +294,18 @@ export default async function CommunitiesPage({ searchParams }) {
         </div>
       )}
 
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
       {/* Search results override */}
       {query ? (
         <SectionGrid
           title={`Search: "${query}"`}
-<<<<<<< HEAD
           emptyText="No groups matched your search."
-=======
-          emptyText="No communities matched your search."
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           communities={allCommunities}
           joinStateFor={joinStateFor}
         />
       ) : (
         <>
-<<<<<<< HEAD
           {/* Discover recommendations block */}
           {tab === "discover" && recommended.length > 0 && (
-=======
-          {/* My Communities */}
-          {myCommunities.length > 0 && (
-            <SectionGrid
-              title="My Communities"
-              count={myCommunities.length}
-              communities={myCommunities}
-              joinStateFor={joinStateFor}
-            />
-          )}
-
-          {/* Recommendations */}
-          {recommended.length > 0 && (
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             <SectionGrid
               title="Recommended for you"
               subtitle="Based on your faculty, year and interests"
@@ -380,7 +314,6 @@ export default async function CommunitiesPage({ searchParams }) {
             />
           )}
 
-<<<<<<< HEAD
           {/* Tab contents list */}
           <SectionGrid
             title={
@@ -397,53 +330,6 @@ export default async function CommunitiesPage({ searchParams }) {
             communities={displayedCommunities}
             joinStateFor={joinStateFor}
           />
-=======
-          {/* Faculty Communities */}
-          {facultyCommunities.length > 0 && (
-            <CategorySection
-              title="Faculty Communities"
-              icon="book"
-              communities={facultyCommunities.slice(0, 6)}
-              joinStateFor={joinStateFor}
-            />
-          )}
-
-          {/* Year Communities */}
-          {yearCommunities.length > 0 && (
-            <CategorySection
-              title="Year Communities"
-              icon="users"
-              communities={yearCommunities.slice(0, 6)}
-              joinStateFor={joinStateFor}
-            />
-          )}
-
-          {/* Clubs */}
-          {clubs.length > 0 && (
-            <CategorySection
-              title="Clubs"
-              icon="group"
-              communities={clubs.slice(0, 6)}
-              joinStateFor={joinStateFor}
-            />
-          )}
-
-          {/* Empty state */}
-          {allCommunities.length === 0 && (
-            <div className="card uf-empty-state">
-              <div className="uf-empty-icon">
-                <UiIcon name="group" size={32} />
-              </div>
-              <h3 className="uf-empty-title">No communities yet</h3>
-              <p className="uf-empty-description">
-                Be the first to create a community for UFAR students.
-              </p>
-              <Link href="/communities/create" className="btn btn-primary">
-                Create Community
-              </Link>
-            </div>
-          )}
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
         </>
       )}
     </div>
@@ -459,15 +345,9 @@ function SectionGrid({
   joinStateFor,
 }) {
   return (
-<<<<<<< HEAD
     <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div>
         <h2 className="uf-card-section-title" style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
-=======
-    <section>
-      <div style={{ marginBottom: 12 }}>
-        <h2 className="uf-card-section-title">
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           {title}
           {typeof count === "number" ? (
             <span className="uf-community-pill">{count}</span>
@@ -476,11 +356,7 @@ function SectionGrid({
         {subtitle ? (
           <p
             style={{
-<<<<<<< HEAD
               margin: "4px 0 0 0",
-=======
-              margin: 0,
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
               color: "var(--text-secondary)",
               fontSize: 14,
             }}
@@ -491,13 +367,8 @@ function SectionGrid({
       </div>
 
       {communities.length === 0 ? (
-<<<<<<< HEAD
         <div className="card uf-empty-state" style={{ padding: "40px 20px", textAlign: "center" }}>
           <p className="uf-empty-description" style={{ color: "var(--text-secondary)", margin: 0 }}>
-=======
-        <div className="card uf-empty-state">
-          <p className="uf-empty-description">
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
             {emptyText || "Nothing here yet."}
           </p>
         </div>
@@ -521,56 +392,3 @@ function SectionGrid({
     </section>
   );
 }
-<<<<<<< HEAD
-=======
-
-function CategorySection({ title, icon, communities, joinStateFor }) {
-  return (
-    <section>
-      <div
-        style={{
-          padding: "14px 18px",
-          background:
-            "linear-gradient(135deg, var(--french-blue) 0%, var(--french-navy) 100%)",
-          borderRadius: "16px 16px 0 0",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-        }}
-      >
-        <UiIcon name={icon} size={18} className="" />
-        <h3
-          style={{
-            margin: 0,
-            color: "var(--bg-card)",
-            fontSize: 16,
-            fontWeight: 900,
-          }}
-        >
-          {title}
-        </h3>
-      </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-          gap: 16,
-          padding: 20,
-          background: "var(--bg-card)",
-          border: "1px solid var(--border-color)",
-          borderTop: "none",
-          borderRadius: "0 0 16px 16px",
-        }}
-      >
-        {communities.map((c) => (
-          <CommunityCard
-            key={c.id}
-            community={c}
-            joinState={joinStateFor(c)}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6

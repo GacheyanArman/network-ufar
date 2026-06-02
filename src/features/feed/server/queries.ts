@@ -1,4 +1,6 @@
 import { and, desc, eq, inArray, notInArray, or, gte, lte } from "drizzle-orm";
+import { cache } from "react";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/shared/db/db";
 import {
   blockedUsers,
@@ -356,44 +358,43 @@ function applyInsertionRules(items: UnifiedFeedItem[]): UnifiedFeedItem[] {
   return result.slice(0, 80);
 }
 
-export async function getUnifiedFeed(
-  userId: string,
-  limit = 80
-): Promise<UnifiedFeedResult> {
-  const [currentUser] = await db
-    .select({
-      id: users.id,
-      fullName: users.fullName,
-      faculty: users.faculty,
-      image: users.image,
-      avatarUrl: users.avatarUrl,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
+export const getUnifiedFeed = cache((userId: string, limit = 80) => {
+  return unstable_cache(
+    async (): Promise<UnifiedFeedResult> => {
+      // Batch 1: user info + social graph in a SINGLE parallel round-trip
+      const [userRows, friendRows, followRows, communityRows, blockedRows] = await Promise.all([
+        db.select({
+          id: users.id,
+          fullName: users.fullName,
+          faculty: users.faculty,
+          image: users.image,
+          avatarUrl: users.avatarUrl,
+        })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1),
+        db.select({ requesterId: friendships.requesterId, receiverId: friendships.receiverId })
+          .from(friendships)
+          .where(and(eq(friendships.status, "accepted"), or(eq(friendships.requesterId, userId), eq(friendships.receiverId, userId)))),
+        db.select({ followingId: userFollows.followingId }).from(userFollows).where(eq(userFollows.followerId, userId)),
+        db.select({ communityId: communityMembers.communityId }).from(communityMembers).where(eq(communityMembers.userId, userId)),
+        db.select({ blockedId: blockedUsers.blockedId, blockerId: blockedUsers.blockerId })
+          .from(blockedUsers)
+          .where(or(eq(blockedUsers.blockerId, userId), eq(blockedUsers.blockedId, userId))),
+      ]);
 
-  if (!currentUser) {
-    return { currentUser: null, items: [] };
-  }
+      const currentUser = userRows[0];
+      if (!currentUser) {
+        return { currentUser: null, items: [] };
+      }
 
-  const [friendRows, followRows, communityRows, blockedRows] = await Promise.all([
-    db.select({ requesterId: friendships.requesterId, receiverId: friendships.receiverId })
-      .from(friendships)
-      .where(and(eq(friendships.status, "accepted"), or(eq(friendships.requesterId, userId), eq(friendships.receiverId, userId)))),
-    db.select({ followingId: userFollows.followingId }).from(userFollows).where(eq(userFollows.followerId, userId)),
-    db.select({ communityId: communityMembers.communityId }).from(communityMembers).where(eq(communityMembers.userId, userId)),
-    db.select({ blockedId: blockedUsers.blockedId, blockerId: blockedUsers.blockerId })
-      .from(blockedUsers)
-      .where(or(eq(blockedUsers.blockerId, userId), eq(blockedUsers.blockedId, userId))),
-  ]);
-
-  const friendIds = new Set<string>(friendRows.map((r: any) => getOtherFriendId(r, userId)));
-  const followingIds = new Set<string>(followRows.map((r: any) => r.followingId));
-  const communityIds = new Set<string>(communityRows.map((r: any) => r.communityId));
-  const blockedUserIds = new Set<string>();
-  for (const r of blockedRows) {
-    blockedUserIds.add(r.blockerId === userId ? r.blockedId : r.blockerId);
-  }
+      const friendIds = new Set<string>(friendRows.map((r: any) => getOtherFriendId(r, userId)));
+      const followingIds = new Set<string>(followRows.map((r: any) => r.followingId));
+      const communityIds = new Set<string>(communityRows.map((r: any) => r.communityId));
+      const blockedUserIds = new Set<string>();
+      for (const r of blockedRows) {
+        blockedUserIds.add(r.blockerId === userId ? r.blockedId : r.blockerId);
+      }
 
   const now = new Date();
   const weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -415,13 +416,13 @@ export async function getUnifiedFeed(
       authorName: users.fullName, authorFaculty: users.faculty, authorImage: users.image,
       authorPrivacyLevel: users.privacyLevel, communityName: communities.name,
     })
-    .from(posts)
-    .innerJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(communities, eq(posts.communityId, communities.id))
-    .where(blockedUserIds.size > 0 ? notInArray(posts.authorId, Array.from(blockedUserIds)) : undefined)
-    .orderBy(desc(posts.createdAt))
-    // 200 candidates is plenty for a 30-day window with relevance ranking
-    .limit(200),
+      .from(posts)
+      .innerJoin(users, eq(posts.authorId, users.id))
+      .leftJoin(communities, eq(posts.communityId, communities.id))
+      .where(blockedUserIds.size > 0 ? notInArray(posts.authorId, Array.from(blockedUserIds)) : undefined)
+      .orderBy(desc(posts.createdAt))
+      // 60 candidates is enough for the 80-item feed cap with relevance ranking
+      .limit(60),
 
     db.select({
       id: events.id, title: events.title, description: events.description,
@@ -430,15 +431,15 @@ export async function getUnifiedFeed(
       coverImageUrl: events.coverImageUrl, coverThumbnailUrl: events.coverThumbnailUrl,
       organizerId: events.organizerId, communityId: events.communityId,
     })
-    .from(events)
-    .where(and(
-      gte(events.startTime, now),
-      lte(events.startTime, weekAhead),
-      eq(events.status, "approved"),
-      eq(events.isCancelled, false),
-    ))
-    .orderBy(events.startTime)
-    .limit(20),
+      .from(events)
+      .where(and(
+        gte(events.startTime, now),
+        lte(events.startTime, weekAhead),
+        eq(events.status, "approved"),
+        eq(events.isCancelled, false),
+      ))
+      .orderBy(events.startTime)
+      .limit(20),
 
     db.select({
       id: photos.id, imageUrl: photos.imageUrl, thumbnailUrl: photos.thumbnailUrl,
@@ -446,11 +447,11 @@ export async function getUnifiedFeed(
       ownerId: photos.ownerId, likesCount: photos.likesCount, commentsCount: photos.commentsCount,
       ownerName: users.fullName, ownerImage: users.image,
     })
-    .from(photos)
-    .innerJoin(users, eq(photos.ownerId, users.id))
-    .where(and(eq(photos.moderationStatus, "approved"), eq(photos.isPrivate, false)))
-    .orderBy(desc(photos.likesCount))
-    .limit(15),
+      .from(photos)
+      .innerJoin(users, eq(photos.ownerId, users.id))
+      .where(and(eq(photos.moderationStatus, "approved"), eq(photos.isPrivate, false)))
+      .orderBy(desc(photos.likesCount))
+      .limit(15),
 
     db.select({
       id: studyGroups.id, title: studyGroups.title, subject: studyGroups.subject,
@@ -459,10 +460,10 @@ export async function getUnifiedFeed(
       onlineLink: studyGroups.onlineLink, membersCount: studyGroups.membersCount,
       maxMembers: studyGroups.maxMembers, ownerId: studyGroups.ownerId,
     })
-    .from(studyGroups)
-    .where(eq(studyGroups.status, "active"))
-    .orderBy(desc(studyGroups.membersCount))
-    .limit(10),
+      .from(studyGroups)
+      .where(eq(studyGroups.status, "active"))
+      .orderBy(desc(studyGroups.membersCount))
+      .limit(10),
 
     // JOIN owner name directly — avoids a secondary lookup round-trip
     db.select({
@@ -474,11 +475,11 @@ export async function getUnifiedFeed(
       ownerId: studyMaterials.ownerId, createdAt: studyMaterials.createdAt,
       ownerName: users.fullName,
     })
-    .from(studyMaterials)
-    .innerJoin(users, eq(studyMaterials.ownerId, users.id))
-    .where(eq(studyMaterials.status, "approved"))
-    .orderBy(desc(studyMaterials.helpfulCount))
-    .limit(10),
+      .from(studyMaterials)
+      .innerJoin(users, eq(studyMaterials.ownerId, users.id))
+      .where(eq(studyMaterials.status, "approved"))
+      .orderBy(desc(studyMaterials.helpfulCount))
+      .limit(10),
 
     getTodayBirthdays(userId, 5),
 
@@ -490,12 +491,12 @@ export async function getUnifiedFeed(
       authorName: users.fullName, authorFaculty: users.faculty, authorImage: users.image,
       communityName: communities.name,
     })
-    .from(posts)
-    .innerJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(communities, eq(posts.communityId, communities.id))
-    .where(and(eq(posts.postType, "announcement"), eq(posts.isPinned, true)))
-    .orderBy(desc(posts.pinnedAt))
-    .limit(5),
+      .from(posts)
+      .innerJoin(users, eq(posts.authorId, users.id))
+      .leftJoin(communities, eq(posts.communityId, communities.id))
+      .where(and(eq(posts.postType, "announcement"), eq(posts.isPinned, true)))
+      .orderBy(desc(posts.pinnedAt))
+      .limit(5),
   ]);
 
   const eventOrganizerIds = upcomingEvents.map((e: any) => e.organizerId);
@@ -558,10 +559,10 @@ export async function getUnifiedFeed(
       createdAt: comments.createdAt, authorId: comments.authorId,
       authorName: users.fullName, authorImage: users.image,
     })
-    .from(comments)
-    .innerJoin(users, eq(comments.authorId, users.id))
-    .where(inArray(comments.postId, postIdsForLikes))
-    .orderBy(desc(comments.createdAt)),
+      .from(comments)
+      .innerJoin(users, eq(comments.authorId, users.id))
+      .where(inArray(comments.postId, postIdsForLikes))
+      .orderBy(desc(comments.createdAt)),
     db.select({ postId: postSaves.postId }).from(postSaves)
       .where(and(inArray(postSaves.postId, postIdsForLikes), eq(postSaves.userId, userId))),
   ]) : [[], [], []];
@@ -781,135 +782,13 @@ export async function getUnifiedFeed(
   const finalItems = applyInsertionRules(allItems);
 
   return { currentUser, items: finalItems };
-}
-<<<<<<< HEAD
-
-export type SinglePost = {
-  id: string;
-  content: string;
-  imageUrl: string | null;
-  createdAt: Date;
-  authorId: string;
-  communityId: string | null;
-  likesCount: number;
-  commentsCount: number;
-  authorName: string;
-  authorFaculty: string | null;
-  authorImage: string | null;
-  communityName: string | null;
-  likedByMe: boolean;
-  savedByMe: boolean;
-  comments: FeedComment[];
-};
-
-export async function getPostById(
-  postId: string,
-  viewerId?: string
-): Promise<{ post: SinglePost | null; currentUser: CurrentUser | null }> {
-  const [row] = await db
-    .select({
-      id: posts.id,
-      content: posts.content,
-      imageUrl: posts.imageUrl,
-      createdAt: posts.createdAt,
-      authorId: posts.authorId,
-      communityId: posts.communityId,
-      likesCount: posts.likesCount,
-      commentsCount: posts.commentsCount,
-      authorName: users.fullName,
-      authorFaculty: users.faculty,
-      authorImage: users.image,
-      communityName: communities.name,
-    })
-    .from(posts)
-    .innerJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(communities, eq(posts.communityId, communities.id))
-    .where(eq(posts.id, postId))
-    .limit(1);
-
-  let currentUser: CurrentUser | null = null;
-
-  if (viewerId) {
-    const [viewer] = await db
-      .select({
-        id: users.id,
-        fullName: users.fullName,
-        faculty: users.faculty,
-        image: users.image,
-        avatarUrl: users.avatarUrl,
-      })
-      .from(users)
-      .where(eq(users.id, viewerId))
-      .limit(1);
-    currentUser = (viewer as CurrentUser) || null;
-  }
-
-  if (!row) {
-    return { post: null, currentUser };
-  }
-
-  const postRow = row as any;
-
-  let likedByMe = false;
-  let savedByMe = false;
-
-  if (viewerId) {
-    const [likedRows, savedRows] = await Promise.all([
-      db
-        .select({ postId: postLikes.postId })
-        .from(postLikes)
-        .where(
-          and(eq(postLikes.postId, postId), eq(postLikes.userId, viewerId))
-        )
-        .limit(1),
-      db
-        .select({ postId: postSaves.postId })
-        .from(postSaves)
-        .where(
-          and(eq(postSaves.postId, postId), eq(postSaves.userId, viewerId))
-        )
-        .limit(1),
-    ]);
-
-    likedByMe = (likedRows as any[]).length > 0;
-    savedByMe = (savedRows as any[]).length > 0;
-  }
-
-  const commentRows = await db
-    .select({
-      id: comments.id,
-      postId: comments.postId,
-      content: comments.content,
-      createdAt: comments.createdAt,
-      authorId: comments.authorId,
-      authorName: users.fullName,
-      authorImage: users.image,
-    })
-    .from(comments)
-    .innerJoin(users, eq(comments.authorId, users.id))
-    .where(eq(comments.postId, postId))
-    .orderBy(desc(comments.createdAt));
-
-  return {
-    post: {
-      id: postRow.id,
-      content: postRow.content,
-      imageUrl: postRow.imageUrl,
-      createdAt: postRow.createdAt,
-      authorId: postRow.authorId,
-      communityId: postRow.communityId,
-      likesCount: postRow.likesCount,
-      commentsCount: postRow.commentsCount,
-      authorName: postRow.authorName || "User",
-      authorFaculty: postRow.authorFaculty,
-      authorImage: postRow.authorImage,
-      communityName: postRow.communityName,
-      likedByMe,
-      savedByMe,
-      comments: commentRows as FeedComment[],
     },
-    currentUser,
-  };
+    [`unified-feed-${userId}-${limit}`],
+    { revalidate: 120, tags: [`feed-${userId}`, "feed"] },
+  )();
+});
+
+/** Invalidate the feed cache for a user (call after post/like/comment/follow). */
+export function invalidateFeedCache(userId: string) {
+  revalidateTag(`feed-${userId}`, {});
 }
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6

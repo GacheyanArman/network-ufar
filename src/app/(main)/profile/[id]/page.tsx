@@ -692,25 +692,17 @@ const profileStyles = `
   margin-bottom: 18px;
 }
 
-.uf-profile-card .uf-inline-icon {
-  width: 18px;
-  flex: 0 0 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .uf-profile-badge {
-  min-height: 34px;
+  min-height: 36px;
   padding: 0 12px;
   border-radius: 10px;
   background: #f4f7fb;
   color: #0f172a;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   border: 1px solid #e3ebf5;
 }
 
@@ -719,9 +711,9 @@ const profileStyles = `
   border-color: transparent;
   color: var(--text-secondary);
   font-weight: 700;
-  font-size: 13px;
-  min-height: 34px;
-  padding: 0 12px;
+  font-size: 12px;
+  min-height: 28px;
+  padding: 0 4px;
 }
 
 .uf-profile-bio {
@@ -781,10 +773,9 @@ const profileStyles = `
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 12px;
   color: #475569;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .uf-profile-info-row span {

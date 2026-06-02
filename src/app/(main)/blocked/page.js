@@ -6,13 +6,6 @@ import { blockedUsers, users } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
 import { eq } from "drizzle-orm";
 import BlockButton from "@/features/profile/components/BlockButton";
-<<<<<<< HEAD
-import UiIcon from "@/shared/ui/UiIcon";
-import BackButton from "@/shared/ui/BackButton";
-
-const iconCenterStyle = { display: "flex", alignItems: "center", justifyContent: "center" };
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
 
 export default async function BlockedUsersPage() {
   const session = await getSession();
@@ -36,11 +29,6 @@ export default async function BlockedUsersPage() {
     .where(eq(blockedUsers.blockerId, session.userId));
 
   return (
-<<<<<<< HEAD
-    <>
-    <BackButton fallback="/settings" />
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
     <div className="card" style={{ maxWidth: "800px", margin: "0 auto" }}>
       <div style={{ padding: "20px", borderBottom: "1px solid var(--border-color)" }}>
         <h1 style={{ margin: "0 0 8px", fontSize: "24px", fontWeight: 900 }}>
@@ -54,13 +42,7 @@ export default async function BlockedUsersPage() {
       {blocked.length === 0 ? (
         <div style={{ padding: "60px 20px", textAlign: "center" }}>
           <div style={{ fontSize: "48px", marginBottom: "16px", opacity: 0.3 }}>
-<<<<<<< HEAD
-            <span style={iconCenterStyle}>
-              <UiIcon name="shield" size={40} />
-            </span>
-=======
             🚫
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
           </div>
           <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 800 }}>
             No blocked users
@@ -190,9 +172,5 @@ export default async function BlockedUsersPage() {
         </div>
       )}
     </div>
-<<<<<<< HEAD
-    </>
-=======
->>>>>>> bade7c6844d8ae0ad73fb233bf09d978b200e3a6
   );
 }

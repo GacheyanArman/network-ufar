@@ -46,12 +46,16 @@ export default function ChatHeaderMenu({
   }, [open]);
 
   const handleBlock = () => {
-    if (!confirm("Block this user? You will no longer see their messages.")) return;
+    if (!confirm("Block this student? Messaging will be paused between you.")) return;
     startTransition(async () => {
       try {
         const fd = new FormData();
-        fd.set("userId", targetId);
-        await blockUser(fd);
+        fd.set("blockedId", targetId);
+        const result = await blockUser(fd);
+        if (result?.error) {
+          alert(result.error);
+          return;
+        }
         window.location.href = "/messages";
       } catch (err) {
         alert((err as Error).message || "Failed to block user");
@@ -60,7 +64,7 @@ export default function ChatHeaderMenu({
   };
 
   const handleLeave = () => {
-    if (!confirm("Leave this group?")) return;
+    if (!confirm("Leave this course chat?")) return;
     startTransition(async () => {
       const fd = new FormData();
       fd.set("groupChatId", targetId);
@@ -74,7 +78,7 @@ export default function ChatHeaderMenu({
   };
 
   const handleDelete = () => {
-    if (!confirm("Delete this group for everyone? This cannot be undone.")) return;
+    if (!confirm("Delete this course chat for everyone? This cannot be undone.")) return;
     startTransition(async () => {
       const fd = new FormData();
       fd.set("groupChatId", targetId);
@@ -127,7 +131,7 @@ export default function ChatHeaderMenu({
                 }}
                 role="menuitem"
               >
-                <UiIcon name="flag" size={14} /> Block user
+                <UiIcon name="flag" size={14} /> Block student
               </button>
             </>
           )}
@@ -144,7 +148,7 @@ export default function ChatHeaderMenu({
                   }}
                   role="menuitem"
                 >
-                  <UiIcon name="users" size={14} /> Members
+                  <UiIcon name="users" size={14} /> Classmates
                 </button>
               )}
               <button
@@ -156,7 +160,7 @@ export default function ChatHeaderMenu({
                 }}
                 role="menuitem"
               >
-                <UiIcon name="x" size={14} /> Leave group
+                <UiIcon name="x" size={14} /> Leave course chat
               </button>
               {isGroupAdmin && (
                 <button
@@ -168,7 +172,7 @@ export default function ChatHeaderMenu({
                   }}
                   role="menuitem"
                 >
-                  <UiIcon name="trash" size={14} /> Delete group
+                  <UiIcon name="trash" size={14} /> Delete course chat
                 </button>
               )}
             </>

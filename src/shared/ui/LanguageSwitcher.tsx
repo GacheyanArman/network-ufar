@@ -6,10 +6,10 @@ import { Language } from "@/shared/i18n/i18n";
 export default function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage();
 
-  const languages: { code: Language; flag: string }[] = [
-    { code: "en", flag: "🇬🇧" },
-    { code: "fr", flag: "🇫🇷" },
-    { code: "hy", flag: "🇦🇲" },
+  const languages: { code: Language; country: string; title: string }[] = [
+    { code: "en", country: "gb", title: "English" },
+    { code: "fr", country: "fr", title: "Français" },
+    { code: "hy", country: "am", title: "Հայերեն" },
   ];
 
   return (
@@ -20,15 +20,15 @@ export default function LanguageSwitcher() {
           type="button"
           onClick={() => setLanguage(lang.code)}
           className={`lang-flag-btn${language === lang.code ? " active" : ""}`}
-          title={
-            lang.code === "en"
-              ? "English"
-              : lang.code === "fr"
-                ? "Français"
-                : "Հայերեն"
-          }
+          title={lang.title}
         >
-          {lang.flag}
+          <img 
+            src={`https://flagcdn.com/w20/${lang.country}.png`} 
+            srcSet={`https://flagcdn.com/w40/${lang.country}.png 2x`}
+            width="20" 
+            alt={lang.title} 
+            style={{ borderRadius: "2px", display: "block" }}
+          />
         </button>
       ))}
 

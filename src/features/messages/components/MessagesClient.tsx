@@ -45,6 +45,7 @@ interface MessagesClientProps {
   selectedGroupId?: string;
   presenceLastSeenAt?: string | null;
   isGroupAdmin?: boolean;
+  isDirectChatBlocked?: boolean;
 }
 
 export default function MessagesClient({
@@ -54,6 +55,7 @@ export default function MessagesClient({
   selectedGroupId = "",
   presenceLastSeenAt,
   isGroupAdmin = false,
+  isDirectChatBlocked = false,
 }: MessagesClientProps) {
   const [messages, setMessages] = useState<MessageType[]>(
     initialHistory.map(normalizeMessage)
@@ -277,6 +279,7 @@ export default function MessagesClient({
 
   const submitMessage = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isDirectChatBlocked) return;
     if (!text.trim() && !attachment) return;
     stopTyping();
 
@@ -349,7 +352,7 @@ export default function MessagesClient({
   };
 
   const onDelete = async (m: MessageType, forEveryone: boolean) => {
-    if (!confirm(forEveryone ? "Delete for everyone?" : "Delete this message?")) return;
+    if (!confirm(forEveryone ? "Delete for everyone?" : "Hide this message from your view?")) return;
     const before = messages;
     setMessages((prev) =>
       forEveryone
@@ -395,24 +398,36 @@ export default function MessagesClient({
   // Empty state.
   if (messages.length === 0) {
     return (
-      <div className="tg-empty-history">
+      <div className="tg-empty-history tg-empty-history-chat">
         <div className="tg-empty-icon">
           <UiIcon name="message" size={48} />
         </div>
-        <h3>Start the conversation</h3>
-        <p>No messages yet — say hi!</p>
-        <ChatInput
-          text={text}
-          setText={setText}
-          attachment={attachment}
-          setAttachment={setAttachment}
-          fileRef={fileRef}
-          onPickFile={onPickFile}
-          onSubmit={submitMessage}
-          onType={onType}
-          stopTyping={stopTyping}
-          inline
-        />
+        <h3>{selectedGroupId ? "Start the course chat" : "Start the conversation"}</h3>
+        <p>
+          {selectedGroupId
+            ? "Ask a question, share notes, or coordinate with classmates."
+            : "No messages yet — send a quick hello or ask about class."}
+        </p>
+        {isDirectChatBlocked ? (
+          <div className="tg-blocked-note">
+            <UiIcon name="flag" size={16} />
+            Messaging is paused for this student.
+          </div>
+        ) : (
+          <ChatInput
+            text={text}
+            setText={setText}
+            attachment={attachment}
+            setAttachment={setAttachment}
+            fileRef={fileRef}
+            onPickFile={onPickFile}
+            onSubmit={submitMessage}
+            onType={onType}
+            stopTyping={stopTyping}
+            disabled={isDirectChatBlocked}
+            inline
+          />
+        )}
       </div>
     );
   }
@@ -420,6 +435,13 @@ export default function MessagesClient({
   // Render --------------------------------------------------------------
   return (
     <>
+      {isDirectChatBlocked && (
+        <div className="tg-blocked-banner" role="status">
+          <UiIcon name="flag" size={16} />
+          <span>Messaging is paused for this student. You can still read your conversation history.</span>
+        </div>
+      )}
+
       {/* Search bar */}
       <div className="tg-chat-search-bar">
         <div className="tg-chat-search-wrapper">
@@ -427,7 +449,7 @@ export default function MessagesClient({
           <input
             type="text"
             className="tg-chat-search-input"
-            placeholder="Search in this chat…"
+            placeholder={selectedGroupId ? "Search notes, questions, files…" : "Search this chat…"}
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -474,7 +496,7 @@ export default function MessagesClient({
             className="tg-chat-search-members"
             onClick={() => setShowMembers((v) => !v)}
           >
-            <UiIcon name="users" size={14} /> Members
+            <UiIcon name="users" size={14} /> Classmates
           </button>
         )}
 
@@ -490,7 +512,7 @@ export default function MessagesClient({
               ? "Online"
               : otherLastSeen && isClient
               ? `Last seen ${formatLastSeen(otherLastSeen)}`
-              : "Offline"}
+              : "Last seen recently"}
           </div>
         )}
       </div>
@@ -501,7 +523,7 @@ export default function MessagesClient({
         onScroll={handleScroll}
       >
         {loadingMore && (
-          <div className="tg-loading-more">Loading older messages…</div>
+          <div className="tg-loading-more">Loading earlier messages…</div>
         )}
 
         <div className="tg-messages-list">
@@ -574,6 +596,7 @@ export default function MessagesClient({
         onSubmit={submitMessage}
         onType={onType}
         stopTyping={stopTyping}
+        disabled={isDirectChatBlocked}
       />
 
       {selectedGroupId && showMembers && (
@@ -624,7 +647,7 @@ function MessageBubble({
   const isPending = m.id.startsWith("tmp_");
   const tombstone = m.deletedForEveryone;
 
-  // Click-outside + Escape to close the menu.
+  // Click-outside, Escape, or scroll to close the menu.
   useEffect(() => {
     if (!menuOpen) return;
     const onClick = (e: MouseEvent) => {
@@ -634,11 +657,16 @@ function MessageBubble({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMenuOpen(false);
     };
+    const onScroll = () => setMenuOpen(false);
     document.addEventListener("mousedown", onClick);
     document.addEventListener("keydown", onKey);
+    document.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onScroll);
     return () => {
       document.removeEventListener("mousedown", onClick);
       document.removeEventListener("keydown", onKey);
+      document.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll);
     };
   }, [menuOpen]);
 
@@ -672,6 +700,11 @@ function MessageBubble({
         </div>
       ) : (
         <>
+          {m.content && (
+            <p className="tg-message-text">
+              {linkifyText(m.content, searchQuery)}
+            </p>
+          )}
           {m.attachmentUrl && m.attachmentType === "image" && (
             <a
               href={m.attachmentUrl}
@@ -691,11 +724,6 @@ function MessageBubble({
             >
               <UiIcon name="paperclip" size={14} /> Open attachment
             </a>
-          )}
-          {m.content && (
-            <p className="tg-message-text">
-              {highlightText(m.content, searchQuery)}
-            </p>
           )}
         </>
       )}
@@ -724,7 +752,7 @@ function MessageBubble({
 
       {menuOpen && (
         <div
-          className={`tg-msg-menu ${isOwn ? "tg-msg-menu-right" : "tg-msg-menu-left"}`}
+          className={`tg-msg-menu ${isOwn ? "tg-msg-menu-own" : "tg-msg-menu-other"}`}
           onClick={(e) => e.stopPropagation()}
         >
           {isOwn && (
@@ -736,7 +764,7 @@ function MessageBubble({
                   onBeginEdit();
                 }}
               >
-                Edit
+                Edit message
               </button>
               <button
                 type="button"
@@ -756,7 +784,7 @@ function MessageBubble({
               onDelete(false);
             }}
           >
-            {isOwn ? "Hide for me" : "Hide for me"}
+            Hide from this screen
           </button>
           <button
             type="button"
@@ -765,7 +793,7 @@ function MessageBubble({
               navigator.clipboard?.writeText(m.content).catch(() => {});
             }}
           >
-            Copy
+            Copy text
           </button>
         </div>
       )}
@@ -797,6 +825,7 @@ function ChatInput({
   onType,
   stopTyping,
   inline = false,
+  disabled = false,
 }: {
   text: string;
   setText: (v: string) => void;
@@ -808,6 +837,7 @@ function ChatInput({
   onType: () => void;
   stopTyping: () => void;
   inline?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <form
@@ -834,6 +864,7 @@ function ChatInput({
         className="tg-attach-btn"
         onClick={() => fileRef.current?.click()}
         aria-label="Attach"
+        disabled={disabled}
       >
         <UiIcon name="paperclip" size={20} />
       </button>
@@ -842,6 +873,7 @@ function ChatInput({
         type="file"
         accept="image/*,application/pdf"
         onChange={onPickFile}
+        disabled={disabled}
         style={{ display: "none" }}
       />
       <input
@@ -853,11 +885,12 @@ function ChatInput({
         }}
         onBlur={() => stopTyping()}
         className="tg-message-input"
-        placeholder="Message"
+        placeholder={disabled ? "Messaging is paused" : "Message, question, or note..."}
+        disabled={disabled}
         maxLength={2000}
         autoComplete="off"
       />
-      <button type="submit" className="tg-send-btn" aria-label="Send">
+      <button type="submit" className="tg-send-btn" aria-label="Send" disabled={disabled || (!text.trim() && !attachment)}>
         <UiIcon name="send" size={20} />
       </button>
     </form>
@@ -888,9 +921,9 @@ function formatLastSeen(value: string) {
   const diff = Date.now() - d.getTime();
   const m = Math.floor(diff / 60_000);
   if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
+  if (m < 60) return `${m} min ago`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24) return `${h} h ago`;
   return d.toLocaleDateString();
 }
 
@@ -906,6 +939,24 @@ function highlightText(text: string, q: string) {
       <span key={i}>{part}</span>
     )
   );
+}
+
+function linkifyText(text: string, searchQ: string) {
+  // Split by URLs to linkify them, then highlight within non-URL parts
+  const URL_REGEX = /(https?:\/\/[^\s<>"]+)/g;
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) => {
+    if (URL_REGEX.test(part)) {
+      URL_REGEX.lastIndex = 0; // reset regex state
+      return (
+        <a key={i} href={part} target="_blank" rel="noreferrer" className="tg-msg-link">
+          {part}
+        </a>
+      );
+    }
+    URL_REGEX.lastIndex = 0;
+    return <span key={i}>{highlightText(part, searchQ)}</span>;
+  });
 }
 
 function escapeReg(s: string) {

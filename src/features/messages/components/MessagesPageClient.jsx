@@ -18,6 +18,7 @@ export default function MessagesPageClient({
   activeGroup,
   sessionUserId,
   q,
+  isGroupAdmin = false,
   children,
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -88,6 +89,19 @@ export default function MessagesPageClient({
     setIsSidebarOpen(true);
   };
 
+  const closeSidebarOnMobile = () => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      setIsSidebarOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if ((selectedUserId || selectedGroupId) && typeof window !== "undefined" && window.innerWidth <= 768) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsSidebarOpen(false);
+    }
+  }, [selectedUserId, selectedGroupId]);
+
   const isSearching = query.trim().length >= 2;
   const showResults = isSearching;
 
@@ -101,7 +115,12 @@ export default function MessagesPageClient({
       searchPlaceholder: "Search people or chats...",
       searchLabel: "Search Results",
       noMatches: "No matches found",
-      tryDifferent: "Try a different name or course chat."
+      tryDifferent: "Try a different name or course chat.",
+      searchingPeople: "Searching students…",
+      peopleSuggestions: "Student suggestions",
+      joinFromCourses: "Join course chats from the Courses tab to ask questions and share notes.",
+      selectChat: "Select a study chat",
+      selectChatHint: "Choose a classmate, course chat, or search for a student to start."
     },
     fr: {
       noMessages: "Pas encore de messages",
@@ -112,7 +131,12 @@ export default function MessagesPageClient({
       searchPlaceholder: "Rechercher des personnes ou des discussions...",
       searchLabel: "Résultats de recherche",
       noMatches: "Aucun résultat trouvé",
-      tryDifferent: "Essayez un autre nom ou discussion de cours."
+      tryDifferent: "Essayez un autre nom ou discussion de cours.",
+      searchingPeople: "Recherche d’étudiants…",
+      peopleSuggestions: "Suggestions d’étudiants",
+      joinFromCourses: "Rejoignez les discussions de cours depuis l’onglet Cours pour poser des questions et partager des notes.",
+      selectChat: "Sélectionnez une discussion d’étude",
+      selectChatHint: "Choisissez un camarade, une discussion de cours ou recherchez un étudiant."
     },
     hy: {
       noMessages: "Հաղորդագրություններ չկան",
@@ -123,7 +147,12 @@ export default function MessagesPageClient({
       searchPlaceholder: "Որոնել մարդկանց կամ զրույցներ...",
       searchLabel: "Որոնման արդյունքներ",
       noMatches: "Համընկնումներ չգտնվեցին",
-      tryDifferent: "Փորձեք այլ անուն կամ դասընթացի զրույց:"
+      tryDifferent: "Փորձեք այլ անուն կամ դասընթացի զրույց:",
+      searchingPeople: "Ուսանողների որոնում…",
+      peopleSuggestions: "Ուսանողների առաջարկներ",
+      joinFromCourses: "Դասընթացների զրույցներին միացեք Courses բաժնից՝ հարցեր տալու և նյութեր կիսելու համար։",
+      selectChat: "Ընտրեք ուսումնական զրույց",
+      selectChatHint: "Ընտրեք համակուրսեցու, դասընթացի զրույց կամ փնտրեք ուսանողի։"
     }
   };
 
@@ -230,7 +259,10 @@ export default function MessagesPageClient({
                         key={user.id}
                         href={`/messages?user=${user.id}`}
                         className={`tg-chat-item ${user.id === selectedUserId ? "active" : ""}`}
-                        onClick={() => setQuery("")}
+                        onClick={() => {
+                          setQuery("");
+                          closeSidebarOnMobile();
+                        }}
                       >
                         <div className="tg-chat-avatar">
                           {user.image ? (
@@ -273,7 +305,10 @@ export default function MessagesPageClient({
                         key={group.id}
                         href={`/messages?group=${group.id}`}
                         className={`tg-chat-item ${group.id === selectedGroupId ? "active" : ""}`}
-                        onClick={() => setQuery("")}
+                        onClick={() => {
+                          setQuery("");
+                          closeSidebarOnMobile();
+                        }}
                       >
                         <div className="tg-chat-avatar tg-group-avatar">
                           {group.avatar ? (
@@ -306,15 +341,15 @@ export default function MessagesPageClient({
                 )}
 
                 <div className="tg-section-title">
-                  {searching ? "Searching People…" : `People suggestions`}
+                  {searching ? dict.searchingPeople : dict.peopleSuggestions}
                 </div>
                 {liveResults.length === 0 && localDirectMatches.length === 0 && localGroupMatches.length === 0 && !searching ? (
                   <div className="tg-empty-state">
                     <div className="tg-empty-icon">
                       <UiIcon name="search" size={36} />
                     </div>
-                    <h3>No matches</h3>
-                    <p>Try a different name or course chat.</p>
+                    <h3>{dict.noMatches}</h3>
+                    <p>{dict.tryDifferent}</p>
                   </div>
                 ) : (
                   liveResults
@@ -324,7 +359,10 @@ export default function MessagesPageClient({
                         key={user.id}
                         href={`/messages?user=${user.id}`}
                         className="tg-chat-item"
-                        onClick={() => setQuery("")}
+                        onClick={() => {
+                          setQuery("");
+                          closeSidebarOnMobile();
+                        }}
                       >
                         <div className="tg-chat-avatar">
                           {user.image ? (
@@ -358,7 +396,7 @@ export default function MessagesPageClient({
                     </div>
                     <h3>{dict.noCourseChats}</h3>
                     <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-                      You can join group chats from the Courses tab.
+                      {dict.joinFromCourses}
                     </p>
                   </div>
                 ) : (
@@ -367,6 +405,7 @@ export default function MessagesPageClient({
                       key={group.id}
                       href={`/messages?group=${group.id}`}
                       className={`tg-chat-item ${group.id === selectedGroupId ? "active" : ""}`}
+                      onClick={closeSidebarOnMobile}
                     >
                       <div className="tg-chat-avatar tg-group-avatar">
                         {group.avatar ? (
@@ -421,6 +460,7 @@ export default function MessagesPageClient({
                       key={user.id}
                       href={`/messages?user=${user.id}`}
                       className={`tg-chat-item ${user.id === selectedUserId ? "active" : ""}`}
+                      onClick={closeSidebarOnMobile}
                     >
                       <div className="tg-chat-avatar">
                         {user.image ? (
@@ -464,8 +504,8 @@ export default function MessagesPageClient({
               <div className="tg-empty-icon">
                 <UiIcon name="message" size={64} />
               </div>
-              <h2>Select a chat to start messaging</h2>
-              <p>Choose a conversation from the list or search for someone new</p>
+              <h2>{dict.selectChat}</h2>
+              <p>{dict.selectChatHint}</p>
             </div>
           ) : (
             <>
@@ -518,7 +558,7 @@ export default function MessagesPageClient({
                     <ChatHeaderMenu kind="user" targetId={activeUser.id} />
                   )}
                   {activeGroup && (
-                    <ChatHeaderMenu kind="group" targetId={activeGroup.id} />
+                    <ChatHeaderMenu kind="group" targetId={activeGroup.id} isGroupAdmin={isGroupAdmin} />
                   )}
                 </div>
               </div>

@@ -25,7 +25,10 @@ export default async function EditProfilePage({ searchParams }) {
       year: users.year,
       bio: users.bio,
       image: users.image,
+      avatarUrl: users.avatarUrl,
       coverImage: users.coverImage,
+      studyGroup: users.studyGroup,
+      privacyLevel: users.privacyLevel,
     })
     .from(users)
     .where(eq(users.id, session.userId))

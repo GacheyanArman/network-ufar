@@ -26,9 +26,14 @@ import {
   togglePostCommentLike,
   getPostCommentsForViewer,
   deleteComment as deletePostComment,
+  toggleLike as togglePostLike,
+  toggleSavePost,
 } from "@/features/feed/server/interactions";
 import { reportContent } from "@/features/admin/server/reports";
-
+import { sendMessage } from "@/features/messages/server/actions";
+import SharePostModal from "@/features/feed/components/SharePostModal";
+import { useLanguage } from "@/contexts/LanguageContext";
+import "./MediaViewer.css";
 type MediaType = "image" | "video";
 
 type MediaComment = {
@@ -85,6 +90,7 @@ type MediaViewerProps = {
   // to the post-comment server actions instead of the photo-comment ones.
   postId?: string | null;
   currentUserId?: string | null;
+  currentUserImage?: string | null;
   onCloseAction?: () => void;
   onClose?: () => void;
   items?: MediaItem[];
@@ -138,8 +144,15 @@ function normalizeServerComment(r: any): MediaComment {
   return {
     id: r.id,
     content: r.content,
-    authorName: r.authorName,
-    authorImage: r.authorImage,
+    authorName: r.authorName ?? r.userName ?? r.name ?? null,
+    authorImage:
+      r.authorImage ??
+      r.userAvatar ??
+      r.userImage ??
+      r.authorAvatar ??
+      r.image ??
+      r.avatarUrl ??
+      null,
     createdAt: r.createdAt,
     userId: r.userId ?? r.authorId ?? null,
     parentId: r.parentId ?? null,
@@ -170,6 +183,7 @@ export default function MediaViewer({
   photoId,
   postId,
   currentUserId,
+  currentUserImage,
   onCloseAction,
   onClose,
   items = [],
@@ -180,6 +194,8 @@ export default function MediaViewer({
   onSaveAction,
   onSubmitCommentAction,
 }: MediaViewerProps) {
+  const { t } = useLanguage();
+
   // Track hydration without an effect: returns false on the server / initial
   // hydration tick, then flips to true once the client takes over.
   const mounted = useSyncExternalStore(
@@ -263,6 +279,7 @@ export default function MediaViewer({
   } | null>(null);
   const commentsEndRef = useRef<HTMLDivElement | null>(null);
   const commentInputRef = useRef<HTMLInputElement | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const showToast = useCallback((text: string, tone: "ok" | "err" = "ok") => {
     setToast({ text, tone });
@@ -317,31 +334,56 @@ export default function MediaViewer({
     };
   }, [finalPhotoId, postId]);
 
+  // --------------------------------------------------------------------------
+  // Scroll Lock Effect
   useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // Capture original state only once on mount
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      // Restore original state on unmount
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, []); // Empty dependency array ensures this only runs once!
+
+  // Keyboard Listener Effect
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
       if (event.key === "Escape") finalOnClose();
       if (event.key === "ArrowLeft") goPrev();
       if (event.key === "ArrowRight") goNext();
     };
 
     window.addEventListener("keydown", handleKeyDown);
-
     return () => {
-      document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [finalOnClose, goPrev, goNext]);
 
   const handleLike = useCallback(() => {
     if (!currentUserId) {
-      showToast("Sign in to like", "err");
+      showToast(t("photos.viewer.signInToLike"), "err");
       return;
     }
-    // No way to perform a like — neither a custom handler nor a photoId.
-    if (!onLikeAction && !finalPhotoId) {
+    // No way to perform a like — neither a custom handler nor a photoId or postId.
+    if (!onLikeAction && !finalPhotoId && !postId) {
       showToast("Liking isn't available for this item yet", "err");
       return;
     }
@@ -352,6 +394,10 @@ export default function MediaViewer({
       try {
         if (onLikeAction) {
           await onLikeAction();
+        } else if (postId) {
+          const fd = new FormData();
+          fd.append("postId", postId);
+          await togglePostLike(fd);
         } else if (finalPhotoId) {
           const fd = new FormData();
           fd.append("photoId", finalPhotoId);
@@ -360,17 +406,17 @@ export default function MediaViewer({
       } catch (err) {
         setLiked(wasLiked);
         setLikesNum((n) => n + (wasLiked ? 1 : -1));
-        showToast((err as Error)?.message || "Could not like", "err");
+        showToast((err as Error)?.message || t("photos.viewer.couldNotLike"), "err");
       }
     });
   }, [finalPhotoId, liked, showToast, currentUserId, onLikeAction]);
 
   const handleSave = useCallback(() => {
     if (!currentUserId) {
-      showToast("Sign in to save", "err");
+      showToast(t("photos.viewer.signInToSave"), "err");
       return;
     }
-    if (!onSaveAction && !finalPhotoId) {
+    if (!onSaveAction && !finalPhotoId && !postId) {
       showToast("Saving isn't available for this item yet", "err");
       return;
     }
@@ -380,15 +426,19 @@ export default function MediaViewer({
       try {
         if (onSaveAction) {
           await onSaveAction();
+        } else if (postId) {
+          const fd = new FormData();
+          fd.append("postId", postId);
+          await toggleSavePost(fd);
         } else if (finalPhotoId) {
           const fd = new FormData();
           fd.append("photoId", finalPhotoId);
           await savePhoto(fd);
         }
-        showToast(wasSaved ? "Removed from saved" : "Saved to your collection");
+        showToast(wasSaved ? t("photos.viewer.removedSaved") : t("photos.viewer.saved"));
       } catch (err) {
         setSaved(wasSaved);
-        showToast((err as Error)?.message || "Could not save", "err");
+        showToast((err as Error)?.message || t("photos.viewer.couldNotSave"), "err");
       }
     });
   }, [finalPhotoId, saved, showToast, currentUserId, onSaveAction]);
@@ -413,7 +463,7 @@ export default function MediaViewer({
     const text = commentText.trim();
     if (!text) return;
     if (!currentUserId) {
-      showToast("Sign in to comment", "err");
+      showToast(t("photos.viewer.signInToComment"), "err");
       return;
     }
     if (!onSubmitCommentAction && !finalPhotoId && !postId) {
@@ -431,7 +481,7 @@ export default function MediaViewer({
       id: tempId,
       content: text,
       authorName: "You",
-      authorImage: null,
+      authorImage: currentUserImage || null,
       createdAt: new Date().toISOString(),
       userId: currentUserId || undefined,
       parentId: threadRootId,
@@ -493,7 +543,7 @@ export default function MediaViewer({
         });
         setCommentsNum((prev) => Math.max(0, prev - 1));
         setCommentText(text);
-        showToast((err as Error)?.message || "Could not post comment", "err");
+        showToast((err as Error)?.message || t("photos.viewer.couldNotPost"), "err");
       }
     });
     setTimeout(() => {
@@ -504,6 +554,7 @@ export default function MediaViewer({
     finalPhotoId,
     postId,
     currentUserId,
+    currentUserImage,
     showToast,
     onSubmitCommentAction,
     replyingTo,
@@ -551,7 +602,7 @@ export default function MediaViewer({
           }
           await refreshCommentTree();
         } catch (err) {
-          showToast((err as Error)?.message || "Could not delete", "err");
+          showToast((err as Error)?.message || t("photos.viewer.couldNotDelete"), "err");
           await refreshCommentTree();
         }
       });
@@ -562,7 +613,7 @@ export default function MediaViewer({
   const handleToggleCommentLike = useCallback(
     (commentId: string) => {
       if (!currentUserId) {
-        showToast("Sign in to like", "err");
+        showToast(t("photos.viewer.signInToLike"), "err");
         return;
       }
 
@@ -595,7 +646,7 @@ export default function MediaViewer({
         } catch (err) {
           // Revert on failure.
           setCommentsList((prev) => prev.map(flipLike));
-          showToast((err as Error)?.message || "Could not like", "err");
+          showToast((err as Error)?.message || t("photos.viewer.couldNotLike"), "err");
         }
       });
     },
@@ -605,7 +656,7 @@ export default function MediaViewer({
   const handleStartReply = useCallback(
     (comment: MediaComment) => {
       if (!currentUserId) {
-        showToast("Sign in to reply", "err");
+        showToast(t("photos.viewer.signInToComment"), "err");
         return;
       }
       // Determine the top-level thread root: if the comment is itself a
@@ -632,7 +683,7 @@ export default function MediaViewer({
   const handleReportComment = useCallback(
     (commentId: string) => {
       if (!currentUserId) {
-        showToast("Sign in to report", "err");
+        showToast(t("photos.viewer.signInToReport"), "err");
         return;
       }
       startTransition(async () => {
@@ -646,9 +697,9 @@ export default function MediaViewer({
           } else {
             await reportPhotoComment(fd);
           }
-          showToast("Reported. Thank you!");
+          showToast(t("photos.viewer.reported"));
         } catch (err) {
-          showToast((err as Error)?.message || "Could not report", "err");
+          showToast((err as Error)?.message || t("photos.viewer.couldNotReport"), "err");
         }
       });
     },
@@ -668,31 +719,35 @@ export default function MediaViewer({
   }, []);
 
   if (!mounted) return null;
+  if (!activeSrc && !items.length) return null;
 
   const viewer = (
     <div
-      className="uf-photo-viewer-backdrop"
+      className="uf-media-viewer-overlay"
       role="dialog"
       aria-modal="true"
       aria-label={alt}
-      onClick={finalOnClose}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) finalOnClose();
+      }}
     >
-      <div
-        className="uf-photo-viewer"
-        onClick={(event) => event.stopPropagation()}
+      <button
+        type="button"
+        className="uf-media-viewer-close"
+        onClick={finalOnClose}
+        aria-label="Close"
       >
-        <button
-          type="button"
-          className="uf-photo-viewer-close"
-          onClick={finalOnClose}
-          aria-label="Close"
-        >
-          ×
-        </button>
-
-        <section className="uf-photo-viewer-image-side">
+        ×
+      </button>
+      <div
+        className="uf-media-viewer-shell"
+        role="dialog"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="uf-media-viewer-body">
+          <section className="uf-media-viewer-stage">
           {items.length > 1 && (
-            <div className="uf-photo-viewer-counter">
+            <div className="uf-media-viewer-counter">
               {currentIndex + 1} / {items.length}
             </div>
           )}
@@ -700,7 +755,7 @@ export default function MediaViewer({
           {canNavigate && (
             <button
               type="button"
-              className="uf-photo-viewer-nav uf-photo-viewer-nav-left"
+              className="uf-media-viewer-nav uf-media-viewer-nav-left"
               onClick={goPrev}
               aria-label="Previous photo"
             >
@@ -708,13 +763,14 @@ export default function MediaViewer({
             </button>
           )}
 
-          <div className="uf-photo-viewer-image-frame">
+          <div className="uf-media-viewer-stage-inner">
             {activeType === "video" ? (
               <video
+                key={activeSrc}
                 src={activeSrc}
                 controls
                 autoPlay
-                className="uf-photo-viewer-media"
+                className="uf-media-viewer-media"
               />
             ) : (
               <Image
@@ -722,7 +778,7 @@ export default function MediaViewer({
                 alt={alt}
                 fill
                 sizes="(max-width: 900px) 100vw, 70vw"
-                className="uf-photo-viewer-media"
+                className="uf-media-viewer-media"
                 priority
               />
             )}
@@ -731,7 +787,7 @@ export default function MediaViewer({
           {canNavigate && (
             <button
               type="button"
-              className="uf-photo-viewer-nav uf-photo-viewer-nav-right"
+              className="uf-media-viewer-nav uf-media-viewer-nav-right"
               onClick={goNext}
               aria-label="Next photo"
             >
@@ -740,9 +796,10 @@ export default function MediaViewer({
           )}
         </section>
 
-        <aside className="uf-photo-viewer-info">
-          <header className="uf-photo-viewer-author">
-            <div className="uf-photo-viewer-avatar">
+        <aside className="uf-media-viewer-side">
+          <div className="uf-media-viewer-side-scrollable">
+            <header className="uf-media-viewer-author">
+              <div className="uf-media-viewer-avatar">
               {finalAuthorImage ? (
                 <Image
                   src={finalAuthorImage}
@@ -755,21 +812,21 @@ export default function MediaViewer({
               )}
             </div>
 
-            <div>
+            <div className="uf-media-viewer-author-meta">
               <strong>{finalAuthorName}</strong>
               <span>{formatDate(finalCreatedAt)}</span>
             </div>
           </header>
 
-          <div className="uf-photo-viewer-caption">
+          <div className="uf-media-viewer-caption">
             {finalCaption ? (
               <p>{finalCaption}</p>
             ) : (
-              <p className="uf-photo-viewer-muted">No caption added.</p>
+              <p className="uf-media-viewer-muted">{t("photos.viewer.noCaption")}</p>
             )}
 
             {hashtags.length > 0 && (
-              <div className="uf-photo-viewer-tags">
+              <div className="uf-media-viewer-tags">
                 {hashtags.map((tag) => (
                   <span key={tag}>{tag}</span>
                 ))}
@@ -777,99 +834,66 @@ export default function MediaViewer({
             )}
           </div>
 
-          <div className="uf-photo-viewer-actions">
+          <div className="uf-media-viewer-actions">
             <button
               type="button"
-              className={`uf-photo-viewer-action like ${liked ? "active" : ""}`}
+              className={`uf-media-viewer-action like ${liked ? "active" : ""}`}
               onClick={handleLike}
               disabled={isPending}
               aria-label={liked ? "Unlike" : "Like"}
               aria-pressed={liked}
             >
-              <span className="uf-photo-viewer-action-icon">
+              <span className="uf-media-viewer-action-icon">
                 <UiIcon name="heart" size={18} />
               </span>
-              <span className="uf-photo-viewer-action-count">{likesNum}</span>
+              <span className="uf-media-viewer-action-count">{likesNum}</span>
             </button>
 
             <button
               type="button"
-              className="uf-photo-viewer-action comment"
+              className="uf-media-viewer-action comment"
               aria-label="Write a comment"
               onClick={() => {
                 setShowCommentInput(true);
                 // Focus on next tick so the freshly-mounted input gets focus.
                 setTimeout(() => {
-                  const input = document.querySelector<HTMLInputElement>(
-                    ".uf-photo-viewer-comment-input input",
-                  );
-                  input?.focus();
+                  commentInputRef.current?.focus();
                   commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
                 }, 50);
               }}
             >
-              <span className="uf-photo-viewer-action-icon">
+              <span className="uf-media-viewer-action-icon">
                 <UiIcon name="comment" size={18} />
               </span>
-              <span className="uf-photo-viewer-action-count">{commentsNum}</span>
+              <span className="uf-media-viewer-action-count">{commentsNum}</span>
             </button>
 
             <button
               type="button"
-              className={`uf-photo-viewer-action bookmark ${saved ? "active" : ""}`}
+              className={`uf-media-viewer-action bookmark ${saved ? "active" : ""}`}
               onClick={handleSave}
               disabled={isPending}
               aria-label={saved ? "Remove from saved" : "Save"}
               aria-pressed={saved}
             >
-              <span className="uf-photo-viewer-action-icon">
+              <span className="uf-media-viewer-action-icon">
                 <UiIcon name="bookmark" size={18} />
               </span>
             </button>
 
             <button
               type="button"
-              className="uf-photo-viewer-action share"
-              onClick={async () => {
-                const url = finalPhotoId
-                  ? `${window.location.origin}/photos#${finalPhotoId}`
-                  : window.location.href;
-                try {
-                  if (typeof navigator !== "undefined" && navigator.share) {
-                    await navigator.share({ url, title: "Campus Moment" });
-                    return;
-                  }
-                  if (typeof navigator !== "undefined" && navigator.clipboard) {
-                    await navigator.clipboard.writeText(url);
-                    showToast("Link copied!");
-                    return;
-                  }
-                  // Older browsers fallback
-                  const ta = document.createElement("textarea");
-                  ta.value = url;
-                  ta.style.position = "fixed";
-                  ta.style.opacity = "0";
-                  document.body.appendChild(ta);
-                  ta.select();
-                  document.execCommand("copy");
-                  document.body.removeChild(ta);
-                  showToast("Link copied!");
-                } catch (err) {
-                  // AbortError = user cancelled the native share sheet
-                  if ((err as Error)?.name !== "AbortError") {
-                    showToast("Could not share link", "err");
-                  }
-                }
-              }}
+              className="uf-media-viewer-action share"
+              onClick={() => setShowShareModal(true)}
             >
-              <span className="uf-photo-viewer-action-icon">
-                <UiIcon name="share" size={18} />
+              <span className="uf-media-viewer-action-icon">
+                <UiIcon name="send" size={18} />
               </span>
             </button>
 
             <button
               type="button"
-              className="uf-photo-viewer-action download"
+              className="uf-media-viewer-action download"
               onClick={async () => {
                 try {
                   const res = await fetch(activeSrc, { mode: "cors" });
@@ -897,43 +921,38 @@ export default function MediaViewer({
                 }
               }}
             >
-              <span className="uf-photo-viewer-action-icon">
+              <span className="uf-media-viewer-action-icon">
                 <UiIcon name="download" size={18} />
               </span>
             </button>
           </div>
 
-          <div style={{ padding: "0 0 4px", fontSize: 14, fontWeight: 800 }}>
-            {likesNum} {likesNum === 1 ? "like" : "likes"}
-          </div>
-
           {(finalCommunity || viewsNum > 0) && (
-            <section className="uf-photo-viewer-student-box">
-              <h3>Student context</h3>
+            <section className="uf-media-viewer-student-box">
+              <h3>{t("photos.viewer.studentContext")}</h3>
 
               {finalCommunity && (
                 <div>
-                  <span>Community</span>
+                  <span>{t("photos.viewer.community")}</span>
                   <strong>{finalCommunity}</strong>
                 </div>
               )}
 
               {viewsNum > 0 && (
                 <div>
-                  <span>Views</span>
+                  <span>{t("photos.viewer.views")}</span>
                   <strong>{viewsNum}</strong>
                 </div>
               )}
             </section>
           )}
 
-          <section className="uf-photo-viewer-comments">
-            <div className="uf-photo-viewer-comments-title">
-              <strong>Comments</strong>
-              <span>{commentsNum}</span>
+          <section className="uf-media-viewer-comments">
+            <div className="uf-media-viewer-comments-title">
+              <strong>{t("photos.viewer.comments")}</strong>
             </div>
 
-            <div className="uf-photo-viewer-comments-list">
+            <div className="uf-media-viewer-comments-list">
               {commentsList.length > 0 ? (
                 commentsList.map((comment) => (
                   <ThreadedComment
@@ -946,11 +965,12 @@ export default function MediaViewer({
                     onReply={handleStartReply}
                     onDelete={handleDeleteComment}
                     onReport={handleReportComment}
+                    t={t}
                   />
                 ))
               ) : (
-                <div className="uf-photo-viewer-empty-comments">
-                  No comments yet. Be the first to comment.
+                <div className="uf-media-viewer-empty-comments">
+                  {t("photos.viewer.noCommentsYet")}
                 </div>
               )}
               <div ref={commentsEndRef} />
@@ -959,11 +979,11 @@ export default function MediaViewer({
             {(showCommentInput ||
               (currentUserId &&
                 (finalPhotoId || postId || onSubmitCommentAction))) && (
-              <div className="uf-photo-viewer-comment-input-wrap">
+              <div className="uf-media-viewer-comment-input-wrap">
                 {replyingTo && (
-                  <div className="uf-photo-viewer-replying-banner">
+                  <div className="uf-media-viewer-replying-banner">
                     <span>
-                      Replying to <strong>@{replyingTo.authorName}</strong>
+                      {t("photos.viewer.replyingTo")} <strong>@{replyingTo.authorName}</strong>
                     </span>
                     <button
                       type="button"
@@ -974,7 +994,7 @@ export default function MediaViewer({
                     </button>
                   </div>
                 )}
-                <div className="uf-photo-viewer-comment-input">
+                <div className="uf-media-viewer-comment-input">
                   <input
                     ref={commentInputRef}
                     type="text"
@@ -992,10 +1012,10 @@ export default function MediaViewer({
                     }}
                     placeholder={
                       !currentUserId
-                        ? "Sign in to comment"
+                        ? t("photos.viewer.signInToComment")
                         : replyingTo
-                          ? `Reply to ${replyingTo.authorName}...`
-                          : "Add a comment..."
+                          ? t("photos.viewer.replyTo").replace("{name}", replyingTo.authorName || "")
+                          : t("photos.viewer.addComment")
                     }
                     disabled={isPending || !currentUserId}
                     maxLength={500}
@@ -1007,15 +1027,22 @@ export default function MediaViewer({
                       isPending || !commentText.trim() || !currentUserId
                     }
                     aria-label="Send comment"
-                    className="uf-photo-viewer-comment-send"
+                    className="uf-media-viewer-comment-send"
                   >
-                    {isPending ? "…" : "Post"}
+                    {isPending ? "…" : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
             )}
           </section>
+          </div>
         </aside>
+        </div>
       </div>
 
       {toast && (
@@ -1044,6 +1071,25 @@ export default function MediaViewer({
           {toast.text}
         </div>
       )}
+
+      {showShareModal && (
+        <SharePostModal
+          postUrl={
+            postId
+              ? `${window.location.origin}/feed#${postId}`
+              : finalPhotoId
+              ? `${window.location.origin}/photos#${finalPhotoId}`
+              : window.location.href
+          }
+          photoUrl={activeSrc}
+          currentUserId={currentUserId ?? null}
+          onClose={() => setShowShareModal(false)}
+          onSent={() => {
+            setShowShareModal(false);
+            showToast("Sent!");
+          }}
+        />
+      )}
     </div>
   );
 
@@ -1064,6 +1110,7 @@ type ThreadedCommentProps = {
   onReply: (comment: MediaComment) => void;
   onDelete: (commentId: string) => void;
   onReport: (commentId: string) => void;
+  t: (key: string) => string;
 };
 
 function ThreadedComment({
@@ -1076,6 +1123,7 @@ function ThreadedComment({
   onReply,
   onDelete,
   onReport,
+  t,
 }: ThreadedCommentProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -1107,11 +1155,10 @@ function ThreadedComment({
       <div className="uf-ig-comment-row">
         <div className="uf-ig-comment-avatar">
           {comment.authorImage ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={comment.authorImage}
               alt={comment.authorName || "User"}
-              width={30}
-              height={30}
             />
           ) : (
             <span>{getInitial(comment.authorName)}</span>
@@ -1120,25 +1167,21 @@ function ThreadedComment({
 
         <div className="uf-ig-comment-body">
           <div className="uf-ig-comment-text">
-            <strong>{comment.authorName || "Student"}</strong> {comment.content}
+            <strong>{comment.authorName || "Student"}</strong> 
+            <span style={{ marginLeft: 6 }}>{comment.content}</span>
           </div>
 
           <div className="uf-ig-comment-meta">
             <span className="uf-ig-comment-time">
               {formatDate(comment.createdAt)}
             </span>
-            {likesCount > 0 && (
-              <span className="uf-ig-comment-likes">
-                {likesCount} {likesCount === 1 ? "like" : "likes"}
-              </span>
-            )}
             <button
               type="button"
               className="uf-ig-comment-meta-btn"
               onClick={() => onReply(comment)}
               disabled={isOptimistic}
             >
-              Reply
+              {t("photos.viewer.reply")}
             </button>
           </div>
         </div>
@@ -1176,7 +1219,7 @@ function ThreadedComment({
                       onDelete(comment.id);
                     }}
                   >
-                    Delete
+                    {t("photos.viewer.delete")}
                   </button>
                 ) : (
                   <button
@@ -1186,7 +1229,7 @@ function ThreadedComment({
                       onReport(comment.id);
                     }}
                   >
-                    Report
+                    {t("photos.viewer.report")}
                   </button>
                 )}
               </div>
@@ -1204,8 +1247,10 @@ function ThreadedComment({
           >
             <span className="uf-ig-comment-thread-line" aria-hidden />
             {isExpanded
-              ? `Hide replies`
-              : `View ${replies.length} ${replies.length === 1 ? "reply" : "replies"}`}
+              ? t("photos.viewer.hideReplies")
+              : t("photos.viewer.viewReplies")
+                  .replace("{n}", replies.length.toString())
+                  .replace("{replyText}", replies.length === 1 ? t("photos.viewer.replyTextSingle") : t("photos.viewer.replyTextPlural"))}
           </button>
 
           {isExpanded &&
@@ -1221,6 +1266,7 @@ function ThreadedComment({
                 onReply={onReply}
                 onDelete={onDelete}
                 onReport={onReport}
+                t={t}
               />
             ))}
         </div>

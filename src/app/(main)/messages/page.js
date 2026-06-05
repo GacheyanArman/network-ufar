@@ -1,7 +1,7 @@
 import { asc, desc, eq, inArray, or, and, ilike, isNull, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/shared/db/db";
-import { messages, users, groupChats, groupChatMembers, messageReads } from "@/shared/db/schema";
+import { messages, users, groupChats, groupChatMembers, messageReads, blockedUsers } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
 import MessagesClient from "@/features/messages/components/MessagesClient";
 import MessagesPageClient from "@/features/messages/components/MessagesPageClient";
@@ -214,8 +214,13 @@ export default async function MessagesPage({ searchParams }) {
         .limit(10)
     : [];
 
-  const selectedUserId = activeUserId || conversations[0]?.user?.id || "";
+  // If a course/group chat is selected, do not auto-select a direct chat.
+  // This keeps /messages?group=... focused on the group instead of falling
+  // back to the first DM conversation.
   const selectedGroupId = activeGroupId || "";
+  const selectedUserId = selectedGroupId
+    ? ""
+    : activeUserId || conversations[0]?.user?.id || "";
 
   const [activeUser] = selectedUserId
     ? await db
@@ -230,6 +235,25 @@ export default async function MessagesPage({ searchParams }) {
         .where(eq(users.id, selectedUserId))
         .limit(1)
     : [];
+
+  const isDirectChatBlocked = selectedUserId
+    ? !!(await db
+        .select({ id: blockedUsers.id })
+        .from(blockedUsers)
+        .where(
+          or(
+            and(
+              eq(blockedUsers.blockerId, session.userId),
+              eq(blockedUsers.blockedId, selectedUserId)
+            ),
+            and(
+              eq(blockedUsers.blockerId, selectedUserId),
+              eq(blockedUsers.blockedId, session.userId)
+            )
+          )
+        )
+        .limit(1))[0]
+    : false;
 
   // Group-admin check: required for the GroupMembersPanel to show admin controls.
   let isGroupAdmin = false;
@@ -258,7 +282,13 @@ export default async function MessagesPage({ searchParams }) {
           course: groupChats.course,
         })
         .from(groupChats)
-        .where(eq(groupChats.id, selectedGroupId))
+        .innerJoin(groupChatMembers, eq(groupChats.id, groupChatMembers.groupChatId))
+        .where(
+          and(
+            eq(groupChats.id, selectedGroupId),
+            eq(groupChatMembers.userId, session.userId)
+          )
+        )
         .limit(1)
     : [];
 
@@ -346,6 +376,7 @@ export default async function MessagesPage({ searchParams }) {
         activeGroup={activeGroup}
         sessionUserId={session.userId}
         q={q}
+        isGroupAdmin={isGroupAdmin}
       >
         {(selectedUserId && activeUser) || (selectedGroupId && activeGroup) ? (
           <MessagesClient
@@ -355,6 +386,7 @@ export default async function MessagesPage({ searchParams }) {
             selectedGroupId={selectedGroupId}
             presenceLastSeenAt={presenceLastSeenAt}
             isGroupAdmin={isGroupAdmin}
+            isDirectChatBlocked={isDirectChatBlocked}
           />
         ) : (
           <div className="tg-empty-history">
@@ -378,12 +410,13 @@ const messagesStyles = `
   display: grid;
   grid-template-columns: 380px 1fr;
   height: calc(100vh - var(--topbar-height) - 48px);
-  background: #ffffff;
-  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-card, 20px);
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
-  border: 1px solid #d9e2ef;
+  box-shadow: var(--shadow-card, 0 14px 40px rgba(15, 23, 42, 0.08));
+  border: 1px solid var(--border-color-light, #d9e2ef);
   transition: grid-template-columns 0.3s ease;
+  backdrop-filter: blur(18px);
 }
 
 .tg-messenger.tg-sidebar-hidden {
@@ -668,7 +701,7 @@ const messagesStyles = `
 .tg-chat-area {
   display: flex;
   flex-direction: column;
-  background: #f8fafc;
+  background: radial-gradient(circle at 16% 0%, rgba(11, 58, 168, 0.08), transparent 32%), var(--bg-page, #f8fafc);
   overflow: hidden;
 }
 
@@ -965,9 +998,20 @@ const messagesStyles = `
   box-shadow: 0 2px 8px rgba(11, 58, 168, 0.24);
 }
 
-.tg-send-btn:hover {
+.tg-send-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(11, 58, 168, 0.32);
+}
+
+.tg-send-btn:disabled,
+.tg-attach-btn:disabled,
+.tg-message-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tg-message-input:disabled {
+  background: #eef2f7;
 }
 
 .tg-send-btn:active {
@@ -984,10 +1028,26 @@ const messagesStyles = `
   .tg-messenger {
     grid-template-columns: 1fr;
     height: calc(100vh - var(--topbar-height) - 24px);
+    position: relative;
   }
 
   .tg-sidebar {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    width: 100%;
+    display: flex;
+    border-right: none;
+  }
+
+  .tg-messenger:not(.tg-sidebar-hidden) .tg-chat-area {
     display: none;
+  }
+
+  .tg-messenger.tg-sidebar-hidden .tg-sidebar {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
   }
 
   .tg-chat-area {
@@ -1261,19 +1321,34 @@ const messagesStyles = `
 }
 .tg-msg-menu {
   position: absolute;
-  top: 28px;
-  z-index: 6;
-  min-width: 180px;
+  top: 0;
+  z-index: 50;
+  width: max-content;
+  min-width: 164px;
+  max-width: 190px;
   background: #fff;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(15,23,42,0.16);
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(15,23,42,0.18);
   padding: 4px;
   display: flex;
   flex-direction: column;
+  animation: tg-menu-pop 0.12s ease-out;
 }
-.tg-msg-menu-right { right: 4px; }
-.tg-msg-menu-left  { left: 4px; }
+.tg-msg-menu-own {
+  top: auto;
+  right: calc(100% + 8px);
+  bottom: 0;
+}
+.tg-msg-menu-other {
+  top: 0;
+  left: calc(100% + 8px);
+}
+
+@keyframes tg-menu-pop {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 /* Chat header dropdown menu */
 .tg-chat-header-menu {
@@ -1413,6 +1488,23 @@ const messagesStyles = `
 }
 .tg-message-other .tg-msg-file {
   background: var(--bg-hover);
+}
+
+.tg-msg-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(255,255,255,0.5);
+  word-break: break-all;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline;
+}
+.tg-message-other .tg-msg-link {
+  color: #0b3aa8;
+  text-decoration-color: rgba(11, 58, 168, 0.3);
+}
+.tg-msg-link:hover {
+  opacity: 0.85;
 }
 
 /* Attachment preview chip */
@@ -1597,5 +1689,46 @@ const messagesStyles = `
   line-height: 1.2;
   margin-left: auto;
   flex-shrink: 0;
+}
+
+.tg-attach-btn:disabled,
+.tg-send-btn:disabled,
+.tg-message-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.tg-input-area:has(.tg-message-input:disabled) {
+  background: #f8fafc;
+}
+
+.tg-blocked-banner,
+.tg-blocked-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tg-blocked-banner {
+  padding: 10px 14px;
+  border-width: 0 0 1px;
+  justify-content: center;
+  line-height: 1.35;
+}
+
+.tg-blocked-note {
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.tg-empty-history-chat {
+  background: radial-gradient(circle at 50% 0%, rgba(11, 58, 168, 0.08), transparent 36%);
 }
 `;

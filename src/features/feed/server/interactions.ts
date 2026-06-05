@@ -361,7 +361,7 @@ export async function getPostCommentsForViewer(
       createdAt: comments.createdAt,
       authorId: comments.authorId,
       authorName: users.fullName,
-      authorImage: users.image,
+      authorImage: sql<string | null>`coalesce(${users.image}, ${users.avatarUrl})`,
       parentId: comments.parentId,
       likesCount: comments.likesCount,
     })

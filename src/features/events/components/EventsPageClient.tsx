@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useCallback, useMemo, useState, useTransition, useRef } from "react";
+import { useCallback, useMemo, useState, useTransition, useRef, useEffect } from "react";
 import UiIcon from "@/shared/ui/UiIcon";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/shared/i18n/i18n";
@@ -54,11 +54,13 @@ const PRIMARY_CATEGORIES = [
 
 const FILTERS: { value: EventsFilter; labelKey: string }[] = [
   { value: "upcoming", labelKey: "events.filters.upcoming" },
+  { value: "today", labelKey: "events.filters.today" },
   { value: "this_week", labelKey: "events.filters.thisWeek" },
   { value: "my_courses", labelKey: "events.filters.myCourses" },
-  { value: "university", labelKey: "events.filters.university" },
   { value: "clubs_groups", labelKey: "events.filters.clubsGroups" },
   { value: "my_events", labelKey: "events.filters.myEvents" },
+  { value: "university", labelKey: "events.filters.university" },
+  { value: "past", labelKey: "events.filters.past" },
 ];
 
 const REMINDER_OPTIONS = [
@@ -94,6 +96,21 @@ function interpolate(
 }
 
 function getFilterLabel(t: (key: string) => string, value: string, lang: string) {
+  if (value === "upcoming") {
+    if (lang === "hy") return "Քեզ համար";
+    if (lang === "fr") return "Pour toi";
+    return "For you";
+  }
+  if (value === "today") {
+    if (lang === "hy") return "Այսօր";
+    if (lang === "fr") return "Aujourd'hui";
+    return "Today";
+  }
+  if (value === "past") {
+    if (lang === "hy") return "Անցած";
+    if (lang === "fr") return "Passés";
+    return "Past";
+  }
   if (value === "my_courses") {
     if (lang === "hy") return "Իմ դասընթացները";
     if (lang === "fr") return "Mes cours";
@@ -105,15 +122,17 @@ function getFilterLabel(t: (key: string) => string, value: string, lang: string)
     return "University";
   }
   if (value === "clubs_groups") {
-    if (lang === "hy") return "Ակումբներ և խմբեր";
-    if (lang === "fr") return "Clubs et groupes";
-    return "Clubs & groups";
+    if (lang === "hy") return "Ակումբներ";
+    if (lang === "fr") return "Clubs";
+    return "Clubs";
   }
   if (value === "this_week") {
     return t("events.filters.thisWeek");
   }
   if (value === "my_events") {
-    return t("events.filters.myEvents");
+    if (lang === "hy") return "Իմ պլանները";
+    if (lang === "fr") return "Mes plans";
+    return "My plans";
   }
   return t(`events.filters.${value}`);
 }
@@ -161,8 +180,10 @@ export default function EventsPageClient({
   );
 
   const handleFilter = (f: EventsFilter) => {
+    const nextCommunityId = f === "clubs_groups" ? communityId : "";
     setFilter(f);
-    refetch({ filter: f, category, communityId, query });
+    if (f !== "clubs_groups") setCommunityId("");
+    refetch({ filter: f, category, communityId: nextCommunityId, query });
   };
   const handleCategory = (c: string) => {
     setCategory(c);
@@ -307,10 +328,10 @@ export default function EventsPageClient({
             }}
           >
             {language === "hy"
-              ? "Ժամկետ / Տեսակ"
+              ? "Գտնել միջոցառում"
               : language === "fr"
-                ? "Période / Portée"
-                : "Time / Scope"}
+                ? "Trouver un event"
+                : "Find events"}
           </span>
           <div
             style={{
@@ -374,7 +395,7 @@ export default function EventsPageClient({
           </div>
         </div>
 
-        {filter === "community" && (
+        {filter === "clubs_groups" && (
           <>
             <div style={{ height: "1px", background: "var(--border-color-light)" }} />
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -468,6 +489,10 @@ export default function EventsPageClient({
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
           gap: 16px;
         }
+        :global(.event-calendar-note) {
+          margin-left: 6px;
+          opacity: 0.72;
+        }
       `}</style>
     </div>
   );
@@ -485,7 +510,7 @@ function EventCard({
     target: "going" | "interested" | "not_going",
   ) => void;
 }) {
-  const { t, locale } = useLanguage();
+  const { t, locale, language } = useLanguage();
   const meta = CATEGORY_META[e.eventType] || CATEGORY_META.other;
   const isPast = useMemo(
     // eslint-disable-next-line react-hooks/purity
@@ -515,6 +540,32 @@ function EventCard({
     e.enableWaitlist &&
     e.rsvpStatus !== "going" &&
     e.rsvpStatus !== "waitlisted";
+  const goingLabel = isWaitlistCase
+    ? t("events.card.joinWaitlist")
+    : e.rsvpStatus === "going"
+      ? language === "hy"
+        ? "Գնում եմ ✓"
+        : language === "fr"
+          ? "J'y vais ✓"
+          : "Going ✓"
+      : e.rsvpStatus === "waitlisted"
+        ? rsvpLabel(t, "waitlisted", e.waitlistPosition ?? null)
+        : language === "hy"
+          ? "Գնում եմ"
+          : language === "fr"
+            ? "J'y vais"
+            : "I'm going";
+  const interestedLabel = e.rsvpStatus === "interested"
+    ? language === "hy"
+      ? "Հետաքրքիր է ✓"
+      : language === "fr"
+        ? "Intéressé ✓"
+        : "Maybe ✓"
+    : language === "hy"
+      ? "Հետաքրքիր է"
+      : language === "fr"
+        ? "Intéressé"
+        : "Maybe";
 
   return (
     <div
@@ -775,7 +826,12 @@ function EventCard({
                 alignSelf: "flex-start",
               }}
             >
-              {rsvpLabel(t, e.rsvpStatus, e.waitlistPosition ?? null)}
+              <span>{rsvpLabel(t, e.rsvpStatus, e.waitlistPosition ?? null)}</span>
+              {(e.rsvpStatus === "going" || e.rsvpStatus === "waitlisted") && (
+                <span className="event-calendar-note">
+                  · {language === "hy" ? "Քո օրացույցում" : language === "fr" ? "Dans ton calendrier" : "In your calendar"}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -795,16 +851,12 @@ function EventCard({
             <RsvpBtn
               active={e.rsvpStatus === "going" || e.rsvpStatus === "waitlisted"}
               onClick={() => handleRsvp("going")}
-              fullText={
-                isWaitlistCase
-                  ? t("events.card.joinWaitlist")
-                  : t("events.card.youAreGoing")
-              }
+              fullText={goingLabel}
             />
             <RsvpBtn
               active={e.rsvpStatus === "interested"}
               onClick={() => handleRsvp("interested")}
-              fullText={t("events.card.interested")}
+              fullText={interestedLabel}
               variant="secondary"
             />
             {e.rsvpStatus && e.rsvpStatus !== "not_going" && (
@@ -1045,6 +1097,13 @@ function CreateEventModal({
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;

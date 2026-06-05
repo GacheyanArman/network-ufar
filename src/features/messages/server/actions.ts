@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/shared/db/db";
 import {
@@ -8,6 +8,7 @@ import {
   messageReads,
   groupChatMembers,
   users,
+  blockedUsers,
 } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
 import { checkRateLimitAsync, getRateLimitError } from "@/shared/utils/rate-limit";
@@ -96,7 +97,31 @@ async function assertCanSendDM(senderId: string, receiverId: string) {
     .from(users)
     .where(eq(users.id, receiverId));
   if (!receiver) throw new Error("Receiver not found");
-  // Could add a blockedUsers check here in future.
+
+  const [block] = await db
+    .select({ id: blockedUsers.id, blockerId: blockedUsers.blockerId })
+    .from(blockedUsers)
+    .where(
+      or(
+        and(
+          eq(blockedUsers.blockerId, senderId),
+          eq(blockedUsers.blockedId, receiverId)
+        ),
+        and(
+          eq(blockedUsers.blockerId, receiverId),
+          eq(blockedUsers.blockedId, senderId)
+        )
+      )
+    )
+    .limit(1);
+
+  if (block) {
+    throw new Error(
+      block.blockerId === senderId
+        ? "You blocked this student. Unblock them to send a message."
+        : "You cannot message this student right now."
+    );
+  }
 }
 
 async function assertGroupMember(groupId: string, userId: string) {
@@ -148,6 +173,10 @@ export async function sendMessage(formData: FormData) {
     });
     attachmentUrl = result?.url ?? null;
     attachmentType = isImage ? "image" : "file";
+  } else if (parsed.existingAttachmentUrl) {
+    // Pre-existing URL (e.g. sharing a post photo — no upload needed)
+    attachmentUrl = parsed.existingAttachmentUrl;
+    attachmentType = parsed.existingAttachmentType || "image";
   }
 
   if (!content && !attachmentUrl) {

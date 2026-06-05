@@ -218,7 +218,7 @@ export async function getPhotoComments(photoId) {
       createdAt: photoComments.createdAt,
       userId: photoComments.userId,
       authorName: users.fullName,
-      authorImage: users.image,
+      authorImage: sql`coalesce(${users.image}, ${users.avatarUrl})`,
       parentId: photoComments.parentId,
       likesCount: photoComments.likesCount,
     })

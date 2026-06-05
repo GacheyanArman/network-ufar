@@ -144,7 +144,7 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
     }
   );
 
-  const filterBy: FilterMode = "all";
+  const [filterBy] = useState<FilterMode>("all");
   const filtered = filterItems(items, filterBy);
   const [displayed, setDisplayed] = useState<UnifiedFeedItem[]>(filtered.slice(0, 15));
   const [hasMore, setHasMore] = useState(filtered.length > 15);

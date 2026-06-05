@@ -1,36 +1,62 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 import UiIcon from "@/shared/ui/UiIcon";
+import "./ProfileSettings.css";
 
 const PREF_KEYS = ["academic", "events", "photos", "messages", "materials", "social"];
 
-const PREF_LABELS = {
+const SETTINGS_LABELS = {
   en: {
-    academic: "Academic deadlines",
-    events: "Events",
-    photos: "Photos",
-    messages: "Messages",
-    materials: "Materials",
-    social: "Social activity",
+    prefs: {
+      academic: { title: "Academic deadlines", desc: "Get notified about upcoming assignments, exams, and important academic dates." },
+      events: { title: "Events", desc: "Receive alerts for new campus events, club meetings, and activities." },
+      photos: { title: "Photos", desc: "Get notified when someone tags you in a photo or uploads a new gallery." },
+      messages: { title: "Messages", desc: "Receive push notifications for new direct messages and group chats." },
+      materials: { title: "Materials", desc: "Know when new study materials, notes, or resources are uploaded to your courses." },
+      social: { title: "Social activity", desc: "Get alerts for likes, comments, mentions, and new followers." },
+    },
+    tabs: {
+      account: "Account",
+      preferences: "Preferences",
+      privacy: "Privacy",
+      security: "Security",
+    },
   },
   fr: {
-    academic: "Échéances académiques",
-    events: "Événements",
-    photos: "Photos",
-    messages: "Messages",
-    materials: "Matériaux",
-    social: "Activité sociale",
+    prefs: {
+      academic: { title: "Échéances académiques", desc: "Soyez informé des devoirs à venir, des examens et des dates importantes." },
+      events: { title: "Événements", desc: "Recevez des alertes pour les nouveaux événements du campus et les réunions de club." },
+      photos: { title: "Photos", desc: "Soyez informé lorsque quelqu'un vous identifie sur une photo." },
+      messages: { title: "Messages", desc: "Recevez des notifications pour les nouveaux messages directs et groupes." },
+      materials: { title: "Matériaux", desc: "Sachez quand de nouveaux supports d'étude sont téléchargés." },
+      social: { title: "Activité sociale", desc: "Recevez des alertes pour les mentions j'aime, les commentaires et les abonnés." },
+    },
+    tabs: {
+      account: "Compte",
+      preferences: "Préférences",
+      privacy: "Confidentialité",
+      security: "Sécurité",
+    },
   },
   hy: {
-    academic: "Ուսումնական ժամկետներ",
-    events: "Իրադարձություններ",
-    photos: "Լուսանկարներ",
-    messages: "Հաղորդագրություններ",
-    materials: "Նյութեր",
-    social: "Սոցիալական ակտիվություն",
+    prefs: {
+      academic: { title: "Ուսումնական ժամկետներ", desc: "Ստացեք ծանուցումներ առաջիկա հանձնարարությունների, քննությունների և կարևոր ժամկետների մասին:" },
+      events: { title: "Իրադարձություններ", desc: "Ստացեք ծանուցումներ համալսարանական նոր իրադարձությունների վերաբերյալ:" },
+      photos: { title: "Լուսանկարներ", desc: "Ստացեք ծանուցումներ, երբ որևէ մեկը նշում է ձեզ լուսանկարում:" },
+      messages: { title: "Հաղորդագրություններ", desc: "Ստացեք ծանուցումներ նոր անձնական և խմբային հաղորդագրությունների համար:" },
+      materials: { title: "Նյութեր", desc: "Իմացեք, երբ նոր ուսումնական նյութեր կամ ռեսուրսներ են վերբեռնվում:" },
+      social: { title: "Սոցիալական ակտիվություն", desc: "Ստացեք ծանուցումներ հավանումների, մեկնաբանությունների և նոր հետևորդների մասին:" },
+    },
+    tabs: {
+      account: "Հաշիվ",
+      preferences: "Նախընտրություններ",
+      privacy: "Գաղտնիություն",
+      security: "Անվտանգություն",
+    },
   },
 };
 
@@ -40,32 +66,100 @@ const LANG_OPTIONS = [
   { value: "hy", label: "Հայերեն" },
 ];
 
-export default function ProfileSettingsClient({ prefs: initialPrefs }) {
+export default function ProfileSettingsClient({ user, prefs: initialPrefs }) {
   const { language, setLanguage } = useLanguage();
   const router = useRouter();
-  const [prefs, setPrefs] = useState(initialPrefs);
-  const [isPending, startTransition] = useTransition();
-  const [activeTab, setActiveTab] = useState("preferences");
   
-  // Placeholder local state for display purposes
-  const [theme, setTheme] = useState("system");
-  const [privacy, setPrivacy] = useState("public");
+  const [activeTab, setActiveTab] = useState("account");
+  
+  // Real persisted state
+  const [prefs, setPrefs] = useState(initialPrefs);
+  const [privacy, setPrivacy] = useState(user?.privacyLevel || "public");
+  
+  // Transitions & Loading states
+  const [isPendingNotif, startTransitionNotif] = useTransition();
+  const [isPendingPrivacy, startTransitionPrivacy] = useTransition();
+  const [isPendingPassword, startTransitionPassword] = useTransition();
+  
+  // Password state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
-  const labels = PREF_LABELS[language] || PREF_LABELS.en;
+  // Toasts
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = (message, type = "success") => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  };
+
+  const labels = SETTINGS_LABELS[language] || SETTINGS_LABELS.en;
 
   const handleToggle = (key) => {
     const next = { ...prefs, [key]: !prefs[key] };
     setPrefs(next);
 
-    startTransition(async () => {
+    startTransitionNotif(async () => {
       const fd = new FormData();
       for (const k of PREF_KEYS) {
         fd.append(k, next[k] ? "on" : "off");
       }
-      const { updateNotificationPreferences } = await import(
-        "@/features/notifications/server/actions"
-      );
-      await updateNotificationPreferences(fd);
+      try {
+        const { updateNotificationPreferences } = await import("@/features/notifications/server/actions");
+        await updateNotificationPreferences(fd);
+        showToast("Preferences saved.");
+      } catch (err) {
+        showToast("Failed to save preferences.", "error");
+        setPrefs(initialPrefs); // revert on error
+      }
+    });
+  };
+
+  const handlePrivacyChange = (e) => {
+    const newPrivacy = e.target.value;
+    setPrivacy(newPrivacy);
+
+    startTransitionPrivacy(async () => {
+      try {
+        const { updatePrivacySettings } = await import("@/features/profile/server/actions");
+        const res = await updatePrivacySettings(newPrivacy);
+        if (res?.error) {
+          showToast(res.error, "error");
+          setPrivacy(user?.privacyLevel || "public");
+        } else {
+          showToast("Privacy settings saved.");
+        }
+      } catch (err) {
+        showToast("Failed to save privacy.", "error");
+        setPrivacy(user?.privacyLevel || "public");
+      }
+    });
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword) {
+      showToast("Please fill all password fields.", "error");
+      return;
+    }
+
+    startTransitionPassword(async () => {
+      try {
+        const { changePassword } = await import("@/features/profile/server/actions");
+        const res = await changePassword(currentPassword, newPassword);
+        if (res?.error) {
+          showToast(res.error, "error");
+        } else {
+          showToast("Password updated successfully.");
+          setCurrentPassword("");
+          setNewPassword("");
+        }
+      } catch (err) {
+        showToast("Failed to change password.", "error");
+      }
     });
   };
 
@@ -75,38 +169,85 @@ export default function ProfileSettingsClient({ prefs: initialPrefs }) {
     router.push("/login");
   };
 
+  const formatDate = (dateInput) => {
+    if (!dateInput) return "Unknown";
+    return new Date(dateInput).toLocaleDateString(language, {
+      year: "numeric", month: "long", day: "numeric"
+    });
+  };
+
   return (
     <div className="uf-settings-container">
-      <style>{settingsStyles}</style>
+      {/* Toasts */}
+      <div className="toast-container">
+        {toasts.map((t) => (
+          <div key={t.id} className={`toast ${t.type}`}>
+            <UiIcon name={t.type === "success" ? "check-circle" : "x-circle"} size={18} />
+            {t.message}
+          </div>
+        ))}
+      </div>
 
       <div className="uf-settings-sidebar">
+        <button
+          className={`uf-settings-tab ${activeTab === "account" ? "active" : ""}`}
+          onClick={() => setActiveTab("account")}
+        >
+          <UiIcon name="user" size={16} /> {labels.tabs.account}
+        </button>
         <button
           className={`uf-settings-tab ${activeTab === "preferences" ? "active" : ""}`}
           onClick={() => setActiveTab("preferences")}
         >
-          <UiIcon name="settings" size={16} /> Preferences
-        </button>
-        <button
-          className={`uf-settings-tab ${activeTab === "appearance" ? "active" : ""}`}
-          onClick={() => setActiveTab("appearance")}
-        >
-          <UiIcon name="eye" size={16} /> Appearance
+          <UiIcon name="settings" size={16} /> {labels.tabs.preferences}
         </button>
         <button
           className={`uf-settings-tab ${activeTab === "privacy" ? "active" : ""}`}
           onClick={() => setActiveTab("privacy")}
         >
-          <UiIcon name="shield-check" size={16} /> Privacy & Security
+          <UiIcon name="eye" size={16} /> {labels.tabs.privacy}
         </button>
         <button
-          className={`uf-settings-tab ${activeTab === "account" ? "active" : ""}`}
-          onClick={() => setActiveTab("account")}
+          className={`uf-settings-tab ${activeTab === "security" ? "active" : ""}`}
+          onClick={() => setActiveTab("security")}
         >
-          <UiIcon name="user" size={16} /> Account Data
+          <UiIcon name="shield-check" size={16} /> {labels.tabs.security}
         </button>
       </div>
 
       <div className="uf-settings-content">
+        {/* ACCOUNT TAB */}
+        {activeTab === "account" && (
+          <div className="uf-settings-section fade-in">
+            <h2 className="uf-settings-header">Account Information</h2>
+            <p className="uf-settings-desc">Basic details about your UFARnet account.</p>
+            
+            <div className="uf-settings-group">
+              <div className="uf-account-info-grid">
+                <div className="uf-account-info-label">Full Name</div>
+                <div>{user?.fullName || "Not set"}</div>
+                
+                <div className="uf-account-info-label">Username</div>
+                <div>@{user?.username || "unknown"}</div>
+                
+                <div className="uf-account-info-label">Email</div>
+                <div>{user?.email}</div>
+                
+                <div className="uf-account-info-label">Role</div>
+                <div style={{textTransform: "capitalize"}}>{user?.role || "user"}</div>
+                
+                <div className="uf-account-info-label">Joined</div>
+                <div>{formatDate(user?.createdAt)}</div>
+              </div>
+
+              <Link href="/profile/edit" className="uf-action-btn">
+                Edit Profile
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* PREFERENCES TAB */}
         {activeTab === "preferences" && (
           <div className="uf-settings-section fade-in">
             <h2 className="uf-settings-header">General Preferences</h2>
@@ -132,128 +273,131 @@ export default function ProfileSettingsClient({ prefs: initialPrefs }) {
               <h3 className="uf-settings-title">Push Notifications</h3>
               <div className="uf-notif-prefs-list">
                 {PREF_KEYS.map((key) => (
-                  <label key={key} className="uf-notif-pref-row">
-                    <span>{labels[key] || key}</span>
+                  <div key={key} className="uf-notif-pref-row" onClick={() => handleToggle(key)}>
                     <button
                       type="button"
                       className={`uf-toggle ${prefs[key] ? "on" : "off"}`}
-                      onClick={() => handleToggle(key)}
-                      disabled={isPending}
+                      onClick={(e) => { e.stopPropagation(); handleToggle(key); }}
+                      disabled={isPendingNotif}
+                      aria-label={`Toggle ${labels.prefs[key]?.title || key}`}
                     >
                       <span className="uf-toggle-knob" />
                     </button>
-                  </label>
+                    <div className="uf-notif-pref-info">
+                      <span className="uf-notif-pref-title">{labels.prefs[key]?.title || key}</span>
+                      <span className="uf-notif-pref-desc">{labels.prefs[key]?.desc}</span>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
           </div>
         )}
 
-        {activeTab === "appearance" && (
-          <div className="uf-settings-section fade-in">
-            <h2 className="uf-settings-header">Appearance</h2>
-            <p className="uf-settings-desc">Customize how UFARnet looks on your device.</p>
-            
-            <div className="uf-settings-group">
-              <h3 className="uf-settings-title">Theme</h3>
-              <div className="uf-theme-options">
-                {['light', 'dark', 'system'].map((t) => (
-                  <label key={t} className={`uf-theme-card ${theme === t ? "active" : ""}`}>
-                    <input type="radio" name="theme" checked={theme === t} onChange={() => setTheme(t)} hidden />
-                    <div className={`uf-theme-preview ${t}`}></div>
-                    <span className="uf-theme-name">{t.charAt(0).toUpperCase() + t.slice(1)}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            
-            <div className="uf-settings-group">
-              <h3 className="uf-settings-title">Accessibility</h3>
-              <label className="uf-notif-pref-row">
-                <span>Reduce motion (animations)</span>
-                <button type="button" className="uf-toggle off">
-                  <span className="uf-toggle-knob" />
-                </button>
-              </label>
-              <label className="uf-notif-pref-row">
-                <span>High contrast text</span>
-                <button type="button" className="uf-toggle off">
-                  <span className="uf-toggle-knob" />
-                </button>
-              </label>
-            </div>
-          </div>
-        )}
-
+        {/* PRIVACY TAB */}
         {activeTab === "privacy" && (
           <div className="uf-settings-section fade-in">
-            <h2 className="uf-settings-header">Privacy & Security</h2>
-            <p className="uf-settings-desc">Control who can see your information and keep your account secure.</p>
+            <h2 className="uf-settings-header">Privacy</h2>
+            <p className="uf-settings-desc">Control who can see your profile and manage blocked users.</p>
             
             <div className="uf-settings-group">
               <h3 className="uf-settings-title">Profile Visibility</h3>
+              <p style={{fontSize: 14, color: "var(--text-secondary)", marginBottom: 12}}>
+                Choose who can view your posts, courses, and full profile.
+              </p>
               <select 
                 className="uf-select-input" 
                 value={privacy} 
-                onChange={(e) => setPrivacy(e.target.value)}
+                onChange={handlePrivacyChange}
+                disabled={isPendingPrivacy}
               >
                 <option value="public">Public (Everyone on UFARnet)</option>
-                <option value="friends">Only My Connections</option>
-                <option value="private">Private</option>
+                <option value="friends">Only My Connections / Friends</option>
+                <option value="private">Private (Only me)</option>
               </select>
+              {isPendingPrivacy && <span style={{fontSize: 13, color: "#64748b", marginLeft: 12}}>Saving...</span>}
             </div>
 
             <div className="uf-settings-group">
-              <h3 className="uf-settings-title">Activity Status</h3>
-              <label className="uf-notif-pref-row">
-                <div>
-                  <span style={{display:"block", marginBottom: 4}}>Show when you're online</span>
-                  <span style={{fontSize: 12, color: "var(--text-muted)", fontWeight: "normal"}}>Allow friends to see your active status in messages.</span>
-                </div>
-                <button type="button" className="uf-toggle on">
-                  <span className="uf-toggle-knob" />
-                </button>
-              </label>
-            </div>
-
-            <div className="uf-settings-group">
-              <h3 className="uf-settings-title">Security</h3>
-              <button className="uf-action-btn">Change Password</button>
-              <button className="uf-action-btn" style={{marginLeft: 12}}>Enable Two-Factor Auth</button>
+              <h3 className="uf-settings-title">Blocked Users</h3>
+              <p style={{fontSize: 14, color: "var(--text-secondary)", marginBottom: 16}}>
+                Manage users you've blocked. They cannot see your content or send you messages.
+              </p>
+              <Link href="/blocked" className="uf-action-btn">
+                Manage Blocked Users
+              </Link>
             </div>
           </div>
         )}
 
-        {activeTab === "account" && (
+        {/* SECURITY TAB */}
+        {activeTab === "security" && (
           <div className="uf-settings-section fade-in">
-            <h2 className="uf-settings-header">Account Data</h2>
-            <p className="uf-settings-desc">Manage your personal data and account status.</p>
+            <h2 className="uf-settings-header">Security</h2>
+            <p className="uf-settings-desc">Protect your account and manage authentication.</p>
             
             <div className="uf-settings-group">
-              <h3 className="uf-settings-title">Your Data</h3>
-              <p style={{fontSize: 14, color: "var(--text-secondary)", marginBottom: 16}}>
-                You can request a copy of your personal data, posts, and messages.
-              </p>
-              <button className="uf-action-btn">Download Archive</button>
-            </div>
-            
-            <div className="uf-settings-group uf-settings-danger">
-              <h3 className="uf-settings-title" style={{color: "#dc2626"}}>Danger Zone</h3>
-              <p style={{fontSize: 14, color: "var(--text-secondary)", marginBottom: 16}}>
-                Once you delete your account, there is no going back. Please be certain.
-              </p>
-              <div style={{display: "flex", gap: 12, alignItems: "center"}}>
-                <button
-                  type="button"
-                  className="uf-logout-btn"
-                  onClick={handleLogout}
-                >
-                  Log out
-                </button>
-                <button className="uf-logout-btn" style={{background: "#dc2626", color: "#fff", border: "none"}}>
-                  Delete Account
-                </button>
+              <h3 className="uf-settings-title">Email Verification</h3>
+              <div style={{display: "flex", alignItems: "center", gap: 8, marginBottom: 24}}>
+                {user?.emailVerified ? (
+                  <>
+                    <UiIcon name="check-circle" size={20} color="#10b981" />
+                    <span style={{fontWeight: 600, color: "#0f172a"}}>Verified</span>
+                  </>
+                ) : (
+                  <>
+                    <UiIcon name="alert-triangle" size={20} color="#f59e0b" />
+                    <span style={{fontWeight: 600, color: "#f59e0b"}}>Not Verified</span>
+                    <button className="uf-action-btn" style={{padding: "6px 12px", marginLeft: "auto"}}>
+                      Verify Now
+                    </button>
+                  </>
+                )}
               </div>
+
+              <h3 className="uf-settings-title" style={{marginTop: 32}}>Change Password</h3>
+              <form onSubmit={handlePasswordSubmit} style={{maxWidth: 400}}>
+                <div style={{marginBottom: 16}}>
+                  <input
+                    type="password"
+                    placeholder="Current Password"
+                    className="uf-input-field"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="New Password (min 8 chars)"
+                    className="uf-input-field"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    minLength={8}
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  className="uf-action-btn uf-action-btn-primary"
+                  disabled={isPendingPassword || !currentPassword || !newPassword}
+                >
+                  {isPendingPassword ? "Updating..." : "Update Password"}
+                </button>
+              </form>
+            </div>
+
+            <div className="uf-settings-group uf-settings-danger">
+              <h3 className="uf-settings-title" style={{color: "#dc2626"}}>Session Management</h3>
+              <p style={{fontSize: 14, color: "var(--text-secondary)", marginBottom: 16}}>
+                Log out of your account on this device.
+              </p>
+              <button
+                type="button"
+                className="uf-logout-btn"
+                onClick={handleLogout}
+              >
+                <UiIcon name="log-out" size={16} /> Log Out
+              </button>
             </div>
           </div>
         )}
@@ -261,316 +405,3 @@ export default function ProfileSettingsClient({ prefs: initialPrefs }) {
     </div>
   );
 }
-
-const settingsStyles = `
-.uf-settings-container {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-@media (min-width: 768px) {
-  .uf-settings-container {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-}
-
-.uf-settings-sidebar {
-  display: flex;
-  flex-direction: row;
-  overflow-x: auto;
-  gap: 8px;
-  width: 100%;
-  border-bottom: 1px solid #e7edf5;
-  padding-bottom: 12px;
-}
-
-@media (min-width: 768px) {
-  .uf-settings-sidebar {
-    flex-direction: column;
-    width: 220px;
-    flex-shrink: 0;
-    border-bottom: none;
-    border-right: 1px solid #e7edf5;
-    padding-bottom: 0;
-    padding-right: 20px;
-  }
-}
-
-.uf-settings-tab {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: transparent;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.uf-settings-tab:hover {
-  background: #f4f7fb;
-  color: #334155;
-}
-
-.uf-settings-tab.active {
-  background: #eef4ff;
-  color: #0b3aa8;
-}
-
-.uf-settings-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.uf-settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.uf-settings-header {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.uf-settings-desc {
-  margin: 6px 0 0;
-  font-size: 14px;
-  color: #64748b;
-}
-
-.uf-settings-group {
-  background: #ffffff;
-}
-
-.uf-settings-title {
-  margin: 0 0 16px;
-  font-size: 15px;
-  font-weight: 800;
-  color: #1e293b;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Language buttons */
-.uf-lang-buttons {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.uf-lang-btn {
-  min-height: 42px;
-  padding: 0 24px;
-  border-radius: 12px;
-  background: #f8fafc;
-  color: #475569;
-  border: 2px solid transparent;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.uf-lang-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-.uf-lang-btn.active {
-  background: #eef4ff;
-  color: #0b3aa8;
-  border-color: #0b3aa8;
-}
-
-/* Notification toggles */
-.uf-notif-prefs-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.uf-notif-pref-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid #e2e8f0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #334155;
-  cursor: pointer;
-  background: #fff;
-  transition: background 0.15s;
-}
-
-.uf-notif-pref-row:hover {
-  background: #f8fafc;
-}
-
-.uf-notif-pref-row:last-child {
-  border-bottom: none;
-}
-
-.uf-toggle {
-  position: relative;
-  width: 48px;
-  height: 26px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  padding: 0;
-  flex: 0 0 48px;
-}
-
-.uf-toggle.on {
-  background: #0b3aa8;
-}
-
-.uf-toggle.off {
-  background: #cbd5e1;
-}
-
-.uf-toggle-knob {
-  position: absolute;
-  top: 3px;
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  transition: left 0.2s ease;
-}
-
-.uf-toggle.on .uf-toggle-knob {
-  left: 25px;
-}
-
-.uf-toggle.off .uf-toggle-knob {
-  left: 3px;
-}
-
-/* Form inputs */
-.uf-select-input {
-  width: 100%;
-  max-width: 400px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #0f172a;
-  font-size: 15px;
-  font-weight: 500;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.uf-select-input:focus {
-  border-color: #0b3aa8;
-}
-
-.uf-action-btn {
-  padding: 12px 20px;
-  border-radius: 10px;
-  background: #f1f5f9;
-  color: #0f172a;
-  border: none;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.uf-action-btn:hover {
-  background: #e2e8f0;
-}
-
-/* Theme previews */
-.uf-theme-options {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.uf-theme-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
-  cursor: pointer;
-}
-
-.uf-theme-preview {
-  width: 100px;
-  height: 70px;
-  border-radius: 12px;
-  border: 2px solid transparent;
-  background-size: cover;
-  transition: all 0.2s;
-}
-
-.uf-theme-preview.light { background: #f8fafc; border: 1px solid #e2e8f0; }
-.uf-theme-preview.dark { background: #0f172a; }
-.uf-theme-preview.system { background: linear-gradient(135deg, #f8fafc 50%, #0f172a 50%); border: 1px solid #e2e8f0; }
-
-.uf-theme-card.active .uf-theme-preview {
-  border-color: #0b3aa8;
-  box-shadow: 0 0 0 2px rgba(11, 58, 168, 0.2);
-}
-
-.uf-theme-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
-}
-
-.uf-theme-card.active .uf-theme-name {
-  color: #0b3aa8;
-}
-
-/* Danger zone */
-.uf-settings-danger {
-  border-top: 1px solid #fecaca;
-  padding-top: 24px;
-}
-
-.uf-logout-btn {
-  min-height: 42px;
-  padding: 0 24px;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.uf-logout-btn:hover {
-  background: #fef2f2;
-  border-color: #dc2626;
-}
-`;

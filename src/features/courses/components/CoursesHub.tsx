@@ -193,7 +193,7 @@ function CoursesGrid({ courses, totalCourses }: { courses: EnrolledCourse[], tot
         </div>
         <h3 className="courses-empty-title">No enrolled courses</h3>
         <p className="courses-empty-desc">
-          You haven't enrolled in any courses for the current semester. Browse the catalog to find your next class.
+          You haven&apos;t enrolled in any courses for the current semester. Browse the catalog to find your next class.
         </p>
         <div className="courses-empty-actions">
           <Link href="/onboarding" className="btn btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>

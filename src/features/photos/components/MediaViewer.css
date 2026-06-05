@@ -1,0 +1,569 @@
+/* 
+  UFARnet MediaViewer Styles
+  A perfect, stable lightbox layout.
+*/
+
+.uf-media-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  padding: 24px;
+}
+
+/* Modal Shell */
+.uf-media-viewer-shell {
+  position: relative;
+  width: min(100%, 1300px);
+  height: min(100%, 900px);
+  max-height: calc(100vh - 48px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border-color-light, #eef2f7);
+  border-radius: 16px;
+  box-shadow: var(
+    --shadow-card,
+    0 2px 8px rgba(30, 58, 95, 0.04),
+      0 12px 32px rgba(30, 58, 95, 0.08)
+  );
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Close button - absolute inside overlay, top right of screen */
+.uf-media-viewer-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(15, 23, 42, 0.4);
+  color: #ffffff;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  transition: all 0.2s ease;
+}
+
+.uf-media-viewer-close:hover {
+  background: rgba(15, 23, 42, 0.7);
+  transform: scale(1.05);
+}
+
+/* Body contains the 2 columns */
+.uf-media-viewer-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  flex: 1;
+  min-height: 0; /* Important for flex child to allow inner scrolling */
+}
+
+/* Left side: Stage */
+.uf-media-viewer-stage {
+  position: relative;
+  background: var(--bg-soft, #fafbfd);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.uf-media-viewer-stage-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Media elements */
+.uf-media-viewer-media {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  /* When using next/image with fill, it adds position absolute and 100% sizes. 
+     Using object-fit: contain ensures it never crops. */
+}
+
+/* Navigation Overlays */
+.uf-media-viewer-counter {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.uf-media-viewer-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s;
+}
+
+.uf-media-viewer-nav:hover {
+  background: #ffffff;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.uf-media-viewer-nav-left {
+  left: 16px;
+}
+.uf-media-viewer-nav-right {
+  right: 16px;
+}
+
+/* Right side: Side Panel */
+.uf-media-viewer-side {
+  position: relative;
+  background: var(--bg-card, #ffffff);
+  border-left: 1px solid var(--border-color-light, #eef2f7);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.uf-media-viewer-side-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  padding-right: 16px; /* Leave space for scrollbar */
+}
+
+/* The rest is UI styling for the side panel internals */
+.uf-media-viewer-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-right: 32px; /* space in case close button overlaps visually */
+}
+
+.uf-media-viewer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #2c5aa0;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.uf-media-viewer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uf-media-viewer-author-meta strong {
+  display: block;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.uf-media-viewer-author-meta span {
+  display: block;
+  color: #64748b;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.uf-media-viewer-caption {
+  font-size: 15px;
+  color: #334155;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.uf-media-viewer-muted {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.uf-media-viewer-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.uf-media-viewer-tags span {
+  padding: 4px 10px;
+  background: #f1f5f9;
+  color: #2c5aa0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.uf-media-viewer-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.uf-media-viewer-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.uf-media-viewer-action:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.uf-media-viewer-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.uf-media-viewer-action.active.like { color: #e11d48; }
+.uf-media-viewer-action.active.like svg { fill: currentColor; }
+.uf-media-viewer-action.active.bookmark { color: #2563eb; }
+.uf-media-viewer-action.active.bookmark svg { fill: currentColor; }
+
+.uf-media-viewer-student-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.uf-media-viewer-student-box h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 0 0 12px;
+  letter-spacing: 0.5px;
+}
+.uf-media-viewer-student-box div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  padding: 6px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.uf-media-viewer-student-box div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.uf-media-viewer-comments-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.uf-media-viewer-comments-title strong {
+  font-size: 15px;
+  color: #0f172a;
+}
+.uf-media-viewer-comments-title span {
+  font-size: 15px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.uf-media-viewer-empty-comments {
+  text-align: center;
+  padding: 32px 16px;
+  color: #94a3b8;
+  font-size: 14px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+}
+
+/* Threads */
+.uf-ig-comment {
+  margin-bottom: 16px;
+}
+.uf-ig-comment.is-sending {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.uf-ig-comment-row {
+  display: flex;
+  gap: 12px;
+}
+.uf-ig-comment-avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #2c5aa0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+.uf-ig-comment-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.uf-ig-comment-body {
+  flex: 1;
+  min-width: 0;
+}
+.uf-ig-comment-text {
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.5;
+  word-wrap: break-word;
+  margin-top: 2px;
+}
+.uf-ig-comment-text strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+.uf-ig-comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.uf-ig-comment-meta-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.uf-ig-comment-meta-btn:hover { color: #64748b; }
+
+.uf-ig-comment-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.uf-ig-comment-like-btn, .uf-ig-comment-menu-trigger {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  padding: 2px;
+}
+.uf-ig-comment-like-btn:hover, .uf-ig-comment-menu-trigger:hover {
+  color: #64748b;
+}
+.uf-ig-comment-like-btn.active { color: #e11d48; }
+.uf-ig-comment-like-btn.active svg { fill: currentColor; }
+
+.uf-ig-comment-menu-wrap { position: relative; }
+.uf-ig-comment-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 20;
+  min-width: 120px;
+  overflow: hidden;
+}
+.uf-ig-comment-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.uf-ig-comment-menu button:hover { background: #f1f5f9; }
+.uf-ig-comment-menu button.danger { color: #e11d48; }
+
+.uf-ig-comment-replies {
+  margin-left: 44px;
+  margin-top: 8px;
+}
+.uf-ig-comment-thread-toggle {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  margin-bottom: 8px;
+}
+.uf-ig-comment-thread-line {
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: #cbd5e1;
+}
+
+/* Comment Input Area */
+.uf-media-viewer-comment-input-wrap {
+  border-top: 1px solid #e2e8f0;
+  padding: 16px 24px;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+.uf-media-viewer-replying-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+.uf-media-viewer-replying-banner button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.uf-media-viewer-replying-banner button:hover { color: #0f172a; }
+
+.uf-media-viewer-comment-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  border-radius: 24px;
+  padding: 8px 8px 8px 16px;
+  transition: all 0.2s ease;
+}
+.uf-media-viewer-comment-input:focus-within {
+  border-color: #2c5aa0;
+  box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+}
+.uf-media-viewer-comment-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #0f172a;
+}
+.uf-media-viewer-comment-input input::placeholder { color: #94a3b8; }
+.uf-media-viewer-comment-send {
+  background: #2c5aa0;
+  color: #ffffff;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.uf-media-viewer-comment-send:hover:not(:disabled) {
+  background: #1e3f70;
+  transform: scale(1.05);
+}
+.uf-media-viewer-comment-send:disabled {
+  opacity: 0.5;
+  background: #cbd5e1;
+  color: #ffffff;
+  cursor: not-allowed;
+}
+
+/* Mobile Layout */
+@media (max-width: 900px) {
+  .uf-media-viewer-overlay {
+    padding: 0;
+  }
+  .uf-media-viewer-shell {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+  .uf-media-viewer-body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .uf-media-viewer-stage {
+    flex: none;
+    height: 50dvh;
+    min-height: 40vh;
+  }
+  .uf-media-viewer-side {
+    flex: none;
+    border-left: none;
+    height: auto;
+    overflow: visible; /* Let the body scroll */
+  }
+  .uf-media-viewer-side-scrollable {
+    overflow: visible;
+  }
+  .uf-media-viewer-close {
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+

@@ -45,6 +45,7 @@ function NavItem({ href, icon, translationKey, descriptionKey, badge }: NavItemP
       className={`nav-item ${isActive ? "active" : ""}`}
       // Screen reader context for active page
       aria-current={isActive ? "page" : undefined}
+      title={t(translationKey)}
     >
       <span className="nav-icon">
         <UiIcon name={icon} />
@@ -101,6 +102,7 @@ function NavigationMenuContent({ userRole }: NavigationMenuProps) {
   // Auto-expand if the route changes to a sub-route
   useEffect(() => {
     if (isSubRouteActive) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsMoreOpen(true);
     }
   }, [pathname, isSubRouteActive]);

@@ -81,6 +81,7 @@ export async function updateProfile(formData) {
   const username = usernameRaw ? usernameRaw.toLowerCase() : "";
   const faculty = clean(formData.get("faculty")) || "";
   const year = clean(formData.get("year")) || "";
+  const studyGroup = clean(formData.get("studyGroup")) || "";
   const bio = clean(formData.get("bio")) || "";
 
   // Safely fallback to database values if not passed in simplified profile form
@@ -100,6 +101,7 @@ export async function updateProfile(formData) {
     username,
     faculty,
     year,
+    studyGroup,
     bio,
     gender,
     relationshipStatus,
@@ -140,6 +142,7 @@ export async function updateProfile(formData) {
       username: validatedData.username || null,
       faculty: validatedData.faculty || null,
       year: validatedData.year || null,
+      studyGroup: validatedData.studyGroup || null,
       bio: validatedData.bio || null,
       gender: validatedData.gender || null,
       relationshipStatus: validatedData.relationshipStatus || null,
@@ -179,4 +182,62 @@ export async function updateProfile(formData) {
     revalidatePath("/profile/edit");
 
     redirect("/profile?tab=about&saved=1");
+}
+
+export async function updatePrivacySettings(privacyLevel) {
+  const session = await getSession();
+  if (!session?.userId) {
+    return { error: "Unauthorized" };
+  }
+
+  const allowedLevels = ["public", "friends", "private"];
+  if (!allowedLevels.includes(privacyLevel)) {
+    return { error: "Invalid privacy level" };
+  }
+
+  await db
+    .update(users)
+    .set({ privacyLevel, updatedAt: new Date() })
+    .where(eq(users.id, session.userId));
+
+  revalidateTag("user");
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function changePassword(currentPassword, newPassword) {
+  const session = await getSession();
+  if (!session?.userId) {
+    return { error: "Unauthorized" };
+  }
+
+  if (!newPassword || newPassword.length < 8) {
+    return { error: "New password must be at least 8 characters long" };
+  }
+
+  const bcrypt = (await import("bcryptjs")).default;
+  
+  const [user] = await db
+    .select({ password: users.password })
+    .from(users)
+    .where(eq(users.id, session.userId))
+    .limit(1);
+
+  if (!user || !user.password) {
+    return { error: "User not found or no password set" };
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isValid) {
+    return { error: "Incorrect current password" };
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+
+  await db
+    .update(users)
+    .set({ password: passwordHash, updatedAt: new Date() })
+    .where(eq(users.id, session.userId));
+
+  return { success: true };
 }

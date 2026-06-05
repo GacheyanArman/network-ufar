@@ -14,6 +14,8 @@ import {
   deleteStudyGroup,
 } from "@/features/study-groups/server/actions";
 import UiIcon from "@/shared/ui/UiIcon";
+import StudyGroupsHeader from "@/features/study-groups/components/StudyGroupsHeader";
+import StudyGroupsCreateButton from "@/features/study-groups/components/StudyGroupsCreateButton";
 
 export default async function StudyGroupsPage({ searchParams }) {
   const session = await getSession();
@@ -78,16 +80,7 @@ export default async function StudyGroupsPage({ searchParams }) {
     <div className="uf-sg-page">
       <style>{pageCSS}</style>
 
-      <div className="uf-sg-header">
-        <div>
-          <h1>{t.title}</h1>
-          <p>{t.subtitle}</p>
-        </div>
-        <Link href="/study-groups/create" className="btn btn-primary">
-          <UiIcon name="plus" size={16} />
-          {t.createGroup}
-        </Link>
-      </div>
+      <StudyGroupsHeader title={t.title} subtitle={t.subtitle} createLabel={t.createGroup} />
 
       <div className="uf-sg-filters">
         {["all", "active", "completed", "cancelled"].map((f) => (
@@ -108,9 +101,7 @@ export default async function StudyGroupsPage({ searchParams }) {
           </div>
           <h2>{t.emptyTitle}</h2>
           <p>{t.emptyHint}</p>
-          <Link href="/study-groups/create" className="btn btn-primary" style={{ marginTop: "16px" }}>
-            {t.createFirst}
-          </Link>
+          <StudyGroupsCreateButton label={t.createFirst} />
         </div>
       ) : (
         <div className="uf-sg-grid">

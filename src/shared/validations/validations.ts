@@ -23,6 +23,8 @@ export const profileSchema = z.object({
 
   year: z.string().trim().max(50).optional().or(z.literal("")),
 
+  studyGroup: z.string().trim().max(100).optional().or(z.literal("")),
+
   bio: z
     .string()
     .trim()
@@ -552,6 +554,8 @@ export const sendMessageSchema = z
     receiverId: fdOptionalText(80),
     groupChatId: fdOptionalText(80),
     content: fdOptionalText(2000),
+    existingAttachmentUrl: fdOptionalText(1000),
+    existingAttachmentType: fdOptionalText(50),
   })
   .superRefine((val, ctx) => {
     if (!val.receiverId && !val.groupChatId) {

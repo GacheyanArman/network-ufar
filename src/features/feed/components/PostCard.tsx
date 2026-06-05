@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Fragment, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import MediaViewer from "@/features/photos/components/MediaViewer";
 import CommentSection from "@/features/feed/components/CommentSection";
+import SharePostModal from "./SharePostModal";
 import { deletePost } from "@/features/feed/server/actions";
 import { toggleLike, toggleSavePost } from "@/features/feed/server/interactions";
 
@@ -71,6 +72,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [showComments, setShowComments] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -222,26 +224,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
   }
 
   async function handleShare() {
-    const url =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/profile/${post.authorId}`
-        : "";
-
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: authorName,
-          text: post.content,
-          url,
-        });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1400);
-      }
-    } catch {
-      // user cancelled share
-    }
+    setShowShareModal(true);
   }
 
   async function handleCopyLink() {
@@ -434,6 +417,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
                   communityName={post.communityName || null}
                   postId={post.id}
                   currentUserId={currentUser?.id || null}
+                  currentUserImage={currentUser?.image || currentUser?.avatarUrl || null}
                   onLikeAction={handleLikeFromViewer}
                   onCloseAction={() => setIsViewerOpen(false)}
                 />
@@ -475,7 +459,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
               <ActionButton
                 type="share"
                 label="Share"
-                icon="share"
+                icon="send"
                 onClick={handleShare}
                 hideValue
               />
@@ -488,13 +472,27 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
               initialComments={post.comments || []}
               currentUserId={currentUser?.id}
               currentUserName={currentUser?.fullName}
-              currentUserImage={currentUser?.image || undefined}
+              currentUserImage={currentUser?.image || currentUser?.avatarUrl || undefined}
             />
           )}
         </div>
 
         {copied ? <div className="uf-post-toast">Link copied</div> : null}
       </article>
+
+      {showShareModal && (
+        <SharePostModal
+          postUrl={
+            typeof window !== "undefined"
+              ? `${window.location.origin}/feed#${post.id}`
+              : ""
+          }
+          photoUrl={post.imageUrl || null}
+          currentUserId={currentUser?.id || null}
+          onClose={() => setShowShareModal(false)}
+          onSent={() => setShowShareModal(false)}
+        />
+      )}
 
       {isViewerOpen && post.imageUrl && (
         <MediaViewer
@@ -514,6 +512,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
           comments={post.comments || []}
           postId={post.id}
           currentUserId={currentUser?.id || null}
+          currentUserImage={currentUser?.image || currentUser?.avatarUrl || null}
           onLikeAction={handleLikeFromViewer}
           onCloseAction={() => setIsViewerOpen(false)}
         />
@@ -724,10 +723,11 @@ type IconName =
   | "trash"
   | "link"
   | "flag"
-  | "download";
+  | "download"
+  | "send";
 
 function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
-  const paths: Record<IconName, string> = {
+  const paths: Record<IconName, string | React.ReactNode> = {
     reply:
       "M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z",
     repost:
@@ -742,6 +742,12 @@ function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
       : "M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5zM6.5 4c-.276 0-.5.22-.5.5v14.56l6-4.29 6 4.29V4.5c0-.28-.224-.5-.5-.5h-11z",
     share:
       "M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z",
+    send: (
+      <>
+        <line x1="22" y1="2" x2="11" y2="13" />
+        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+      </>
+    ),
     more:
       "M3 12c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm7 0c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm7 0c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z",
     trash:
@@ -755,8 +761,12 @@ function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
   };
 
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d={paths[name]} />
+    <svg 
+      viewBox="0 0 24 24" 
+      aria-hidden="true"
+      style={name === "send" ? { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } : {}}
+    >
+      {typeof paths[name] === "string" ? <path d={paths[name] as string} /> : paths[name]}
     </svg>
   );
 }

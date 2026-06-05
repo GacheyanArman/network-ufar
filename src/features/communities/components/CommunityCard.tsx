@@ -26,8 +26,8 @@ type CommunityCardProps = {
 };
 
 const typeLabels: Record<string, string> = {
-  faculty_group: "Faculty Group",
-  year_group: "Year Group",
+  faculty_group: "Faculty",
+  year_group: "Class / Year",
   club: "Club",
   student_council: "Student Council",
   interest_group: "Interest Group",
@@ -132,7 +132,7 @@ export default function CommunityCard({
           {isPrivate ? (
             <span className="uf-privacy-badge private">
               <UiIcon name="eye" size={12} />
-              Private
+              Approval needed
             </span>
           ) : null}
         </div>
@@ -151,7 +151,9 @@ export default function CommunityCard({
               WebkitBoxOrient: "vertical",
             }}
           >
-            {community.description}
+            {community.description.length > 140
+              ? `${community.description.slice(0, 140)}…`
+              : community.description}
           </p>
         )}
 
@@ -170,7 +172,7 @@ export default function CommunityCard({
             style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
           >
             <UiIcon name="users" size={14} />
-            {community.memberCount || 0} members
+            {community.memberCount || 0} {(community.memberCount || 0) === 1 ? "student" : "students"}
           </span>
 
           {community.facultyTag ? (

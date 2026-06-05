@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/shared/db/db";
 import { getSession } from "@/shared/auth/session";
-import { notificationPreferences } from "@/shared/db/schema";
+import { notificationPreferences, users } from "@/shared/db/schema";
 import ProfileSettingsClient from "@/features/profile/components/ProfileSettingsClient";
 
 export const metadata = {
@@ -17,6 +17,27 @@ export default async function SettingsPage() {
   }
 
   const currentUserId = session.userId as string;
+
+  const [currentUser] = await db
+    .select({
+      id: users.id,
+      fullName: users.fullName,
+      username: users.username,
+      email: users.email,
+      image: users.image,
+      avatarUrl: users.avatarUrl,
+      role: users.role,
+      emailVerified: users.emailVerified,
+      privacyLevel: users.privacyLevel,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, currentUserId))
+    .limit(1);
+
+  if (!currentUser) {
+    redirect("/login");
+  }
 
   const [prefRow] = await db
     .select()
@@ -34,10 +55,10 @@ export default async function SettingsPage() {
   };
 
   return (
-    <div className="uf-settings-page" style={{ maxWidth: 700, margin: "0 auto", padding: "24px 16px" }}>
+    <div className="uf-settings-page" style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px" }}>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0f172a", marginBottom: 24 }}>Settings</h1>
       <div className="uf-card" style={{ padding: "24px", background: "#ffffff", borderRadius: "16px", border: "1px solid #d9e2ef", boxShadow: "0 2px 10px rgba(15, 23, 42, 0.04)" }}>
-        <ProfileSettingsClient prefs={prefs} />
+        <ProfileSettingsClient user={currentUser} prefs={prefs} />
       </div>
     </div>
   );

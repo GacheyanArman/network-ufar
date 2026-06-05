@@ -1,15 +1,24 @@
 "use client";
 
-import { useState, useMemo, useTransition, useCallback, useEffect, useRef } from "react";
+import * as React from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import UiIcon from "@/shared/ui/UiIcon";
 import {
   toggleSaveMaterial,
   uploadMaterial,
   trackMaterialDownload,
+  trackMaterialView,
   deleteMaterial,
+  rateMaterial,
+  getMaterialComments,
+  createMaterialComment,
+  deleteMaterialComment,
+  requestMaterial,
+  supportMaterialRequest,
 } from "@/features/materials/server/actions";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import styles from "./MaterialsPageClient.module.css";
 
 type Material = {
   id: string;
@@ -26,7 +35,10 @@ type Material = {
   viewsCount: number;
   downloadsCount: number;
   helpfulCount: number;
+  ratingSum: number;
+  ratingCount: number;
   averageRating: number;
+  myRating: number;
   isSaved: boolean;
   createdAt: Date | string;
   ownerId: string;
@@ -53,6 +65,15 @@ type OpenRequest = {
   isMine: boolean;
 };
 
+type MaterialComment = {
+  id: string;
+  content: string;
+  createdAt: Date | string;
+  userId: string;
+  userName?: string | null;
+  userAvatar?: string | null;
+};
+
 type Props = {
   materials: Material[];
   openRequests: OpenRequest[];
@@ -64,23 +85,36 @@ type Props = {
 const TYPES_MAP = [
   { value: "lecture_notes", label: "Lecture notes" },
   { value: "exam_prep", label: "Exam prep" },
-  { value: "past_questions", label: "Homework" },
-  { value: "slides", label: "Book / PDF" },
+  { value: "past_questions", label: "Past questions" },
+  { value: "slides", label: "Slides" },
   { value: "template", label: "Template" },
   { value: "useful_link", label: "Link" },
 ];
 
 const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "Master Students"];
+const URGENCIES = ["low", "medium", "high"];
 
 const getTypeName = (type: string) => {
+  const found = TYPES_MAP.find((t) => t.value === type);
+  return found ? found.label : "Other";
+};
+
+const getTypeIcon = (type: string) => {
   switch (type) {
-    case "lecture_notes": return "Lecture notes";
-    case "exam_prep": return "Exam prep";
-    case "past_questions": return "Homework";
-    case "slides": return "Book / PDF";
-    case "template": return "Template";
-    case "useful_link": return "Link";
-    default: return "Other";
+    case "lecture_notes":
+      return "file-text";
+    case "exam_prep":
+      return "book-open";
+    case "past_questions":
+      return "file-text";
+    case "slides":
+      return "file-pdf";
+    case "template":
+      return "file";
+    case "useful_link":
+      return "share";
+    default:
+      return "file";
   }
 };
 
@@ -88,51 +122,383 @@ const timeAgo = (input: Date | string) => {
   const d = typeof input === "string" ? new Date(input) : input;
   const diff = (Date.now() - d.getTime()) / 1000;
   if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 30 * 86400) return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+  if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+  if (diff < 30 * 86400) return Math.floor(diff / 86400) + "d ago";
   return d.toLocaleDateString();
 };
 
+/* ------------------------------------------------------------------ */
+/* Rating stars                                                        */
+/* ------------------------------------------------------------------ */
+function RatingStars({
+  myRating,
+  average,
+  count,
+  onRate,
+}: {
+  myRating: number;
+  average: number;
+  count: number;
+  onRate: (rating: number) => void;
+}) {
+  const [hover, setHover] = useState(0);
+  const display = hover || myRating || Math.round(average);
+  return (
+    <div className={styles.rating}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          className={styles.starBtn}
+          onMouseEnter={() => setHover(n)}
+          onMouseLeave={() => setHover(0)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRate(n);
+          }}
+          title={"Rate " + n + " / 5"}
+        >
+          <UiIcon name={n <= display ? "star-filled" : "star"} size={15} />
+        </button>
+      ))}
+      <span className={styles.ratingValue}>
+        {count > 0 ? average.toFixed(1) + " (" + count + ")" : "No ratings"}
+      </span>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Material card                                                       */
+/* ------------------------------------------------------------------ */
+function MaterialCard({
+  m,
+  currentUserId,
+  onToggleSave,
+  onDelete,
+  onDownload,
+  onRate,
+}: {
+  m: Material;
+  currentUserId: string;
+  onToggleSave: (id: string, e: React.MouseEvent) => void;
+  onDelete: (id: string, e: React.MouseEvent) => void;
+  onDownload: (m: Material) => void;
+  onRate: (id: string, rating: number) => void;
+}) {
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [comments, setComments] = useState<MaterialComment[] | null>(null);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [posting, setPosting] = useState(false);
+  const viewedRef = useRef(false);
+
+  const toggleComments = useCallback(async () => {
+    const next = !commentsOpen;
+    setCommentsOpen(next);
+    if (next) {
+      if (!viewedRef.current) {
+        viewedRef.current = true;
+        trackMaterialView(m.id).catch(() => {});
+      }
+      if (comments === null) {
+        setLoadingComments(true);
+        try {
+          const rows = (await getMaterialComments(m.id)) as MaterialComment[];
+          setComments(rows);
+        } catch {
+          setComments([]);
+        } finally {
+          setLoadingComments(false);
+        }
+      }
+    }
+  }, [commentsOpen, comments, m.id]);
+
+  const submitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const content = newComment.trim();
+    if (!content || posting) return;
+    setPosting(true);
+    try {
+      const res = await createMaterialComment(m.id, content);
+      setComments((prev) => [
+        {
+          id: res.id,
+          content,
+          createdAt: res.createdAt,
+          userId: currentUserId,
+          userName: "You",
+          userAvatar: null,
+        },
+        ...(prev || []),
+      ]);
+      setNewComment("");
+    } catch (err: any) {
+      alert(err?.message || "Failed to post comment");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const removeComment = async (commentId: string) => {
+    if (!confirm("Delete this comment?")) return;
+    try {
+      await deleteMaterialComment(commentId);
+      setComments((prev) => (prev || []).filter((c) => c.id !== commentId));
+    } catch (err: any) {
+      alert(err?.message || "Failed to delete comment");
+    }
+  };
+
+  return (
+    <div className={"card " + styles.card}>
+      {/* Header: badges + save */}
+      <div className={styles.cardHead}>
+        <div className={styles.badges}>
+          <span className={styles.typeIcon}>
+            <UiIcon name={getTypeIcon(m.type)} size={18} />
+          </span>
+          {m.course && <span className={styles.badge}>{m.course}</span>}
+          <span className={styles.badge + " " + styles.badgeType}>
+            {getTypeName(m.type)}
+          </span>
+          {m.isVerified && (
+            <span className={styles.typeIcon} title="Verified">
+              <UiIcon name="shield-check" size={15} />
+            </span>
+          )}
+        </div>
+        <button
+          className={
+            styles.saveBtn + (m.isSaved ? " " + styles.saveBtnActive : "")
+          }
+          onClick={(e) => onToggleSave(m.id, e)}
+          title={m.isSaved ? "Remove from saved" : "Save"}
+        >
+          <UiIcon name="bookmark" size={16} />
+        </button>
+      </div>
+
+      {/* Title + description */}
+      <h3 className={styles.title}>{m.title}</h3>
+      {m.description && <p className={styles.desc}>{m.description}</p>}
+
+      {/* Metadata */}
+      {(m.subject || m.year || m.professorCourse) && (
+        <div className={styles.meta}>
+          {m.subject && (
+            <span className={styles.metaItem}>
+              <UiIcon name="book" size={12} /> {m.subject}
+            </span>
+          )}
+          {m.year && (
+            <span className={styles.metaItem}>
+              <UiIcon name="graduation" size={12} /> {m.year}
+            </span>
+          )}
+          {m.professorCourse && (
+            <span className={styles.metaItem}>
+              <UiIcon name="user-tie" size={12} /> {m.professorCourse}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Stats: rating + views + downloads + comments toggle */}
+      <div className={styles.stats}>
+        <RatingStars
+          myRating={m.myRating}
+          average={m.averageRating}
+          count={m.ratingCount}
+          onRate={(r) => onRate(m.id, r)}
+        />
+        <span className={styles.stat} title="Views">
+          <UiIcon name="eye" size={14} /> {m.viewsCount}
+        </span>
+        <span className={styles.stat} title="Downloads">
+          <UiIcon name="download" size={14} /> {m.downloadsCount}
+        </span>
+        <button className={styles.statBtn} onClick={toggleComments}>
+          <UiIcon name="comment" size={14} /> Comments
+          {comments ? " (" + comments.length + ")" : ""}
+        </button>
+      </div>
+
+      {/* Footer: owner + actions */}
+      <div className={styles.footer}>
+        <div className={styles.owner}>
+          {m.ownerAvatar ? (
+            <Image
+              className={styles.ownerAvatar}
+              src={m.ownerAvatar}
+              alt=""
+              width={32}
+              height={32}
+            />
+          ) : (
+            <span className={styles.ownerAvatarBlank}>
+              <UiIcon name="user" size={14} />
+            </span>
+          )}
+          <div className={styles.ownerText}>
+            <span className={styles.ownerName}>
+              {m.ownerName || "UFAR Student"}
+            </span>
+            <span className={styles.time}>{timeAgo(m.createdAt)}</span>
+          </div>
+        </div>
+        <div className={styles.actions}>
+          {currentUserId === m.ownerId && (
+            <button
+              className={styles.iconBtn + " " + styles.dangerBtn}
+              onClick={(e) => onDelete(m.id, e)}
+              title="Delete"
+            >
+              <UiIcon name="trash" size={14} />
+            </button>
+          )}
+          {m.fileUrl && (
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={() => onDownload(m)}
+            >
+              <UiIcon
+                name={m.type === "useful_link" ? "share" : "download"}
+                size={13}
+              />
+              {m.type === "useful_link" ? "Open" : "Get"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Comments */}
+      {commentsOpen && (
+        <div className={styles.commentsWrap}>
+          <form className={styles.commentForm} onSubmit={submitComment}>
+            <textarea
+              className={styles.commentInput}
+              placeholder="Add a comment..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              rows={1}
+            />
+            <button
+              type="submit"
+              className="btn btn-sm btn-primary"
+              disabled={posting || !newComment.trim()}
+            >
+              <UiIcon name="send" size={13} />
+            </button>
+          </form>
+
+          {loadingComments ? (
+            <p className={styles.commentEmpty}>Loading comments...</p>
+          ) : comments && comments.length > 0 ? (
+            <div className={styles.commentList}>
+              {comments.map((c) => (
+                <div key={c.id} className={styles.commentItem}>
+                  {c.userAvatar ? (
+                    <Image
+                      className={styles.commentAvatar}
+                      src={c.userAvatar}
+                      alt=""
+                      width={28}
+                      height={28}
+                    />
+                  ) : (
+                    <span className={styles.commentAvatarBlank}>
+                      <UiIcon name="user" size={14} />
+                    </span>
+                  )}
+                  <div className={styles.commentBody}>
+                    <div className={styles.commentTop}>
+                      <span className={styles.commentName}>
+                        {c.userName || "UFAR Student"}
+                      </span>
+                      <span className={styles.commentTime}>
+                        {timeAgo(c.createdAt)}
+                      </span>
+                      {c.userId === currentUserId && (
+                        <button
+                          className={styles.commentDelete}
+                          onClick={() => removeComment(c.id)}
+                          title="Delete comment"
+                        >
+                          <UiIcon name="trash" size={12} />
+                        </button>
+                      )}
+                    </div>
+                    <p className={styles.commentText}>{c.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.commentEmpty}>
+              No comments yet. Be the first to ask or share something.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
 export default function MaterialsPageClient({
   materials: initialMaterials,
-  openRequests,
+  openRequests: initialRequests,
   currentUserId,
   enrolledCourseCodes = [],
   allCourses = [],
 }: Props) {
   const router = useRouter();
   const [materials, setMaterials] = useState<Material[]>(initialMaterials);
+  const [requests, setRequests] = useState<OpenRequest[]>(initialRequests);
   const [searchQuery, setSearchQuery] = useState("");
   const [quickFilter, setQuickFilter] = useState("recently_added");
-  const [activeTab, setActiveTab] = useState<"browse" | "saved" | "requests">("browse");
+  const [activeTab, setActiveTab] = useState<"browse" | "saved" | "requests">(
+    "browse"
+  );
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [requestError, setRequestError] = useState("");
 
-  const [uploadSourceType, setUploadSourceType] = useState<"file" | "link">("file");
-  const [showOptionalUploadFields, setShowOptionalUploadFields] = useState(false);
+  const [uploadSourceType, setUploadSourceType] = useState<"file" | "link">(
+    "file"
+  );
+  const [showOptionalUploadFields, setShowOptionalUploadFields] =
+    useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const modalFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Lock body scroll when upload modal is open
+  // Lock body scroll when any modal is open
   useEffect(() => {
-    if (isUploadModalOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    const open = isUploadModalOpen || isRequestModalOpen;
+    document.body.style.overflow = open ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isUploadModalOpen]);
+  }, [isUploadModalOpen, isRequestModalOpen]);
 
-  // ------------------- Filtering & Sorting -------------------
-  const filteredMaterials = useMemo(() => {
+  // ------------------- Filtering & sorting -------------------
+  const displayedMaterials = useMemo(() => {
     let list = materials;
 
-    // Apply search query
+    if (activeTab === "saved") {
+      list = list.filter((m) => m.isSaved);
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter(
@@ -144,9 +510,10 @@ export default function MaterialsPageClient({
       );
     }
 
-    // Apply quick filters
     if (quickFilter === "my_courses") {
-      list = list.filter((m) => m.course && enrolledCourseCodes.includes(m.course.toLowerCase()));
+      list = list.filter(
+        (m) => m.course && enrolledCourseCodes.includes(m.course.toLowerCase())
+      );
     } else if (quickFilter === "this_semester") {
       const fourMonthsAgo = new Date();
       fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
@@ -155,55 +522,86 @@ export default function MaterialsPageClient({
       list = list.filter((m) => m.type === "exam_prep");
     }
 
-    // Apply sorting
     list = [...list].sort((a, b) => {
       if (quickFilter === "most_useful") {
-        return b.downloadsCount - a.downloadsCount || b.averageRating - a.averageRating;
+        return (
+          b.downloadsCount - a.downloadsCount ||
+          b.averageRating - a.averageRating
+        );
       }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
     return list;
-  }, [materials, searchQuery, quickFilter, enrolledCourseCodes]);
-
-  const displayedMaterials = useMemo(() => {
-    if (activeTab === "saved") {
-      return filteredMaterials.filter((m) => m.isSaved);
-    }
-    return filteredMaterials;
-  }, [filteredMaterials, activeTab]);
+  }, [materials, searchQuery, quickFilter, enrolledCourseCodes, activeTab]);
 
   // ------------------- Handlers -------------------
-  const handleToggleSave = useCallback(async (id: string, e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-    setMaterials((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, isSaved: !m.isSaved } : m))
-    );
-    try {
-      await toggleSaveMaterial(id);
-    } catch {
-      // Rollback
+  const handleToggleSave = useCallback(
+    async (id: string, e?: React.MouseEvent) => {
+      e?.preventDefault();
+      e?.stopPropagation();
       setMaterials((prev) =>
         prev.map((m) => (m.id === id ? { ...m, isSaved: !m.isSaved } : m))
       );
+      try {
+        await toggleSaveMaterial(id);
+      } catch {
+        setMaterials((prev) =>
+          prev.map((m) => (m.id === id ? { ...m, isSaved: !m.isSaved } : m))
+        );
+      }
+    },
+    []
+  );
+
+  const handleRate = useCallback(async (id: string, rating: number) => {
+    let rollback: Material | null = null;
+    setMaterials((prev) =>
+      prev.map((m) => {
+        if (m.id !== id) return m;
+        rollback = m;
+        const hadRating = m.myRating > 0;
+        const newSum = hadRating
+          ? m.ratingSum - m.myRating + rating
+          : m.ratingSum + rating;
+        const newCount = hadRating ? m.ratingCount : m.ratingCount + 1;
+        const newAvg =
+          newCount > 0 ? Math.round((newSum / newCount) * 10) / 10 : 0;
+        return {
+          ...m,
+          myRating: rating,
+          ratingSum: newSum,
+          ratingCount: newCount,
+          averageRating: newAvg,
+        };
+      })
+    );
+    try {
+      await rateMaterial(id, rating);
+    } catch (err: any) {
+      if (rollback) {
+        setMaterials((prev) =>
+          prev.map((m) => (m.id === id ? (rollback as Material) : m))
+        );
+      }
+      alert(err?.message || "Failed to rate");
     }
   }, []);
 
-  const handleDownload = useCallback(async (id: string, fileUrl: string | null) => {
-    if (!fileUrl) return;
+  const handleDownload = useCallback(async (m: Material) => {
+    if (!m.fileUrl) return;
+    setMaterials((prev) =>
+      prev.map((x) =>
+        x.id === m.id ? { ...x, downloadsCount: x.downloadsCount + 1 } : x
+      )
+    );
     try {
-      const res = await trackMaterialDownload(id);
-      if (res.ok && res.fileUrl) {
-        window.open(res.fileUrl, "_blank");
-      } else {
-        window.open(fileUrl, "_blank");
-      }
+      const res = await trackMaterialDownload(m.id);
+      window.open(res.ok && res.fileUrl ? res.fileUrl : m.fileUrl, "_blank");
     } catch {
-      window.open(fileUrl, "_blank");
+      window.open(m.fileUrl, "_blank");
     }
-    router.refresh();
-  }, [router]);
+  }, []);
 
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -213,7 +611,36 @@ export default function MaterialsPageClient({
       await deleteMaterial(id);
       setMaterials((prev) => prev.filter((m) => m.id !== id));
     } catch (err: any) {
-      alert(err.message || "Failed to delete");
+      alert(err?.message || "Failed to delete");
+    }
+  }, []);
+
+  const handleSupport = useCallback(async (id: string) => {
+    setRequests((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              isSupportedByMe: true,
+              supportersCount: r.supportersCount + 1,
+            }
+          : r
+      )
+    );
+    try {
+      await supportMaterialRequest(id);
+    } catch {
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                isSupportedByMe: false,
+                supportersCount: Math.max(0, r.supportersCount - 1),
+              }
+            : r
+        )
+      );
     }
   }, []);
 
@@ -221,561 +648,316 @@ export default function MaterialsPageClient({
     e.preventDefault();
     setUploadError("");
     setIsUploading(true);
-
     const fd = new FormData(e.currentTarget);
     try {
       const res = await uploadMaterial(fd);
       if (res.ok) {
         setIsUploadModalOpen(false);
+        setSelectedFileName(null);
+        setShowOptionalUploadFields(false);
         router.refresh();
-        // Light-weight fallback to reload parent state
-        window.location.reload();
       }
     } catch (err: any) {
-      setUploadError(err.message || "Failed to upload material");
+      setUploadError(err?.message || "Failed to upload material");
     } finally {
       setIsUploading(false);
     }
   };
 
+  const handleRequestSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setRequestError("");
+    setIsRequesting(true);
+    const fd = new FormData(e.currentTarget);
+    try {
+      const res = await requestMaterial(fd);
+      if (res.ok) {
+        setIsRequestModalOpen(false);
+        router.refresh();
+      }
+    } catch (err: any) {
+      setRequestError(err?.message || "Failed to submit request");
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  const openUpload = () => {
+    setUploadError("");
+    setIsUploadModalOpen(true);
+  };
+
+  const QUICK_FILTERS = [
+    { id: "recently_added", label: "Recently Added", icon: "clock" },
+    { id: "my_courses", label: "My Courses", icon: "graduation" },
+    { id: "this_semester", label: "This Semester", icon: "calendar" },
+    { id: "exam_prep", label: "Exam Prep", icon: "book-open" },
+    { id: "most_useful", label: "Most Useful", icon: "trending-up" },
+  ];
+
   return (
-    <div className="study-materials-page" style={{ maxWidth: 960, margin: "0 auto", padding: "16px 8px" }}>
-      {/* Header Banner */}
-      <div
-        className="card"
-        style={{
-          padding: "24px 32px",
-          color: "var(--text-primary)",
-          marginBottom: 24,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 16,
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 800, margin: "0 0 4px", color: "var(--french-navy)" }}>
-            Study Materials
-          </h1>
-          <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", margin: 0, maxWidth: 480 }}>
-            Share and download lecture notes, summaries, exam preparation guides, and academic files.
+    <div className={styles.page}>
+      {/* Header */}
+      <div className={"card " + styles.header}>
+        <div className={styles.headerText}>
+          <h1 className={styles.headerTitle}>Study Materials</h1>
+          <p className={styles.headerSub}>
+            Lecture notes, summaries, exam prep and academic files — shared by
+            students, for students.
           </p>
         </div>
-        <button
-          onClick={() => {
-            setUploadError("");
-            setIsUploadModalOpen(true);
-          }}
-          className="btn btn-primary"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 20px",
-            background: "var(--french-blue)",
-            border: "none",
-            borderRadius: 8,
-            color: "white",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
+        <button className="btn btn-primary" onClick={openUpload}>
           <UiIcon name="upload" size={16} />
           Upload Material
         </button>
       </div>
 
-      {/* Main Tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          borderBottom: "1px solid var(--border-color-light)",
-          marginBottom: 20,
-        }}
-      >
+      {/* Tabs */}
+      <div className={styles.tabs}>
         <button
+          className={
+            styles.tab + (activeTab === "browse" ? " " + styles.tabActive : "")
+          }
           onClick={() => setActiveTab("browse")}
-          style={{
-            padding: "12px 18px",
-            background: "none",
-            border: "none",
-            borderBottom: activeTab === "browse" ? "3px solid var(--french-blue)" : "3px solid transparent",
-            color: activeTab === "browse" ? "var(--french-navy)" : "var(--text-secondary)",
-            fontWeight: 600,
-            fontSize: "0.92rem",
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-          }}
         >
           <UiIcon name="search" size={16} />
           Browse
         </button>
         <button
+          className={
+            styles.tab + (activeTab === "saved" ? " " + styles.tabActive : "")
+          }
           onClick={() => setActiveTab("saved")}
-          style={{
-            padding: "12px 18px",
-            background: "none",
-            border: "none",
-            borderBottom: activeTab === "saved" ? "3px solid var(--french-blue)" : "3px solid transparent",
-            color: activeTab === "saved" ? "var(--french-navy)" : "var(--text-secondary)",
-            fontWeight: 600,
-            fontSize: "0.92rem",
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-          }}
         >
           <UiIcon name="bookmark" size={16} />
-          Saved Files
+          Saved
         </button>
-        {openRequests.length > 0 && (
-          <button
-            onClick={() => setActiveTab("requests")}
-            style={{
-              padding: "12px 18px",
-              background: "none",
-              border: "none",
-              borderBottom: activeTab === "requests" ? "3px solid var(--french-blue)" : "3px solid transparent",
-              color: activeTab === "requests" ? "var(--french-navy)" : "var(--text-secondary)",
-              fontWeight: 600,
-              fontSize: "0.92rem",
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            <UiIcon name="comment" size={16} />
-            Requests ({openRequests.length})
-          </button>
-        )}
+        <button
+          className={
+            styles.tab +
+            (activeTab === "requests" ? " " + styles.tabActive : "")
+          }
+          onClick={() => setActiveTab("requests")}
+        >
+          <UiIcon name="comment" size={16} />
+          Requests ({requests.length})
+        </button>
       </div>
 
       {activeTab !== "requests" ? (
         <>
-          {/* Search bar & quick filters */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ position: "relative", width: "100%", marginBottom: 16 }}>
-              <span
-                style={{
-                  position: "absolute",
-                  left: 14,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "var(--text-muted)",
-                  display: "inline-flex",
-                }}
-              >
+          {/* Toolbar */}
+          <div className={styles.toolbar}>
+            <div className={styles.searchWrap}>
+              <span className={styles.searchIcon}>
                 <UiIcon name="search" size={18} />
               </span>
               <input
+                className={styles.searchInput}
                 type="text"
-                placeholder="Search materials by title, description, or course code..."
+                placeholder="Search by title, description, or course code..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "12px 16px 12px 42px",
-                  borderRadius: 10,
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-card)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.95rem",
-                  boxShadow: "var(--shadow-inset-soft)",
-                }}
               />
             </div>
-
-            {/* Quick filter pills */}
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {[
-                { id: "recently_added", label: "Recently Added", icon: "clock" },
-                { id: "my_courses", label: "My Courses", icon: "graduation" },
-                { id: "this_semester", label: "This Semester", icon: "calendar" },
-                { id: "exam_prep", label: "Exam Prep", icon: "file-text" },
-                { id: "most_useful", label: "Most Useful", icon: "star" },
-              ].map((f) => {
-                const active = quickFilter === f.id;
-                return (
-                  <button
-                    key={f.id}
-                    onClick={() => setQuickFilter(f.id)}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "8px 14px",
-                      borderRadius: 999,
-                      border: "1px solid",
-                      borderColor: active ? "var(--french-navy)" : "var(--border-color-light)",
-                      background: active ? "var(--french-navy)" : "var(--bg-card)",
-                      color: active ? "white" : "var(--text-secondary)",
-                      fontSize: "0.82rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <UiIcon name={f.icon} size={14} />
-                    {f.label}
-                  </button>
-                );
-              })}
+            <div className={styles.pills}>
+              {QUICK_FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  className={
+                    styles.pill +
+                    (quickFilter === f.id ? " " + styles.pillActive : "")
+                  }
+                  onClick={() => setQuickFilter(f.id)}
+                >
+                  <UiIcon name={f.icon} size={14} />
+                  {f.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Materials Grid / List */}
+          {/* Grid / empty */}
           {displayedMaterials.length === 0 ? (
-            <div
-              className="card"
-              style={{
-                padding: "48px 24px",
-                textAlign: "center",
-                background: "var(--bg-card)",
-                borderRadius: 12,
-                border: "1px dashed var(--border-color)",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "center", color: "var(--text-muted)", opacity: 0.4, marginBottom: 12 }}>
+            <div className={"card " + styles.empty}>
+              <span className={styles.emptyIcon}>
                 <UiIcon name="folder" size={48} />
-              </div>
-              <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--french-navy)", margin: "0 0 6px" }}>
-                {activeTab === "saved" ? "No saved materials" : "No materials found"}
-              </h3>
-              <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", margin: "0 0 16px" }}>
+              </span>
+              <h3 className={styles.emptyTitle}>
                 {activeTab === "saved"
-                  ? "Files you bookmark will show up here for fast access."
+                  ? "No saved materials"
+                  : "No materials found"}
+              </h3>
+              <p className={styles.emptyText}>
+                {activeTab === "saved"
+                  ? "Files you save will show up here for fast access."
                   : searchQuery
                   ? "Try adjusting your search terms or filters."
                   : "Be the first to upload study notes for your courses."}
               </p>
-              {!searchQuery && activeTab !== "saved" && (
-                <button
-                  onClick={() => setIsUploadModalOpen(true)}
-                  className="btn btn-secondary btn-sm"
-                  style={{ fontWeight: 600 }}
-                >
+              {activeTab !== "saved" && !searchQuery && (
+                <button className="btn btn-secondary btn-sm" onClick={openUpload}>
                   Upload the first material
                 </button>
               )}
             </div>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))",
-                gap: 16,
-              }}
-            >
+            <div className={styles.grid}>
               {displayedMaterials.map((m) => (
-                <div
+                <MaterialCard
                   key={m.id}
-                  className="card material-card"
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    padding: 16,
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--border-color-light)",
-                    borderRadius: 12,
-                    boxShadow: "var(--shadow-soft)",
-                    position: "relative",
-                  }}
-                >
-                  {/* Card Header Badges */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: 12,
-                    }}
-                  >
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {m.course && (
-                        <span
-                          style={{
-                            fontSize: "0.72rem",
-                            fontWeight: 700,
-                            background: "var(--french-blue-soft)",
-                            color: "var(--french-blue)",
-                            padding: "3px 8px",
-                            borderRadius: 6,
-                          }}
-                        >
-                          {m.course}
-                        </span>
-                      )}
-                      <span
-                        style={{
-                          fontSize: "0.72rem",
-                          fontWeight: 600,
-                          background: "var(--bg-hover)",
-                          color: "var(--text-secondary)",
-                          padding: "3px 8px",
-                          borderRadius: 6,
-                        }}
-                      >
-                        {getTypeName(m.type)}
-                      </span>
-                    </div>
-
-                    {/* Bookmark Save Button */}
-                    <button
-                      onClick={(e) => handleToggleSave(m.id, e)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: m.isSaved ? "var(--warning)" : "var(--text-muted)",
-                        padding: 4,
-                        display: "inline-flex",
-                      }}
-                    >
-                      <UiIcon name={m.isSaved ? "star-filled" : "bookmark"} size={16} />
-                    </button>
-                  </div>
-
-                  {/* Title and Description */}
-                  <h3
-                    style={{
-                      fontSize: "0.95rem",
-                      fontWeight: 700,
-                      color: "var(--french-navy)",
-                      margin: "0 0 6px",
-                      lineHeight: 1.4,
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {m.title}
-                  </h3>
-
-                  {m.description && (
-                    <p
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "var(--text-secondary)",
-                        margin: "0 0 16px",
-                        lineHeight: 1.5,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {m.description}
-                    </p>
-                  )}
-
-                  {/* Footer Row */}
-                  <div
-                    style={{
-                      marginTop: "auto",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      paddingTop: 12,
-                      borderTop: "1px solid var(--border-color-light)",
-                    }}
-                  >
-                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                      <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 500 }}>
-                        {m.ownerName || "UFAR Student"}
-                      </span>
-                      <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", opacity: 0.8 }}>
-                        {timeAgo(m.createdAt)}
-                      </span>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      {currentUserId === m.ownerId && (
-                        <button
-                          onClick={(e) => handleDelete(m.id, e)}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            color: "var(--danger)",
-                            padding: 6,
-                            display: "inline-flex",
-                          }}
-                          title="Delete file"
-                        >
-                          <UiIcon name="trash" size={14} />
-                        </button>
-                      )}
-                      {m.fileUrl && (
-                        <button
-                          onClick={() => handleDownload(m.id, m.fileUrl)}
-                          className="btn btn-sm btn-outline"
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 4,
-                            fontSize: "0.78rem",
-                            padding: "5px 10px",
-                            borderRadius: 6,
-                          }}
-                        >
-                          <UiIcon name="download" size={12} />
-                          {m.type === "useful_link" ? "Open" : "Get"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  m={m}
+                  currentUserId={currentUserId}
+                  onToggleSave={handleToggleSave}
+                  onDelete={handleDelete}
+                  onDownload={handleDownload}
+                  onRate={handleRate}
+                />
               ))}
             </div>
           )}
         </>
       ) : (
-        /* Simple Requests List Tab */
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {openRequests.map((r) => (
-            <div
-              key={r.id}
-              className="card"
-              style={{
-                padding: 16,
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-color-light)",
-                borderRadius: 12,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 12,
+        /* Requests tab */
+        <>
+          <div className={styles.requestsHead}>
+            <h3 className={styles.requestsTitle}>Open material requests</h3>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                setRequestError("");
+                setIsRequestModalOpen(true);
               }}
             >
-              <div>
-                <h4 style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--french-navy)", margin: "0 0 4px" }}>
-                  {r.subject} {r.materialType ? `(${getTypeName(r.materialType)})` : ""}
-                </h4>
-                <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", margin: "0 0 6px" }}>
-                  {r.description}
-                </p>
-                <div style={{ display: "flex", gap: 8, fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                  <span>Requested by {r.requesterName}</span>
-                  <span>•</span>
-                  <span>{timeAgo(r.createdAt)}</span>
-                </div>
-              </div>
-              <Link
-                href={`/study-materials?request=${r.id}`}
-                className="btn btn-sm btn-primary"
+              <UiIcon name="plus" size={14} />
+              Request a material
+            </button>
+          </div>
+
+          {requests.length === 0 ? (
+            <div className={"card " + styles.empty}>
+              <span className={styles.emptyIcon}>
+                <UiIcon name="comment" size={48} />
+              </span>
+              <h3 className={styles.emptyTitle}>No open requests</h3>
+              <p className={styles.emptyText}>
+                Need notes you can&apos;t find? Post a request and let other
+                students help.
+              </p>
+              <button
+                className="btn btn-secondary btn-sm"
                 onClick={() => {
-                  setUploadError("");
-                  setIsUploadModalOpen(true);
+                  setRequestError("");
+                  setIsRequestModalOpen(true);
                 }}
-                style={{ fontSize: "0.78rem" }}
               >
-                Upload File
-              </Link>
+                Request a material
+              </button>
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className={styles.requestList}>
+              {requests.map((r) => {
+                const urgencyClass =
+                  r.urgency === "high"
+                    ? styles.urgencyHigh
+                    : r.urgency === "low"
+                    ? styles.urgencyLow
+                    : styles.urgencyMedium;
+                return (
+                  <div key={r.id} className={"card " + styles.requestCard}>
+                    <div className={styles.requestInfo}>
+                      <h4 className={styles.requestTitle}>
+                        {r.subject || "Material request"}
+                        {r.materialType && (
+                          <span
+                            className={styles.badge + " " + styles.badgeType}
+                          >
+                            {getTypeName(r.materialType)}
+                          </span>
+                        )}
+                        <span
+                          className={styles.urgencyBadge + " " + urgencyClass}
+                        >
+                          {r.urgency}
+                        </span>
+                      </h4>
+                      {r.description && (
+                        <p className={styles.requestDesc}>{r.description}</p>
+                      )}
+                      <div className={styles.requestMeta}>
+                        <span>Requested by {r.requesterName || "a student"}</span>
+                        <span>&middot;</span>
+                        <span>{timeAgo(r.createdAt)}</span>
+                        {r.year && (
+                          <>
+                            <span>&middot;</span>
+                            <span>{r.year}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className={styles.requestActions}>
+                      <span className={styles.supportCount}>
+                        <UiIcon name="users" size={13} />
+                        {r.supportersCount} need this
+                      </span>
+                      {!r.isMine && (
+                        <button
+                          className="btn btn-sm btn-outline"
+                          disabled={r.isSupportedByMe}
+                          onClick={() => handleSupport(r.id)}
+                        >
+                          <UiIcon
+                            name={r.isSupportedByMe ? "check" : "thumbs-up"}
+                            size={13}
+                          />
+                          {r.isSupportedByMe ? "Supported" : "I need this too"}
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={openUpload}
+                      >
+                        <UiIcon name="upload" size={13} />
+                        Fulfill
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Simple Upload Modal */}
+      {/* Upload modal */}
       {isUploadModalOpen && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15, 23, 42, 0.4)",
-            backdropFilter: "blur(4px)",
-            zIndex: 1000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-            overflow: "hidden",
-          }}
+          className={styles.modalOverlay}
           onClick={() => setIsUploadModalOpen(false)}
         >
           <form
+            className={styles.modalCard}
             onSubmit={handleUploadSubmit}
             onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "var(--bg-card)",
-              border: "1px solid var(--border-color)",
-              borderRadius: 16,
-              padding: 24,
-              maxWidth: 480,
-              width: "100%",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-              maxHeight: "90vh",
-              overflowY: "auto",
-            }}
           >
-            <h2 style={{ fontSize: "1.2rem", fontWeight: 800, margin: "0 0 18px", color: "var(--french-navy)" }}>
-              Upload Study Material
-            </h2>
+            <h2 className={styles.modalTitle}>Upload Study Material</h2>
+            {uploadError && <div className={styles.modalError}>{uploadError}</div>}
 
-            {uploadError && (
-              <div
-                style={{
-                  background: "var(--danger-soft)",
-                  color: "var(--danger)",
-                  padding: "10px 12px",
-                  borderRadius: 6,
-                  fontSize: "0.82rem",
-                  marginBottom: 16,
-                  fontWeight: 500,
-                }}
-              >
-                {uploadError}
-              </div>
-            )}
-
-            {/* Title Field */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "var(--french-navy)", marginBottom: 6 }}>
-                Title *
-              </label>
+            <div className={styles.field}>
+              <label className={styles.label}>Title *</label>
               <input
+                className={styles.input}
                 type="text"
                 name="title"
                 required
                 placeholder="e.g. FIN-301 Midterm Summary Notes"
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  borderRadius: 8,
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-card)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.88rem",
-                }}
               />
             </div>
 
-            {/* Course Selector */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "var(--french-navy)", marginBottom: 6 }}>
-                Course *
-              </label>
-              <select
-                name="courseId"
-                required
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  borderRadius: 8,
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-card)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.88rem",
-                }}
-              >
+            <div className={styles.field}>
+              <label className={styles.label}>Course *</label>
+              <select className={styles.select} name="courseId" required>
                 <option value="">Select course...</option>
                 {allCourses.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -785,24 +967,9 @@ export default function MaterialsPageClient({
               </select>
             </div>
 
-            {/* Material Type Selector */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "var(--french-navy)", marginBottom: 6 }}>
-                Type *
-              </label>
-              <select
-                name="type"
-                required
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  borderRadius: 8,
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-card)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.88rem",
-                }}
-              >
+            <div className={styles.field}>
+              <label className={styles.label}>Type *</label>
+              <select className={styles.select} name="type" required>
                 {TYPES_MAP.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
@@ -811,43 +978,30 @@ export default function MaterialsPageClient({
               </select>
             </div>
 
-            {/* Source Tab Switcher: File vs Link */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "var(--french-navy)", marginBottom: 6 }}>
-                Source *
-              </label>
-              <div style={{ display: "flex", gap: 6, background: "var(--bg-hover)", padding: 3, borderRadius: 8, marginBottom: 10 }}>
+            <div className={styles.field}>
+              <label className={styles.label}>Source *</label>
+              <div className={styles.sourceToggle}>
                 <button
                   type="button"
+                  className={
+                    styles.sourceBtn +
+                    (uploadSourceType === "file"
+                      ? " " + styles.sourceBtnActive
+                      : "")
+                  }
                   onClick={() => setUploadSourceType("file")}
-                  style={{
-                    flex: 1,
-                    padding: "6px 12px",
-                    borderRadius: 6,
-                    border: "none",
-                    background: uploadSourceType === "file" ? "var(--bg-card)" : "transparent",
-                    color: "var(--text-primary)",
-                    fontWeight: 600,
-                    fontSize: "0.82rem",
-                    cursor: "pointer",
-                  }}
                 >
                   Upload File
                 </button>
                 <button
                   type="button"
+                  className={
+                    styles.sourceBtn +
+                    (uploadSourceType === "link"
+                      ? " " + styles.sourceBtnActive
+                      : "")
+                  }
                   onClick={() => setUploadSourceType("link")}
-                  style={{
-                    flex: 1,
-                    padding: "6px 12px",
-                    borderRadius: 6,
-                    border: "none",
-                    background: uploadSourceType === "link" ? "var(--bg-card)" : "transparent",
-                    color: "var(--text-primary)",
-                    fontWeight: 600,
-                    fontSize: "0.82rem",
-                    cursor: "pointer",
-                  }}
                 >
                   Provide Link
                 </button>
@@ -857,166 +1011,83 @@ export default function MaterialsPageClient({
                 <>
                   <input
                     ref={modalFileInputRef}
+                    className={styles.hiddenFileInput}
                     type="file"
                     name="file"
                     required
-                    style={{ display: "none" }}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       setSelectedFileName(file ? file.name : null);
                     }}
                   />
                   <div
+                    className={styles.dropzone}
                     onClick={() => modalFileInputRef.current?.click()}
-                    style={{
-                      border: "2px dashed var(--border-color)",
-                      borderRadius: 12,
-                      padding: "24px 16px",
-                      textAlign: "center",
-                      cursor: "pointer",
-                      background: "var(--bg-soft)",
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "var(--french-blue)";
-                      e.currentTarget.style.background = "var(--french-blue-soft)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "var(--border-color)";
-                      e.currentTarget.style.background = "var(--bg-soft)";
-                    }}
                   >
-                    <div style={{ marginBottom: 8, color: "var(--french-blue)", display: "flex", justifyContent: "center" }}>
+                    <span className={styles.dropIcon}>
                       <UiIcon name="upload" size={28} />
+                    </span>
+                    <div className={styles.dropMain}>
+                      {selectedFileName || "Click to choose a file"}
                     </div>
-                    {selectedFileName ? (
-                      <>
-                        <div style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--french-navy)", marginBottom: 4 }}>
-                          {selectedFileName}
-                        </div>
-                        <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-                          Click to change file
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--french-navy)", marginBottom: 4 }}>
-                          Click to choose a file
-                        </div>
-                        <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-                          PDF, DOCX, PPTX, images, and more
-                        </div>
-                      </>
-                    )}
+                    <div className={styles.dropSub}>
+                      {selectedFileName
+                        ? "Click to change file"
+                        : "PDF, DOCX, PPTX, images, and more"}
+                    </div>
                   </div>
                 </>
               ) : (
                 <input
+                  className={styles.input}
                   type="url"
                   name="link"
                   required
                   placeholder="https://drive.google.com/... or any URL"
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    border: "1px solid var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-primary)",
-                    fontSize: "0.88rem",
-                  }}
                 />
               )}
             </div>
 
-            {/* Collapsible Optional Section */}
-            <div style={{ marginBottom: 20 }}>
+            <div className={styles.field}>
               <button
                 type="button"
-                onClick={() => setShowOptionalUploadFields(!showOptionalUploadFields)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "var(--french-blue)",
-                  fontSize: "0.82rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: 0,
-                }}
+                className={styles.optionalToggle}
+                onClick={() =>
+                  setShowOptionalUploadFields(!showOptionalUploadFields)
+                }
               >
-                <UiIcon name={showOptionalUploadFields ? "chevron-up" : "chevron-down"} size={14} />
-                {showOptionalUploadFields ? "Hide Optional Details" : "Add Optional Details"}
+                <UiIcon
+                  name={showOptionalUploadFields ? "chevron-up" : "chevron-down"}
+                  size={14}
+                />
+                {showOptionalUploadFields
+                  ? "Hide optional details"
+                  : "Add optional details"}
               </button>
 
               {showOptionalUploadFields && (
-                <div
-                  style={{
-                    marginTop: 12,
-                    padding: 12,
-                    background: "var(--bg-hover)",
-                    borderRadius: 8,
-                    border: "1px solid var(--border-color-light)",
-                  }}
-                >
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4 }}>
-                      Description
-                    </label>
+                <div className={styles.optionalBody}>
+                  <div>
+                    <label className={styles.label}>Description</label>
                     <textarea
+                      className={styles.textarea}
                       name="description"
                       rows={2}
-                      placeholder="Describe what these study notes cover..."
-                      style={{
-                        width: "100%",
-                        padding: "8px 10px",
-                        borderRadius: 6,
-                        border: "1px solid var(--border-color)",
-                        background: "var(--bg-card)",
-                        color: "var(--text-primary)",
-                        fontSize: "0.82rem",
-                      }}
+                      placeholder="Describe what these notes cover..."
                     />
                   </div>
-
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4 }}>
-                      Tags (comma-separated)
-                    </label>
+                  <div>
+                    <label className={styles.label}>Tags (comma-separated)</label>
                     <input
+                      className={styles.input}
                       type="text"
                       name="tags"
                       placeholder="e.g. midterm, formula-sheet"
-                      style={{
-                        width: "100%",
-                        padding: "8px 10px",
-                        borderRadius: 6,
-                        border: "1px solid var(--border-color)",
-                        background: "var(--bg-card)",
-                        color: "var(--text-primary)",
-                        fontSize: "0.82rem",
-                      }}
                     />
                   </div>
-
                   <div>
-                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4 }}>
-                      Year
-                    </label>
-                    <select
-                      name="year"
-                      style={{
-                        width: "100%",
-                        padding: "8px 10px",
-                        borderRadius: 6,
-                        border: "1px solid var(--border-color)",
-                        background: "var(--bg-card)",
-                        color: "var(--text-primary)",
-                        fontSize: "0.82rem",
-                      }}
-                    >
+                    <label className={styles.label}>Year</label>
+                    <select className={styles.select} name="year">
                       <option value="">Select year...</option>
                       {YEARS.map((y) => (
                         <option key={y} value={y}>
@@ -1029,33 +1100,19 @@ export default function MaterialsPageClient({
               )}
             </div>
 
-            {/* Modal Buttons */}
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <div className={styles.modalButtons}>
               <button
                 type="button"
-                onClick={() => setIsUploadModalOpen(false)}
-                disabled={isUploading}
                 className="btn btn-secondary"
-                style={{ padding: "8px 16px", borderRadius: 8, fontSize: "0.85rem", fontWeight: 600 }}
+                disabled={isUploading}
+                onClick={() => setIsUploadModalOpen(false)}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={isUploading}
                 className="btn btn-primary"
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 8,
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  background: "var(--french-blue)",
-                  border: "none",
-                  color: "white",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
+                disabled={isUploading}
               >
                 {isUploading ? (
                   <>
@@ -1064,6 +1121,105 @@ export default function MaterialsPageClient({
                   </>
                 ) : (
                   "Upload"
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Request modal */}
+      {isRequestModalOpen && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setIsRequestModalOpen(false)}
+        >
+          <form
+            className={styles.modalCard}
+            onSubmit={handleRequestSubmit}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className={styles.modalTitle}>Request a Material</h2>
+            {requestError && (
+              <div className={styles.modalError}>{requestError}</div>
+            )}
+
+            <div className={styles.field}>
+              <label className={styles.label}>Subject *</label>
+              <input
+                className={styles.input}
+                type="text"
+                name="subject"
+                required
+                placeholder="e.g. Microeconomics"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Type</label>
+              <select className={styles.select} name="materialType">
+                {TYPES_MAP.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Year</label>
+              <select className={styles.select} name="year">
+                <option value="">Select year...</option>
+                {YEARS.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Urgency</label>
+              <select className={styles.select} name="urgency" defaultValue="medium">
+                {URGENCIES.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Details</label>
+              <textarea
+                className={styles.textarea}
+                name="description"
+                rows={3}
+                placeholder="Describe exactly what you need (topic, professor, chapter)..."
+              />
+            </div>
+
+            <div className={styles.modalButtons}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={isRequesting}
+                onClick={() => setIsRequestModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isRequesting}
+              >
+                {isRequesting ? (
+                  <>
+                    <UiIcon name="loader" size={14} className="animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit request"
                 )}
               </button>
             </div>

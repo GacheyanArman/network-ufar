@@ -17,8 +17,12 @@ type ProfilePost = {
   mediaType?: "image" | "video" | null;
   createdAt?: Date | string | null;
   authorId: string;
+  authorName?: string;
+  authorImage?: string | null;
   likesCount: number;
   commentsCount: number;
+  likedByMe?: boolean;
+  savedByMe?: boolean;
 };
 
 type ProfilePostsClientProps = {
@@ -42,13 +46,14 @@ export default function ProfilePostsClient({
             mediaType: post.mediaType || null,
             createdAt: post.createdAt,
             authorId: post.authorId,
-            authorName: currentUser.fullName || "User",
-            authorImage: currentUser.image || null,
+            authorName: post.authorName || currentUser.fullName || "User",
+            authorImage: post.authorImage || currentUser.image || null,
             likesCount: post.likesCount || 0,
             commentsCount: post.commentsCount || 0,
             repostsCount: 0,
             viewsCount: 0,
-            likedByMe: false,
+            likedByMe: post.likedByMe || false,
+            savedByMe: post.savedByMe || false,
             comments: [],
             communityName: null,
           }}

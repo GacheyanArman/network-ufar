@@ -606,6 +606,7 @@ select:focus {
     position: sticky !important;
     top: calc(var(--topbar-height) + 24px) !important;
     align-self: start !important;
+    z-index: 40 !important;
 }
 
 .sidebar-right {

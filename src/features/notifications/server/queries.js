@@ -14,6 +14,7 @@ const TYPES = new Set([
   "event_new",
   "deadline",
   "group_join",
+  "save",
 ]);
 
 const TYPE_CATEGORY = {
@@ -28,6 +29,7 @@ const TYPE_CATEGORY = {
   event_new: "events",
   deadline: "academic",
   group_join: "social",
+  save: "social",
 };
 
 export async function createNotification({ userId, actorId, type, entityId, postId }) {

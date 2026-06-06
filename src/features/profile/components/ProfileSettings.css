@@ -153,7 +153,7 @@
 .uf-notif-pref-row {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 16px;
   padding: 16px;
   border-bottom: 1px solid #e2e8f0;
@@ -166,6 +166,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
   padding-right: 16px;
 }
 
@@ -301,6 +302,10 @@
   font-weight: 800;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .uf-logout-btn:hover {

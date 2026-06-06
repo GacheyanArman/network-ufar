@@ -15,6 +15,8 @@ import {
   courses,
   semesters,
   notificationPreferences,
+  postSaves,
+  postLikes,
 } from "@/shared/db/schema";
 import PostComposer from "@/features/feed/components/PostComposer";
 import ProfilePostsClient from "@/features/profile/components/ProfilePostsClient";
@@ -40,7 +42,7 @@ interface PageProps {
   }>;
 }
 
-const ALLOWED_TABS = ["posts", "saved", "uploads", "about", "overview"];
+const ALLOWED_TABS = ["posts", "saved_posts", "saved", "uploads", "about", "overview"];
 
 export default async function ProfilePage({ searchParams }: PageProps) {
   const session = await getSession();
@@ -129,6 +131,19 @@ export default async function ProfilePage({ searchParams }: PageProps) {
     .where(eq(posts.authorId, currentUserId))
     .orderBy(desc(posts.createdAt));
 
+  // ─── User's Likes and Saves ───
+  const userLikes = await db
+    .select({ postId: postLikes.postId })
+    .from(postLikes)
+    .where(eq(postLikes.userId, currentUserId));
+  const likedPostIds = new Set(userLikes.map((l) => l.postId));
+
+  const userSaves = await db
+    .select({ postId: postSaves.postId })
+    .from(postSaves)
+    .where(eq(postSaves.userId, currentUserId));
+  const savedPostIds = new Set(userSaves.map((s) => s.postId));
+
   const safeName = currentUser.fullName || "Student";
   const avatarImage = currentUser.image || currentUser.avatarUrl || "";
   const rawFaculty = currentUser.faculty || "";
@@ -155,12 +170,62 @@ export default async function ProfilePage({ searchParams }: PageProps) {
       likesCount: post.likesCount || 0,
       commentsCount: post.commentsCount || 0,
       postType: post.postType || "discussion",
-      likedByMe: false,
+      likedByMe: likedPostIds.has(post.id),
+      savedByMe: savedPostIds.has(post.id),
     };
   });
 
   // ─── My Posts ───
   const myPostsOnly = serializedPosts.filter((p: any) => p.postType !== "question");
+
+  // ─── Saved Posts ───
+  const savedPostsRecords = await db
+    .select({
+      id: posts.id,
+      content: posts.content,
+      imageUrl: posts.imageUrl,
+      createdAt: posts.createdAt,
+      likesCount: posts.likesCount,
+      commentsCount: posts.commentsCount,
+      authorId: posts.authorId,
+      postType: posts.postType,
+      authorName: users.fullName,
+      authorImage: users.image,
+      authorAvatarUrl: users.avatarUrl,
+      authorFaculty: users.faculty,
+    })
+    .from(postSaves)
+    .innerJoin(posts, eq(postSaves.postId, posts.id))
+    .innerJoin(users, eq(posts.authorId, users.id))
+    .where(eq(postSaves.userId, currentUserId))
+    .orderBy(desc(postSaves.createdAt));
+
+  const savedPostsSerialized = savedPostsRecords.map((post: any) => {
+    const imageUrl = post.imageUrl || null;
+    const mediaType = imageUrl
+      ? /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(imageUrl)
+        ? "video"
+        : "image"
+      : null;
+    return {
+      id: post.id,
+      content: post.content || "",
+      imageUrl,
+      mediaType: mediaType as "image" | "video" | null,
+      createdAt: post.createdAt
+        ? post.createdAt.toISOString()
+        : new Date().toISOString(),
+      authorId: post.authorId,
+      authorName: post.authorName || "Student",
+      authorImage: post.authorImage || post.authorAvatarUrl || "",
+      authorFaculty: post.authorFaculty || "",
+      likesCount: post.likesCount || 0,
+      commentsCount: post.commentsCount || 0,
+      postType: post.postType || "discussion",
+      likedByMe: likedPostIds.has(post.id),
+      savedByMe: true,
+    };
+  });
 
   // ─── Saved Materials ───
   const savedMaterials = await db
@@ -242,6 +307,7 @@ export default async function ProfilePage({ searchParams }: PageProps) {
 
   const TABS = [
     { key: "posts", label: t.profile?.myPosts || "My Posts" },
+    { key: "saved_posts", label: t.profile?.savedPosts || "Saved Posts" },
     { key: "saved", label: t.profile?.savedMaterials || "Saved Materials" },
     { key: "uploads", label: t.profile?.myUploads || "My Uploads" },
     { key: "about", label: t.profile?.about || "About" },
@@ -434,6 +500,26 @@ export default async function ProfilePage({ searchParams }: PageProps) {
                 ) : (
                   <ProfilePostsClient
                     posts={myPostsOnly}
+                    currentUser={currentUser}
+                  />
+                )}
+              </section>
+            ) : null}
+
+            {/* ─── Saved Posts tab ─── */}
+            {currentTab === "saved_posts" ? (
+              <section className="uf-profile-feed">
+                {savedPostsSerialized.length === 0 ? (
+                  <EmptyState
+                    icon="bookmark"
+                    title={t.profile?.noSavedPosts || "No saved posts yet"}
+                    description={t.profile?.noSavedPostsHint || "Bookmark posts to find them easily later."}
+                    actionHref="/feed"
+                    actionText={t.profile?.browseFeed || "Browse feed"}
+                  />
+                ) : (
+                  <ProfilePostsClient
+                    posts={savedPostsSerialized}
                     currentUser={currentUser}
                   />
                 )}

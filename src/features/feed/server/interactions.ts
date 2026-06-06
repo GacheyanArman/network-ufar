@@ -491,6 +491,16 @@ export async function toggleSavePost(
     })
     .onConflictDoNothing();
 
+  if (post.authorId !== userId) {
+    await createNotification({
+      userId: post.authorId,
+      actorId: userId,
+      type: "save",
+      entityId: postId,
+      postId,
+    });
+  }
+
   await revalidatePostPlaces(post);
   revalidateTag(`feed-${userId}`, {});
 

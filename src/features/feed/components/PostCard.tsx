@@ -247,7 +247,7 @@ export default function PostCard({ post, currentUser }: PostCardProps) {
     <>
       <style>{postCardStyles}</style>
 
-      <article 
+      <article
         className={`uf-post ${post.isOptimistic ? "is-sending" : ""}`}
         style={{ zIndex: isMenuOpen ? 50 : 1 }}
       >
@@ -761,8 +761,8 @@ function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
   };
 
   return (
-    <svg 
-      viewBox="0 0 24 24" 
+    <svg
+      viewBox="0 0 24 24"
       aria-hidden="true"
       style={name === "send" ? { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } : {}}
     >

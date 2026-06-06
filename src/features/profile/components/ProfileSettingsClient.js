@@ -274,6 +274,10 @@ export default function ProfileSettingsClient({ user, prefs: initialPrefs }) {
               <div className="uf-notif-prefs-list">
                 {PREF_KEYS.map((key) => (
                   <div key={key} className="uf-notif-pref-row" onClick={() => handleToggle(key)}>
+                    <div className="uf-notif-pref-info">
+                      <span className="uf-notif-pref-title">{labels.prefs[key]?.title || key}</span>
+                      <span className="uf-notif-pref-desc">{labels.prefs[key]?.desc}</span>
+                    </div>
                     <button
                       type="button"
                       className={`uf-toggle ${prefs[key] ? "on" : "off"}`}
@@ -283,10 +287,6 @@ export default function ProfileSettingsClient({ user, prefs: initialPrefs }) {
                     >
                       <span className="uf-toggle-knob" />
                     </button>
-                    <div className="uf-notif-pref-info">
-                      <span className="uf-notif-pref-title">{labels.prefs[key]?.title || key}</span>
-                      <span className="uf-notif-pref-desc">{labels.prefs[key]?.desc}</span>
-                    </div>
                   </div>
                 ))}
               </div>

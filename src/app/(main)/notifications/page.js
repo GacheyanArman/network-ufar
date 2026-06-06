@@ -432,8 +432,8 @@ const pageStyles = `
 }
 
 .uf-notif-prefs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -441,8 +441,11 @@ const pageStyles = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 6px 0;
+  gap: 12px;
+  background: #f8fafc;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
 }
 
 .uf-notif-pref-label {
@@ -729,7 +732,8 @@ const pageStyles = `
   }
 
   .uf-notif-prefs-grid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 `;

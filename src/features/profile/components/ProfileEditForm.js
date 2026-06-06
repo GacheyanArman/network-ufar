@@ -6,6 +6,7 @@ import { updateProfile } from "@/features/profile/server/actions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/shared/i18n/i18n";
 import UiIcon from "@/shared/ui/UiIcon";
+import CoverEditorModal from "./CoverEditorModal";
 import "./ProfileEditForm.css";
 
 const editProfileText = {
@@ -167,6 +168,9 @@ export default function ProfileEditForm({ user, error }) {
   const [coverPreview, setCoverPreview] = useState(user.coverImage || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
+  const [tempCoverFile, setTempCoverFile] = useState(null);
+
   // Live preview state
   const [fullName, setFullName] = useState(user.fullName || "");
   const [username, setUsername] = useState(user.username || "");
@@ -234,7 +238,25 @@ export default function ProfileEditForm({ user, error }) {
       return;
     }
 
-    setCoverPreview(URL.createObjectURL(file));
+    setTempCoverFile(file);
+    setIsCoverModalOpen(true);
+    event.target.value = "";
+  }
+
+  function handleCoverApply(file, previewUrl) {
+    if (!file) return;
+    
+    // Create a new FileList-like object to attach to the input
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    
+    if (coverInputRef.current) {
+      coverInputRef.current.files = dataTransfer.files;
+    }
+    
+    setCoverPreview(previewUrl);
+    setIsCoverModalOpen(false);
+    setTempCoverFile(null);
   }
 
   function formatUsername(val) {
@@ -289,9 +311,12 @@ export default function ProfileEditForm({ user, error }) {
                     <button
                       type="button"
                       className="uf-edit-photo-btn"
-                      onClick={() => coverInputRef.current?.click()}
+                      onClick={() => {
+                        setTempCoverFile(null);
+                        setIsCoverModalOpen(true);
+                      }}
                     >
-                      <UiIcon name="image" size={14} />
+                      <UiIcon name="edit-2" size={14} />
                       {text.changeCover}
                     </button>
                   </div>
@@ -580,6 +605,16 @@ export default function ProfileEditForm({ user, error }) {
           </div>
         </div>
       </div>
+
+      <CoverEditorModal 
+        isOpen={isCoverModalOpen}
+        onClose={() => {
+          setIsCoverModalOpen(false);
+          setTempCoverFile(null);
+        }}
+        initialImageFile={tempCoverFile}
+        onApply={handleCoverApply}
+      />
     </div>
   );
 }

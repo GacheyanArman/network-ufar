@@ -26,7 +26,7 @@
     --success-soft: #ecfdf5;
     --warning: #f59e0b;
     --warning-soft: #fef3c7;
-    --info: #2563eb;
+    --info: var(--french-blue);
     --purple: #7c3aed;
     --purple-soft: #f5f3ff;
 

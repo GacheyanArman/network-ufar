@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { redirect, notFound } from "next/navigation";
 
 import { db } from "@/shared/db/db";
@@ -14,7 +14,7 @@ import {
   courseEnrollments,
   courses,
   semesters,
-  studyMaterials,
+  photoAlbums,
 } from "@/shared/db/schema";
 import { getFacultyLabel } from "@/features/profile/server/utils";
 import { getSession } from "@/shared/auth/session";
@@ -29,7 +29,6 @@ import "@/features/profile/profile.css";
 import {
   TabLink,
   InfoBlock,
-  MaterialCard,
   EmptyState,
 } from "@/features/profile/components/SharedProfileComponents";
 
@@ -42,7 +41,7 @@ interface PageProps {
   }>;
 }
 
-const ALLOWED_TABS = ["posts", "uploads", "about"];
+const ALLOWED_TABS = ["posts", "friends", "albums", "about"];
 
 export default async function PublicProfilePage({ params, searchParams }: PageProps) {
   const session = await getSession();
@@ -155,27 +154,6 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
     .where(eq(posts.authorId, profileId))
     .orderBy(desc(posts.createdAt));
 
-  // ─── Public Approved Uploads ───
-  const publicUploads = await db
-    .select({
-      id: studyMaterials.id,
-      title: studyMaterials.title,
-      description: studyMaterials.description,
-      fileUrl: studyMaterials.fileUrl,
-      type: studyMaterials.type,
-      course: studyMaterials.course,
-      createdAt: studyMaterials.createdAt,
-      downloadsCount: studyMaterials.downloadsCount,
-    })
-    .from(studyMaterials)
-    .where(
-      and(
-        eq(studyMaterials.ownerId, profileId),
-        eq(studyMaterials.status, "approved")
-      )
-    )
-    .orderBy(desc(studyMaterials.createdAt));
-
   const [relationship] = await db
     .select({
       id: friendships.id,
@@ -228,6 +206,52 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
 
   const isBlocked = blockStatus?.blockerId === currentUserId;
   const isBlockedByThem = blockStatus?.blockerId === profileId;
+
+  const [profileFriendships, myFriendships, profileFollowers, profileFollowing, publicAlbums] = await Promise.all([
+    db
+      .select({ requesterId: friendships.requesterId, receiverId: friendships.receiverId })
+      .from(friendships)
+      .where(and(eq(friendships.status, "accepted"), or(eq(friendships.requesterId, profileId), eq(friendships.receiverId, profileId)))),
+    db
+      .select({ requesterId: friendships.requesterId, receiverId: friendships.receiverId })
+      .from(friendships)
+      .where(and(eq(friendships.status, "accepted"), or(eq(friendships.requesterId, currentUserId), eq(friendships.receiverId, currentUserId)))),
+    db.select({ id: userFollows.id }).from(userFollows).where(eq(userFollows.followingId, profileId)),
+    db.select({ id: userFollows.id }).from(userFollows).where(eq(userFollows.followerId, profileId)),
+    db
+      .select({
+        id: photoAlbums.id,
+        title: photoAlbums.title,
+        description: photoAlbums.description,
+        coverPhotoUrl: photoAlbums.coverPhotoUrl,
+      })
+      .from(photoAlbums)
+      .where(and(eq(photoAlbums.ownerId, profileId), eq(photoAlbums.isPrivate, false)))
+      .orderBy(desc(photoAlbums.createdAt))
+      .limit(18),
+  ]);
+
+  const profileFriendIds: string[] = profileFriendships.map((friendship: { requesterId: string; receiverId: string }) =>
+    friendship.requesterId === profileId ? friendship.receiverId : friendship.requesterId
+  );
+  const myFriendIds = new Set<string>(myFriendships.map((friendship: { requesterId: string; receiverId: string }) =>
+    friendship.requesterId === currentUserId ? friendship.receiverId : friendship.requesterId
+  ));
+  const mutualFriendsCount = profileFriendIds.filter((id) => myFriendIds.has(id)).length;
+  const publicFriends = profileFriendIds.length > 0
+    ? await db
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          faculty: users.faculty,
+          image: users.image,
+          avatarUrl: users.avatarUrl,
+        })
+        .from(users)
+        .where(inArray(users.id, profileFriendIds))
+        .limit(24)
+    : [];
 
   const safeName = profileUser.fullName || "Student";
   const safeInitial = safeName.charAt(0).toUpperCase() || "U";
@@ -284,7 +308,8 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
 
   const TABS = [
     { key: "posts", label: "Posts" },
-    { key: "uploads", label: "Uploads" },
+    { key: "friends", label: "Friends" },
+    { key: "albums", label: "Albums" },
     { key: "about", label: "About" },
   ];
 
@@ -414,6 +439,24 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
 
                 {safeBio ? <p className="uf-profile-bio">{safeBio}</p> : null}
 
+                <div className="uf-profile-stats-bar uf-profile-social-stats">
+                  <Link href={`/profile/${profileId}?tab=friends`} className="uf-stat-item">
+                    <span className="uf-stat-value">{profileFriendIds.length}</span>
+                    <span className="uf-stat-label">Friends</span>
+                  </Link>
+                  <Link href={`/profile/${profileId}?tab=friends`} className="uf-stat-item">
+                    <span className="uf-stat-value">{profileFollowers.length}</span>
+                    <span className="uf-stat-label">Followers</span>
+                  </Link>
+                  <Link href={`/profile/${profileId}?tab=friends`} className="uf-stat-item">
+                    <span className="uf-stat-value">{profileFollowing.length}</span>
+                    <span className="uf-stat-label">Following</span>
+                  </Link>
+                </div>
+                <p style={{ margin: "8px 0 0", color: "var(--text-secondary)", fontSize: 13 }}>
+                  {mutualFriendsCount} mutual friends
+                </p>
+
                 {/* Enrolled Courses */}
                 {enrolledCourses.length > 0 ? (
                   <div className="uf-profile-courses">
@@ -454,13 +497,6 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
                           </button>
                         </form>
                       )}
-
-                      <Link
-                        href={`/messages?user=${profileId}`}
-                        className="public-btn public-btn-light"
-                      >
-                        Message
-                      </Link>
 
                       {isFriend ? (
                         <span className="public-status-pill">Friends</span>
@@ -537,22 +573,58 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
               </section>
             ) : null}
 
-            {/* ─── Uploads tab ─── */}
-            {currentTab === "uploads" ? (
+            {/* ─── Friends tab ─── */}
+            {currentTab === "friends" ? (
               <section className="uf-materials-section">
-                <h3 className="uf-overview-section-title" style={{ padding: "0 8px" }}>
-                  Uploads ({publicUploads.length})
-                </h3>
-                {publicUploads.length === 0 ? (
-                  <EmptyState
-                    icon="upload"
-                    title="No uploads yet"
-                    description="This student hasn't shared any study materials yet."
-                  />
+                <div className="uf-card" style={{ padding: 18, marginBottom: 16 }}>
+                  <h3 className="uf-overview-section-title" style={{ padding: 0, marginBottom: 12 }}>Social circle</h3>
+                  <div className="uf-profile-stats-bar">
+                    <div className="uf-stat-item"><span className="uf-stat-value">{profileFriendIds.length}</span><span className="uf-stat-label">Friends</span></div>
+                    <div className="uf-stat-item"><span className="uf-stat-value">{profileFollowers.length}</span><span className="uf-stat-label">Followers</span></div>
+                    <div className="uf-stat-item"><span className="uf-stat-value">{profileFollowing.length}</span><span className="uf-stat-label">Following</span></div>
+                    <div className="uf-stat-item"><span className="uf-stat-value">{mutualFriendsCount}</span><span className="uf-stat-label">Mutual</span></div>
+                  </div>
+                </div>
+                {publicFriends.length === 0 ? (
+                  <EmptyState icon="users" title="No friends yet" description="This student has not added friends yet." />
                 ) : (
-                  <div style={{ display: "grid", gap: 16 }}>
-                    {publicUploads.map((m: any) => (
-                      <MaterialCard key={m.id} material={m} />
+                  <div className="uf-card" style={{ padding: 12, display: "grid", gap: 8 }}>
+                    {publicFriends.map((friend: { id: string; fullName: string | null; username: string | null; faculty: string | null; image: string | null; avatarUrl: string | null }) => (
+                      <Link key={friend.id} href={`/profile/${friend.id}`} className="mini-user-row mini-user-row-link">
+                        <div className="mini-user-avatar">
+                          {friend.image || friend.avatarUrl ? (
+                            <img src={(friend.image || friend.avatarUrl) as string} alt={friend.fullName || "Student"} />
+                          ) : (
+                            friend.fullName?.[0] || "U"
+                          )}
+                        </div>
+                        <div className="mini-user-main">
+                          <strong>{friend.fullName || "Student"}</strong>
+                          <span>{friend.username ? `@${friend.username}` : friend.faculty || "Student"}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : null}
+
+            {/* ─── Albums tab ─── */}
+            {currentTab === "albums" ? (
+              <section className="uf-materials-section">
+                <h3 className="uf-overview-section-title" style={{ padding: "0 8px" }}>Albums ({publicAlbums.length})</h3>
+                {publicAlbums.length === 0 ? (
+                  <EmptyState icon="image" title="No public albums yet" description="Albums keep photos from events, clubs and student life in one profile." />
+                ) : (
+                  <div className="uf-photo-grid">
+                    {publicAlbums.map((album: { id: string; title: string; description: string | null; coverPhotoUrl: string | null }) => (
+                      <div key={album.id} className="uf-card uf-photo-tile">
+                        <div className="uf-photo-thumb">
+                          {album.coverPhotoUrl ? <img src={album.coverPhotoUrl} alt={album.title} /> : <span>📸</span>}
+                        </div>
+                        <strong>{album.title}</strong>
+                        <span>{album.description || "Student memories"}</span>
+                      </div>
                     ))}
                   </div>
                 )}

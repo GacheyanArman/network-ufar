@@ -3,6 +3,11 @@
 import { useCallback, useOptimistic, useEffect, useRef, useState } from "react";
 import PostCard from "@/features/feed/components/PostCard";
 import PostComposer from "@/features/feed/components/PostComposer";
+import FeedBirthdayCard from "@/features/feed/components/FeedBirthdayCard";
+import FeedEventCard from "@/features/feed/components/FeedEventCard";
+import FeedMaterialCard from "@/features/feed/components/FeedMaterialCard";
+import FeedPhotoCard from "@/features/feed/components/FeedPhotoCard";
+import FeedStudyGroupCard from "@/features/feed/components/FeedStudyGroupCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { UnifiedFeedItem } from "@/features/feed/server/queries";
 
@@ -75,7 +80,12 @@ function renderFeedItem(item: UnifiedFeedItem, currentUser: CurrentUser) {
     );
   }
 
-  // For non-post types that slip through, render them normally
+  if (item.type === "photo") return <FeedPhotoCard key={`photo-${item.id}`} item={item} />;
+  if (item.type === "event") return <FeedEventCard key={`event-${item.id}`} item={item} />;
+  if (item.type === "material") return <FeedMaterialCard key={`material-${item.id}`} item={item} />;
+  if (item.type === "study_group") return <FeedStudyGroupCard key={`study-group-${item.id}`} item={item} />;
+  if (item.type === "birthday") return <FeedBirthdayCard key={`birthday-${item.id}`} item={item} />;
+
   return null;
 }
 
@@ -84,25 +94,19 @@ function renderFeedItem(item: UnifiedFeedItem, currentUser: CurrentUser) {
  * Further filters by tab selection.
  */
 function filterItems(items: UnifiedFeedItem[], filter: FilterMode): UnifiedFeedItem[] {
-  // First, only keep posts and announcements (no photos, events, materials, etc.)
-  const academic = items.filter(
-    (i) => i.type === "post" || i.type === "announcement"
-  );
-
   switch (filter) {
     case "questions":
-      return academic.filter(
+      return items.filter(
         (i) => i.type === "post" && "postType" in i && (i as any).postType === "question"
       );
     case "announcements":
-      return academic.filter((i) => i.type === "announcement");
+      return items.filter((i) => i.type === "announcement");
     case "my_courses":
-      // Show posts that have a communityId (course-related) or are from a community
-      return academic.filter(
-        (i) => (i as any).communityId || (i as any).communityName
+      return items.filter(
+        (i) => (i as any).communityId || (i as any).communityName || i.type === "material" || i.type === "study_group"
       );
     default:
-      return academic;
+      return items;
   }
 }
 

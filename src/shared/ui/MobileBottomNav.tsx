@@ -16,25 +16,19 @@ function MobileNavItem({ href, icon, translationKey }: MobileNavItemProps) {
   const { t } = useLanguage();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  // Split href to base path and query parameters
   const [baseHref, queryStr] = href.split("?");
 
   let isActive = false;
   if (queryStr) {
     const urlParams = new URLSearchParams(queryStr);
-    const allQueryMatches = Array.from(urlParams.entries()).every(([key, val]) => {
-      return searchParams ? searchParams.get(key) === val : false;
-    });
-    if (pathname === baseHref && allQueryMatches) {
-      isActive = true;
-    }
-  } else {
-    if (pathname === href) {
-      isActive = true;
-    } else if (href !== "/" && pathname && pathname.startsWith(href)) {
-      isActive = true;
-    }
+    const allQueryMatches = Array.from(urlParams.entries()).every(([key, val]) =>
+      searchParams ? searchParams.get(key) === val : false
+    );
+    isActive = pathname === baseHref && allQueryMatches;
+  } else if (pathname === href) {
+    isActive = true;
+  } else if (href !== "/" && pathname?.startsWith(href)) {
+    isActive = true;
   }
 
   return (
@@ -52,11 +46,11 @@ function MobileNavItem({ href, icon, translationKey }: MobileNavItemProps) {
 }
 
 const MOBILE_ITEMS = [
-  { href: "/feed", icon: "message-circle", key: "nav.feed" },
   { href: "/today", icon: "home", key: "nav.today" },
-  { href: "/schedule", icon: "graduation", key: "nav.courses" },
+  { href: "/feed", icon: "message-circle", key: "nav.feed" },
+  { href: "/communities", icon: "users", key: "nav.communities" },
   { href: "/study-materials", icon: "folder", key: "nav.materials" },
-  { href: "/messages", icon: "message", key: "nav.messages" },
+  { href: "/profile", icon: "user", key: "nav.myProfile" },
 ];
 
 function MobileBottomNavContent() {
@@ -65,12 +59,7 @@ function MobileBottomNavContent() {
   return (
     <nav className="mobile-bottom-nav" aria-label={t("nav.primary") || "Mobile navigation"}>
       {MOBILE_ITEMS.map((item) => (
-        <MobileNavItem
-          key={item.href}
-          href={item.href}
-          icon={item.icon}
-          translationKey={item.key}
-        />
+        <MobileNavItem key={item.href} href={item.href} icon={item.icon} translationKey={item.key} />
       ))}
     </nav>
   );

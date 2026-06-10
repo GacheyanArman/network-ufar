@@ -6,7 +6,7 @@ type SummaryBarProps = {
   classesToday: number;
   deadlinesCount: number;
   materialsCount: number;
-  unreadMessages: number;
+  notificationsCount: number;
   t: (key: string) => string;
 };
 
@@ -14,31 +14,24 @@ export default function SummaryBar({
   classesToday,
   deadlinesCount,
   materialsCount,
-  unreadMessages,
+  notificationsCount,
   t,
 }: SummaryBarProps) {
-  const totalItems = classesToday + deadlinesCount + materialsCount + unreadMessages;
+  const totalItems = classesToday + deadlinesCount + materialsCount + notificationsCount;
 
   if (totalItems === 0) {
     return (
       <div className="dash-summary-empty" id="today-summary">
-        <h3 className="dash-summary-empty-title">{t("today.dayLooksClear") || "Your day looks clear"}</h3>
+        <h3 className="dash-summary-empty-title">Welcome to your student club</h3>
         <p className="dash-summary-empty-desc">
-          {t("today.noTasksDesc") || "No classes, deadlines, new materials, or unread messages right now."}
-        </p>
-        <p className="dash-summary-empty-sub">
-          {t("today.reviewNotes") || "Use this time to review notes or plan your next study session."}
+          Today is clear: check the feed, discover groups, or save new campus memories.
         </p>
         <div className="dash-summary-empty-actions">
-          <Link href="/schedule">
-            <Button variant="outline" size="sm">
-              {t("today.openSchedule") || "Open schedule"}
-            </Button>
+          <Link href="/feed">
+            <Button variant="outline" size="sm">Open feed</Button>
           </Link>
-          <Link href="/study-materials">
-            <Button variant="outline" size="sm">
-              {t("today.browseMaterials") || "Browse materials"}
-            </Button>
+          <Link href="/communities">
+            <Button variant="outline" size="sm">Explore groups</Button>
           </Link>
         </div>
       </div>
@@ -47,14 +40,14 @@ export default function SummaryBar({
 
   const cards = [
     {
-      href: "/schedule",
+      href: "/today",
       icon: "calendar",
       isUrgent: false,
       title: classesToday > 0 ? `${classesToday} ${t("today.classesSummary") || "classes"}` : t("today.noClassesLabel") || "No classes",
       subtitle: t("today.todayTitle") || "Today",
     },
     {
-      href: "/calendar",
+      href: "/today",
       icon: "alert-circle",
       isUrgent: deadlinesCount > 0,
       title: deadlinesCount > 0 ? `${deadlinesCount} ${deadlinesCount === 1 ? (t("today.deadlineSingle") || "deadline") : (t("today.deadlinesSummary") || "deadlines")}` : t("today.noDeadlinesLabel") || "No deadlines",
@@ -68,22 +61,18 @@ export default function SummaryBar({
       subtitle: t("today.studyMaterials") || "Study materials",
     },
     {
-      href: "/messages",
-      icon: "message-circle",
-      isUrgent: false,
-      title: unreadMessages > 0 ? `${unreadMessages} ${t("today.unreadSummary") || "unread"}` : t("today.allCaughtUp") || "All caught up",
-      subtitle: t("today.messagesTitle") || "Messages",
+      href: "/notifications",
+      icon: "bell",
+      isUrgent: notificationsCount > 0,
+      title: notificationsCount > 0 ? `${notificationsCount} new` : "All caught up",
+      subtitle: "Notifications",
     },
   ];
 
   return (
     <div className="dash-summary-grid" id="today-summary">
       {cards.map((card, i) => (
-        <Link
-          key={i}
-          href={card.href}
-          className={`dash-summary-card ${card.isUrgent ? "is-urgent" : ""}`}
-        >
+        <Link key={i} href={card.href} className={`dash-summary-card ${card.isUrgent ? "is-urgent" : ""}`}>
           <div className="dash-summary-icon" aria-hidden="true">
             <UiIcon name={card.icon} size={20} />
           </div>

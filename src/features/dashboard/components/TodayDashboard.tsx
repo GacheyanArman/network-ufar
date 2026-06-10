@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { db } from "@/shared/db/db";
 import {
@@ -6,13 +7,16 @@ import {
   courses,
   events,
   communities,
+  posts,
+  photos,
+  users,
 } from "@/shared/db/schema";
 import { eq, and, desc, inArray, asc, gte } from "drizzle-orm";
 import {
   getCachedUserSchedule,
   getCachedUpcomingDeadlines,
-  getCachedUnreadMessages,
   getCachedUnreadNotifications,
+  getCachedPeopleYouMayKnow,
 } from "@/shared/cache/cache";
 import { PageHeader, PageShell } from "@/shared/ui/Layout";
 import { Language } from "@/shared/i18n/i18n";
@@ -172,10 +176,50 @@ export default async function TodayDashboard({
     .orderBy(asc(events.startTime))
     .limit(3);
 
-  // ── Unread counts ──────────────────────────────────────────────────────
-  const [unreadMessages, unreadNotifications] = await Promise.all([
-    getCachedUnreadMessages(userId),
+  // ── Social club snapshots ──────────────────────────────────────────────
+  const [unreadNotifications, activeDiscussions, popularGroups, campusMoments, suggestedFriends] = await Promise.all([
     getCachedUnreadNotifications(userId),
+    db
+      .select({
+        id: posts.id,
+        content: posts.content,
+        commentsCount: posts.commentsCount,
+        likesCount: posts.likesCount,
+        authorName: users.fullName,
+        communityName: communities.name,
+      })
+      .from(posts)
+      .innerJoin(users, eq(posts.authorId, users.id))
+      .leftJoin(communities, eq(posts.communityId, communities.id))
+      .orderBy(desc(posts.createdAt))
+      .limit(4),
+    db
+      .select({
+        id: communities.id,
+        name: communities.name,
+        description: communities.description,
+        avatar: communities.avatar,
+        facultyTag: communities.facultyTag,
+      })
+      .from(communities)
+      .where(eq(communities.status, "approved"))
+      .orderBy(desc(communities.createdAt))
+      .limit(4),
+    db
+      .select({
+        id: photos.id,
+        imageUrl: photos.thumbnailUrl,
+        mediumUrl: photos.mediumUrl,
+        originalUrl: photos.imageUrl,
+        caption: photos.caption,
+        ownerName: users.fullName,
+      })
+      .from(photos)
+      .innerJoin(users, eq(photos.ownerId, users.id))
+      .where(and(eq(photos.isPrivate, false), eq(photos.moderationStatus, "approved")))
+      .orderBy(desc(photos.createdAt))
+      .limit(6),
+    getCachedPeopleYouMayKnow(userId, 4),
   ]);
 
   // ── Summary counts ─────────────────────────────────────────────────────
@@ -198,7 +242,7 @@ export default async function TodayDashboard({
         classesToday={classesTodayCount}
         deadlinesCount={deadlines.length}
         materialsCount={newMaterials.length}
-        unreadMessages={unreadMessages}
+        notificationsCount={unreadNotifications}
         t={t}
       />
 
@@ -235,6 +279,86 @@ export default async function TodayDashboard({
 
         {/* Campus events */}
         <EventsList events={upcomingEvents} locale={locale} t={t} />
+      </div>
+
+      <div className="dashboard-grid" style={{ marginTop: 18 }}>
+        <section className="card" style={{ padding: 18 }}>
+          <div className="old-widget-head">
+            <h3 className="widget-title">Active discussions</h3>
+            <Link href="/feed" className="old-widget-link">Open feed</Link>
+          </div>
+          <div className="mini-user-list">
+            {activeDiscussions.length === 0 ? (
+              <div className="empty-state-mini"><p>No discussions yet. Start the first one in Feed.</p></div>
+            ) : activeDiscussions.map((post: { id: string; content: string; commentsCount: number; likesCount: number; authorName: string | null; communityName: string | null }) => (
+              <Link key={post.id} href="/feed" className="mini-user-row mini-user-row-link">
+                <div className="mini-user-avatar">💬</div>
+                <div className="mini-user-main">
+                  <strong>{post.content.slice(0, 72)}{post.content.length > 72 ? "…" : ""}</strong>
+                  <span>{post.authorName || "Student"}{post.communityName ? ` · ${post.communityName}` : ""} · {post.commentsCount} comments</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="card" style={{ padding: 18 }}>
+          <div className="old-widget-head">
+            <h3 className="widget-title">Popular groups</h3>
+            <Link href="/communities" className="old-widget-link">See groups</Link>
+          </div>
+          <div className="mini-user-list">
+            {popularGroups.length === 0 ? (
+              <div className="empty-state-mini"><p>No groups yet.</p></div>
+            ) : popularGroups.map((group: { id: string; name: string; description: string | null; avatar: string | null; facultyTag: string | null }) => (
+              <Link key={group.id} href={`/communities/${group.id}`} className="mini-user-row mini-user-row-link">
+                <div className="mini-user-avatar">{group.avatar ? "★" : "#"}</div>
+                <div className="mini-user-main">
+                  <strong>{group.name}</strong>
+                  <span>{group.description || group.facultyTag || "Student community"}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="card" style={{ padding: 18 }}>
+          <div className="old-widget-head">
+            <h3 className="widget-title">Campus moments</h3>
+            <Link href="/feed" className="old-widget-link">Share photo</Link>
+          </div>
+          {campusMoments.length === 0 ? (
+            <div className="empty-state-mini"><p>No campus moments yet.</p></div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+              {campusMoments.map((photo: { id: string; imageUrl: string | null; mediumUrl: string | null; originalUrl: string; caption: string | null; ownerName: string | null }) => (
+                <Link key={photo.id} href="/feed" title={photo.caption || "Campus moment"} style={{ borderRadius: 12, overflow: "hidden", aspectRatio: "1", background: "#e2e8f0" }}>
+                  <img src={photo.imageUrl || photo.mediumUrl || photo.originalUrl} alt={photo.caption || `Photo by ${photo.ownerName || "student"}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="card" style={{ padding: 18 }}>
+          <div className="old-widget-head">
+            <h3 className="widget-title">Students to follow</h3>
+            <Link href="/profile?tab=friends" className="old-widget-link">Friends</Link>
+          </div>
+          <div className="mini-user-list">
+            {suggestedFriends.length === 0 ? (
+              <div className="empty-state-mini"><p>No suggestions right now.</p></div>
+            ) : suggestedFriends.map((student: { id: string; fullName: string | null; reason?: string | null }) => (
+              <Link key={student.id} href={`/profile/${student.id}`} className="mini-user-row mini-user-row-link">
+                <div className="mini-user-avatar">{student.fullName?.[0] || "U"}</div>
+                <div className="mini-user-main">
+                  <strong>{student.fullName}</strong>
+                  <span>{student.reason || "Student you may know"}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </PageShell>
   );

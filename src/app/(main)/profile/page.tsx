@@ -2,38 +2,37 @@ import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 
 import { db } from "@/shared/db/db";
 import { getSession } from "@/shared/auth/session";
 import {
   users,
   posts,
-  studyMaterials,
-  studyMaterialSaves,
   courseEnrollments,
   courses,
   semesters,
   notificationPreferences,
   postSaves,
   postLikes,
+  friendships,
+  userFollows,
+  photoAlbums,
+  photoSaves,
+  photos,
 } from "@/shared/db/schema";
 import PostComposer from "@/features/feed/components/PostComposer";
 import ProfilePostsClient from "@/features/profile/components/ProfilePostsClient";
 import UiIcon from "@/shared/ui/UiIcon";
 import { getFacultyLabel } from "@/features/profile/server/utils";
 import { translations } from "@/shared/i18n/i18n";
-import ProfileSettingsClient from "@/features/profile/components/ProfileSettingsClient";
 
 import "@/features/profile/profile.css";
 import {
   TabLink,
   InfoBlock,
-  MaterialCard,
   EmptyState,
-  ProfileCompleteness,
 } from "@/features/profile/components/SharedProfileComponents";
-import PostCard from "@/features/feed/components/PostCard";
 
 interface PageProps {
   searchParams: Promise<{
@@ -42,7 +41,7 @@ interface PageProps {
   }>;
 }
 
-const ALLOWED_TABS = ["posts", "saved_posts", "saved", "uploads", "about", "overview"];
+const ALLOWED_TABS = ["posts", "friends", "albums", "saved", "about"];
 
 export default async function ProfilePage({ searchParams }: PageProps) {
   const session = await getSession();
@@ -88,6 +87,76 @@ export default async function ProfilePage({ searchParams }: PageProps) {
   if (!currentUser) {
     redirect("/login");
   }
+
+  // ─── Social graph: kept in Profile to avoid overloading the main navigation ───
+  const acceptedFriendships = await db
+    .select({
+      id: friendships.id,
+      requesterId: friendships.requesterId,
+      receiverId: friendships.receiverId,
+    })
+    .from(friendships)
+    .where(
+      and(
+        eq(friendships.status, "accepted"),
+        or(eq(friendships.requesterId, currentUserId), eq(friendships.receiverId, currentUserId))
+      )
+    );
+
+  const friendIds: string[] = acceptedFriendships.map((friendship: { requesterId: string; receiverId: string }) =>
+    friendship.requesterId === currentUserId ? friendship.receiverId : friendship.requesterId
+  );
+
+  const friendsList = friendIds.length > 0
+    ? await db
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          faculty: users.faculty,
+          image: users.image,
+          avatarUrl: users.avatarUrl,
+        })
+        .from(users)
+        .where(inArray(users.id, friendIds))
+        .limit(24)
+    : [];
+
+  const [followersRows, followingRows] = await Promise.all([
+    db.select({ id: userFollows.id }).from(userFollows).where(eq(userFollows.followingId, currentUserId)),
+    db.select({ id: userFollows.id }).from(userFollows).where(eq(userFollows.followerId, currentUserId)),
+  ]);
+
+  // ─── Photo memory library: albums and saved photos live inside Profile ───
+  const [myAlbums, savedPhotos] = await Promise.all([
+    db
+      .select({
+        id: photoAlbums.id,
+        title: photoAlbums.title,
+        description: photoAlbums.description,
+        coverPhotoUrl: photoAlbums.coverPhotoUrl,
+        createdAt: photoAlbums.createdAt,
+      })
+      .from(photoAlbums)
+      .where(eq(photoAlbums.ownerId, currentUserId))
+      .orderBy(desc(photoAlbums.createdAt))
+      .limit(24),
+    db
+      .select({
+        id: photos.id,
+        imageUrl: photos.imageUrl,
+        thumbnailUrl: photos.thumbnailUrl,
+        mediumUrl: photos.mediumUrl,
+        caption: photos.caption,
+        ownerName: users.fullName,
+      })
+      .from(photoSaves)
+      .innerJoin(photos, eq(photoSaves.photoId, photos.id))
+      .innerJoin(users, eq(photos.ownerId, users.id))
+      .where(eq(photoSaves.userId, currentUserId))
+      .orderBy(desc(photoSaves.createdAt))
+      .limit(36),
+  ]);
 
   // ─── Enrolled courses (current semester) ───
   const activeSemesterResult = await db
@@ -136,13 +205,13 @@ export default async function ProfilePage({ searchParams }: PageProps) {
     .select({ postId: postLikes.postId })
     .from(postLikes)
     .where(eq(postLikes.userId, currentUserId));
-  const likedPostIds = new Set(userLikes.map((l) => l.postId));
+  const likedPostIds = new Set<string>(userLikes.map((l: { postId: string }) => l.postId));
 
   const userSaves = await db
     .select({ postId: postSaves.postId })
     .from(postSaves)
     .where(eq(postSaves.userId, currentUserId));
-  const savedPostIds = new Set(userSaves.map((s) => s.postId));
+  const savedPostIds = new Set<string>(userSaves.map((s: { postId: string }) => s.postId));
 
   const safeName = currentUser.fullName || "Student";
   const avatarImage = currentUser.image || currentUser.avatarUrl || "";
@@ -177,93 +246,6 @@ export default async function ProfilePage({ searchParams }: PageProps) {
 
   // ─── My Posts ───
   const myPostsOnly = serializedPosts.filter((p: any) => p.postType !== "question");
-
-  // ─── Saved Posts ───
-  const savedPostsRecords = await db
-    .select({
-      id: posts.id,
-      content: posts.content,
-      imageUrl: posts.imageUrl,
-      createdAt: posts.createdAt,
-      likesCount: posts.likesCount,
-      commentsCount: posts.commentsCount,
-      authorId: posts.authorId,
-      postType: posts.postType,
-      authorName: users.fullName,
-      authorImage: users.image,
-      authorAvatarUrl: users.avatarUrl,
-      authorFaculty: users.faculty,
-    })
-    .from(postSaves)
-    .innerJoin(posts, eq(postSaves.postId, posts.id))
-    .innerJoin(users, eq(posts.authorId, users.id))
-    .where(eq(postSaves.userId, currentUserId))
-    .orderBy(desc(postSaves.createdAt));
-
-  const savedPostsSerialized = savedPostsRecords.map((post: any) => {
-    const imageUrl = post.imageUrl || null;
-    const mediaType = imageUrl
-      ? /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(imageUrl)
-        ? "video"
-        : "image"
-      : null;
-    return {
-      id: post.id,
-      content: post.content || "",
-      imageUrl,
-      mediaType: mediaType as "image" | "video" | null,
-      createdAt: post.createdAt
-        ? post.createdAt.toISOString()
-        : new Date().toISOString(),
-      authorId: post.authorId,
-      authorName: post.authorName || "Student",
-      authorImage: post.authorImage || post.authorAvatarUrl || "",
-      authorFaculty: post.authorFaculty || "",
-      likesCount: post.likesCount || 0,
-      commentsCount: post.commentsCount || 0,
-      postType: post.postType || "discussion",
-      likedByMe: likedPostIds.has(post.id),
-      savedByMe: true,
-    };
-  });
-
-  // ─── Saved Materials ───
-  const savedMaterials = await db
-    .select({
-      id: studyMaterials.id,
-      title: studyMaterials.title,
-      description: studyMaterials.description,
-      fileUrl: studyMaterials.fileUrl,
-      type: studyMaterials.type,
-      course: studyMaterials.course,
-      createdAt: studyMaterials.createdAt,
-      ownerName: users.fullName,
-    })
-    .from(studyMaterialSaves)
-    .innerJoin(
-      studyMaterials,
-      eq(studyMaterialSaves.materialId, studyMaterials.id)
-    )
-    .innerJoin(users, eq(studyMaterials.ownerId, users.id))
-    .where(eq(studyMaterialSaves.userId, currentUserId))
-    .orderBy(desc(studyMaterialSaves.createdAt));
-
-  // ─── My Uploads ───
-  const myUploads = await db
-    .select({
-      id: studyMaterials.id,
-      title: studyMaterials.title,
-      description: studyMaterials.description,
-      fileUrl: studyMaterials.fileUrl,
-      type: studyMaterials.type,
-      course: studyMaterials.course,
-      status: studyMaterials.status,
-      downloadsCount: studyMaterials.downloadsCount,
-      createdAt: studyMaterials.createdAt,
-    })
-    .from(studyMaterials)
-    .where(eq(studyMaterials.ownerId, currentUserId))
-    .orderBy(desc(studyMaterials.createdAt));
 
   // ─── Notification preferences ───
   const [prefRow] = await db
@@ -306,12 +288,11 @@ export default async function ProfilePage({ searchParams }: PageProps) {
     : "Recently";
 
   const TABS = [
-    { key: "posts", label: t.profile?.myPosts || "My Posts" },
-    { key: "saved_posts", label: t.profile?.savedPosts || "Saved Posts" },
-    { key: "saved", label: t.profile?.savedMaterials || "Saved Materials" },
-    { key: "uploads", label: t.profile?.myUploads || "My Uploads" },
+    { key: "posts", label: "Posts" },
+    { key: "friends", label: "Friends" },
+    { key: "albums", label: "Albums" },
+    { key: "saved", label: "Saved Photos" },
     { key: "about", label: t.profile?.about || "About" },
-    { key: "overview", label: t.profile?.overview || "Overview" },
   ];
 
   return (
@@ -382,6 +363,21 @@ export default async function ProfilePage({ searchParams }: PageProps) {
                   <p className="uf-profile-bio">{safeBio}</p>
                 ) : null}
 
+                <div className="uf-profile-stats-bar uf-profile-social-stats">
+                  <Link href="/profile?tab=friends" className="uf-stat-item">
+                    <span className="uf-stat-value">{friendsList.length}</span>
+                    <span className="uf-stat-label">Friends</span>
+                  </Link>
+                  <Link href="/profile?tab=friends" className="uf-stat-item">
+                    <span className="uf-stat-value">{followersRows.length}</span>
+                    <span className="uf-stat-label">Followers</span>
+                  </Link>
+                  <Link href="/profile?tab=friends" className="uf-stat-item">
+                    <span className="uf-stat-value">{followingRows.length}</span>
+                    <span className="uf-stat-label">Following</span>
+                  </Link>
+                </div>
+
                 {/* Enrolled courses */}
                 {enrolledCourses.length > 0 ? (
                   <div className="uf-profile-courses">
@@ -431,57 +427,6 @@ export default async function ProfilePage({ searchParams }: PageProps) {
               </div>
             ) : null}
 
-            {/* ─── Overview tab ─── */}
-            {currentTab === "overview" ? (
-              <div className="uf-overview-grid">
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <ProfileCompleteness user={currentUser} coursesCount={enrolledCourses.length} />
-                  
-                  <div className="uf-profile-stats-bar">
-                    <div className="uf-stat-item">
-                      <span className="uf-stat-value">{myPostsOnly.length}</span>
-                      <span className="uf-stat-label">Posts</span>
-                    </div>
-                    <div className="uf-stat-item">
-                      <span className="uf-stat-value">{myUploads.length}</span>
-                      <span className="uf-stat-label">Uploads</span>
-                    </div>
-                    <div className="uf-stat-item">
-                      <span className="uf-stat-value">{savedMaterials.length}</span>
-                      <span className="uf-stat-label">Saved</span>
-                    </div>
-                    <div className="uf-stat-item">
-                      <span className="uf-stat-value">{enrolledCourses.length}</span>
-                      <span className="uf-stat-label">Courses</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="uf-overview-section">
-                  <h3 className="uf-overview-section-title">Recent Posts</h3>
-                  {myPostsOnly.length === 0 ? (
-                    <div className="uf-card" style={{ padding: 16, textAlign: "center", color: "var(--text-secondary)" }}>
-                      No posts yet
-                    </div>
-                  ) : (
-                    myPostsOnly.slice(0, 2).map((post: any) => (
-                      <PostCard
-                        key={post.id}
-                        post={{
-                          ...post,
-                          repostsCount: 0,
-                          viewsCount: 0,
-                          comments: [],
-                          communityName: null,
-                        }}
-                        currentUser={currentUser}
-                      />
-                    ))
-                  )}
-                </div>
-              </div>
-            ) : null}
-
             {/* ─── Posts tab ─── */}
             {currentTab === "posts" ? (
               <section className="uf-profile-feed">
@@ -506,68 +451,98 @@ export default async function ProfilePage({ searchParams }: PageProps) {
               </section>
             ) : null}
 
-            {/* ─── Saved Posts tab ─── */}
-            {currentTab === "saved_posts" ? (
-              <section className="uf-profile-feed">
-                {savedPostsSerialized.length === 0 ? (
-                  <EmptyState
-                    icon="bookmark"
-                    title={t.profile?.noSavedPosts || "No saved posts yet"}
-                    description={t.profile?.noSavedPostsHint || "Bookmark posts to find them easily later."}
-                    actionHref="/feed"
-                    actionText={t.profile?.browseFeed || "Browse feed"}
-                  />
-                ) : (
-                  <ProfilePostsClient
-                    posts={savedPostsSerialized}
-                    currentUser={currentUser}
-                  />
-                )}
-              </section>
-            ) : null}
-
-            {/* ─── Saved Materials tab ─── */}
-            {currentTab === "saved" ? (
+            {/* ─── Friends tab ─── */}
+            {currentTab === "friends" ? (
               <section className="uf-materials-section">
-                <h3 className="uf-overview-section-title" style={{ padding: "0 8px" }}>
-                  Saved Materials ({savedMaterials.length})
-                </h3>
-                {savedMaterials.length === 0 ? (
+                <div className="uf-card" style={{ padding: 18, marginBottom: 16 }}>
+                  <h3 className="uf-overview-section-title" style={{ padding: 0, marginBottom: 12 }}>Social circle</h3>
+                  <div className="uf-profile-stats-bar">
+                    <div className="uf-stat-item"><span className="uf-stat-value">{friendsList.length}</span><span className="uf-stat-label">Friends</span></div>
+                    <div className="uf-stat-item"><span className="uf-stat-value">{followersRows.length}</span><span className="uf-stat-label">Followers</span></div>
+                    <div className="uf-stat-item"><span className="uf-stat-value">{followingRows.length}</span><span className="uf-stat-label">Following</span></div>
+                  </div>
+                  <p style={{ color: "var(--text-secondary)", marginTop: 12, marginBottom: 0 }}>Friends and follows create status and discovery without turning the club into a messenger.</p>
+                </div>
+                {friendsList.length === 0 ? (
                   <EmptyState
-                    icon="bookmark"
-                    title={t.profile?.noSavedMaterials || "No saved materials yet"}
-                    description="Bookmark study materials and they will appear here for quick access."
-                    actionHref="/study-materials"
-                    actionText={t.profile?.browseMaterials || "Browse materials"}
+                    icon="users"
+                    title="No friends yet"
+                    description="Follow classmates and add friends from public profiles."
+                    actionHref="/search"
+                    actionText="Find students"
                   />
                 ) : (
-                  <div style={{ display: "grid", gap: 16 }}>
-                    {savedMaterials.map((m: any) => (
-                      <MaterialCard key={m.id} material={m} />
+                  <div className="uf-card" style={{ padding: 12, display: "grid", gap: 8 }}>
+                    {friendsList.map((friend: { id: string; fullName: string | null; username: string | null; faculty: string | null; image: string | null; avatarUrl: string | null }) => (
+                      <Link key={friend.id} href={`/profile/${friend.id}`} className="mini-user-row mini-user-row-link">
+                        <div className="mini-user-avatar">
+                          {friend.image || friend.avatarUrl ? (
+                            <img src={(friend.image || friend.avatarUrl) as string} alt={friend.fullName || "Student"} />
+                          ) : (
+                            friend.fullName?.[0] || "U"
+                          )}
+                        </div>
+                        <div className="mini-user-main">
+                          <strong>{friend.fullName || "Student"}</strong>
+                          <span>{friend.username ? `@${friend.username}` : friend.faculty || "Student"}</span>
+                        </div>
+                      </Link>
                     ))}
                   </div>
                 )}
               </section>
             ) : null}
 
-            {/* ─── My Uploads tab ─── */}
-            {currentTab === "uploads" ? (
+            {/* ─── Albums tab ─── */}
+            {currentTab === "albums" ? (
               <section className="uf-materials-section">
-                <h3 className="uf-overview-section-title" style={{ padding: "0 8px" }}>
-                  My Uploads ({myUploads.length})
-                </h3>
-                {myUploads.length === 0 ? (
+                <h3 className="uf-overview-section-title" style={{ padding: "0 8px" }}>Albums ({myAlbums.length})</h3>
+                {myAlbums.length === 0 ? (
                   <EmptyState
-                    icon="upload"
-                    title={t.profile?.noUploads || "No uploads yet"}
-                    description="Share your lecture notes, summaries, or exam prep files with the community."
-                    actionHref="/study-materials"
-                    actionText={t.profile?.uploadMaterial || "Upload material"}
+                    icon="image"
+                    title="No albums yet"
+                    description="Create albums for events, meetups, clubs and student memories."
+                    actionHref="/feed"
+                    actionText="Share a campus moment"
                   />
                 ) : (
-                  <div style={{ display: "grid", gap: 16 }}>
-                    {myUploads.map((m: any) => (
-                      <MaterialCard key={m.id} material={m} showStatus />
+                  <div className="uf-photo-grid">
+                    {myAlbums.map((album: { id: string; title: string; description: string | null; coverPhotoUrl: string | null }) => (
+                      <div key={album.id} className="uf-card uf-photo-tile">
+                        <div className="uf-photo-thumb">
+                          {album.coverPhotoUrl ? <img src={album.coverPhotoUrl} alt={album.title} /> : <span>📸</span>}
+                        </div>
+                        <strong>{album.title}</strong>
+                        <span>{album.description || "Student memories"}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : null}
+
+            {/* ─── Saved Photos tab ─── */}
+            {currentTab === "saved" ? (
+              <section className="uf-materials-section">
+                <h3 className="uf-overview-section-title" style={{ padding: "0 8px" }}>Saved Photos ({savedPhotos.length})</h3>
+                {savedPhotos.length === 0 ? (
+                  <EmptyState
+                    icon="bookmark"
+                    title="No saved photos yet"
+                    description="Save campus moments from the feed and they will stay here in your profile."
+                    actionHref="/feed"
+                    actionText="Browse feed"
+                  />
+                ) : (
+                  <div className="uf-photo-grid">
+                    {savedPhotos.map((photo: { id: string; imageUrl: string; thumbnailUrl: string | null; mediumUrl: string | null; caption: string | null; ownerName: string | null }) => (
+                      <div key={photo.id} className="uf-card uf-photo-tile">
+                        <div className="uf-photo-thumb">
+                          <img src={photo.thumbnailUrl || photo.mediumUrl || photo.imageUrl} alt={photo.caption || `Photo by ${photo.ownerName || "student"}`} />
+                        </div>
+                        <strong>{photo.caption || "Campus moment"}</strong>
+                        <span>{photo.ownerName || "Student"}</span>
+                      </div>
                     ))}
                   </div>
                 )}

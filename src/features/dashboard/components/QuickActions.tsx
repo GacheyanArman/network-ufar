@@ -7,29 +7,24 @@ type QuickActionsProps = {
 };
 
 const ACTIONS = [
-  { icon: "plus-circle", href: "/calendar",                labelKey: "today.addDeadline" },
-  { icon: "calendar",    href: "/schedule",                labelKey: "today.openSchedule" },
-  { icon: "message-circle", href: "/feed?tab=questions",   labelKey: "today.askClassmates" },
-  { icon: "upload",      href: "/study-materials",         labelKey: "today.uploadNotes" },
-  { icon: "users",       href: "/study-groups",            labelKey: "today.findStudyGroup" },
+  { icon: "message-circle", href: "/feed", label: "Write a post" },
+  { icon: "help", href: "/feed?tab=questions", label: "Ask classmates" },
+  { icon: "users", href: "/communities", label: "Join a group" },
+  { icon: "upload", href: "/study-materials", label: "Upload notes" },
+  { icon: "image", href: "/profile?tab=albums", label: "Add memories" },
 ] as const;
 
 export default function QuickActions({ t }: QuickActionsProps) {
+  void t;
   return (
     <div className="dashboard-quick-actions" id="today-quick-actions">
       {ACTIONS.map((action) => (
-        <Link
-          key={action.href}
-          href={action.href}
-          className="dash-link-reset"
-        >
+        <Link key={action.href} href={action.href} className="dash-link-reset">
           <Card padding="sm" interactive className="dash-quick-action">
             <div className="dash-quick-action-icon">
               <UiIcon name={action.icon} size={18} />
             </div>
-            <span className="dash-quick-action-label">
-              {t(action.labelKey)}
-            </span>
+            <span className="dash-quick-action-label">{action.label}</span>
           </Card>
         </Link>
       ))}

@@ -1,139 +1,326 @@
-<div align="center">
-  <h1>🎓 UFARnet — The Ultimate University Student Network</h1>
-  <p>A modern, full-stack social and academic platform built exclusively for university students. Designed to seamlessly integrate social networking with academic tools like study material sharing, library resources, and event tracking.</p>
+# 🎓 UFARnet — University Social & Academic Platform
 
-  [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-blue?style=for-the-badge&logo=postgresql)](https://neon.tech/)
-  [![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.31-green?style=for-the-badge)](https://orm.drizzle.team/)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+<div align="center">
+
+A modern full-stack platform designed specifically for university students.
+
+UFARnet combines social networking, academic collaboration, messaging, event management, study resources, and campus services into a single ecosystem.
+
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge\&logo=next.js)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-blue?style=for-the-badge\&logo=postgresql)
+![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-Latest-green?style=for-the-badge)
+![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=for-the-badge\&logo=typescript)
+![Playwright](https://img.shields.io/badge/Playwright-E2E_Testing-brightgreen?style=for-the-badge)
+
 </div>
 
 ---
 
-## 📑 Table of Contents
-- [About The Project](#-about-the-project)
-- [Core Features](#-core-features)
-  - [Social & Community](#social--community)
-  - [Academic & Study Tools](#academic--study-tools)
-  - [Communication](#communication)
-  - [Security & Moderation](#security--moderation)
-- [Tech Stack](#-tech-stack)
-- [Architecture & Security](#-architecture--security)
-- [UI/UX Design System](#-uiux-design-system)
-- [Local Development Setup](#%EF%B8%8F-local-development-setup)
-- [Roadmap](#-roadmap)
+## 📖 Overview
+
+UFARnet is a centralized university platform that connects students through social networking and academic tools.
+
+Instead of using separate applications for communication, study materials, scheduling, and campus activities, students can access everything from one place.
+
+The platform provides:
+
+* Social networking
+* Academic collaboration
+* Real-time communication
+* Course and schedule management
+* Event organization
+* Community engagement
+* Resource sharing
 
 ---
 
-## 🚀 About The Project
+## ✨ Features
 
-UFARnet is designed as a centralized hub for students. It eliminates the need for fragmented communication across multiple apps by combining a social feed, group chats, photo galleries, academic calendars, and peer-to-peer study material sharing into a single, cohesive platform. 
+### 🌐 Social Network
 
-Registration is exclusively restricted to university domains (e.g., `@ufar.com`, `@ufar.am`) to ensure a safe, closed community.
+* Personal student profiles
+* News feed and posts
+* Comments and interactions
+* Stories system
+* Friend management
+* User blocking
+* Hashtags and search
+* Photo sharing
+
+### 👥 Communities
+
+* Create and join communities
+* Community discussions
+* Member management
+* Community settings
+* Faculty and interest groups
+
+### 💬 Messaging
+
+* Private messaging
+* Group chats
+* Real-time message updates
+* Typing indicators
+* Online presence tracking
+* Unread message notifications
+
+### 📚 Academic Tools
+
+* Course management
+* Class schedules
+* Academic calendar
+* Study materials sharing
+* Learning resources repository
+* Study groups
+
+### 📅 Events
+
+* Create university events
+* Event registration
+* Event attendance tracking
+* Event reminders
+* Campus activities management
+
+### 📷 Media Platform
+
+* Photo uploads
+* Photo albums
+* Saved photos
+* Media explorer
+* Tag-based browsing
+* Comments and reactions
+
+### 🔔 Notifications
+
+* Message notifications
+* Event reminders
+* Community updates
+* Social activity notifications
+* Smart notification management
+
+### 🎯 Campus Services
+
+* Lost & Found system
+* Library resources
+* Student collaboration tools
+* Daily dashboard
+* Campus announcements
+
+### 🛡 Administration
+
+* User management
+* Content moderation
+* Reports system
+* Audit logs
+* Community administration
+* Event administration
 
 ---
 
-## 🧩 Core Features
+## 🏗 Architecture
 
-### Social & Community
-- **Dynamic Feed:** Twitter-style feed supporting various post types (Discussions, Questions with "Best Answer" features, Announcements).
-- **Profiles & Relationships:** Follow users, add friends, block users, and manage privacy levels (Public, Friends, Private).
-- **Communities:** Create and join public or private faculty/year-specific communities with role-based access.
-- **Photos & Stories:** Create albums, upload photos with tags and likes. Expiring 24-hour stories with view tracking.
-- **Events:** Create and RSVP to university events, parties, or workshops.
+The application follows a modular architecture based on feature separation.
 
-### Academic & Study Tools
-- **UFAR Materials:** A peer-to-peer hub for students to upload, request, and share study notes, exam prep, and templates. Filterable by faculty, year, and subject.
-- **UFAR Library:** An official resource catalog with reading lists, book availability tracking, and digital access links.
-- **Academic Calendar & Schedule:** Track exams, deadlines, and personal class schedules.
-
-### Communication
-- **Real-time Messaging:** 1:1 direct messaging with read receipts and optimistic UI updates.
-- **Group Chats:** Create course-specific or faculty group chats with moderation tools.
-
-### Security & Moderation
-- **Custom Auth:** Secure JWT-based authentication stored in HTTP-only cookies.
-- **Domain Restriction:** Only allowed university email domains can register.
-- **Reporting System:** Robust user, post, and photo reporting and moderation dashboard.
-
----
-
-## 💻 Tech Stack
-
-- **Framework:** Next.js 16 (App Router)
-- **Database:** PostgreSQL (Neon Serverless)
-- **ORM:** Drizzle ORM
-- **Authentication:** Custom JWT (`jose`) + bcrypt
-- **Email Service:** Nodemailer (SMTP with OTP verification)
-- **Styling:** Custom Vanilla CSS Design System (Tailwind-free for maximum control)
-- **Validation:** Zod (planned/in-progress)
-
----
-
-## 🏗 Architecture & Security
-
-UFARnet avoids heavy third-party authentication providers in favor of a highly controlled, custom flow.
-
-- **Stateless Sessions:** JWTs are verified efficiently without database lookups per request, while remaining secure against XSS.
-- **OTP Verification:** Email verification uses a transient `email_verification` table with expiration times and attempt limits to prevent database pollution.
-- **Optimistic UI:** Extensive use of React's `useOptimistic` hook for instant feedback on likes, saves, and messaging.
-
----
-
-## 🎨 UI/UX Design System
-
-The application features a modern, clean interface tailored for a university environment.
-
-- **Layout:** Standard 3-column layout (Navigation / Feed / Widgets).
-- **Aesthetics:** Card-based UI with consistent borders and spacing. No heavy gradients; relies on clean typography and subtle interactive states.
-- **Unified Icons:** Custom `<UiIcon />` component system ensures pixel-perfect rendering across all operating systems, replacing inconsistent native emojis.
-
----
-
-## ⚙️ Local Development Setup
-
-### 1. Prerequisites
-- Node.js (v18+)
-- PostgreSQL Database (e.g., Neon.tech)
-- Gmail App Password (for email verification)
-
-### 2. Environment Variables
-Create a `.env` file in the root directory:
-```env
-DATABASE_URL="postgresql://..."
-JWT_SECRET="your_super_secret_jwt_string"
-
-EMAIL_DEV_MODE="false"
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="your_email@gmail.com"
-SMTP_PASS="your_app_password"
-SMTP_FROM="UFARnet <your_email@gmail.com>"
+```text
+src/
+├── app/                # Next.js App Router
+├── components/         # Shared UI components
+├── contexts/           # React contexts
+├── features/           # Feature modules
+│   ├── auth
+│   ├── feed
+│   ├── messages
+│   ├── communities
+│   ├── events
+│   ├── photos
+│   ├── profile
+│   ├── courses
+│   ├── materials
+│   ├── notifications
+│   └── admin
+├── shared/             # Shared services
+├── lib/                # Core libraries
+└── types/              # Type definitions
 ```
 
-### 3. Installation & Database Sync
+---
+
+## ⚙ Technology Stack
+
+### Frontend
+
+* Next.js 16
+* React
+* TypeScript
+* JavaScript
+* CSS Modules
+
+### Backend
+
+* Next.js Server Actions
+* API Routes
+* Node.js
+
+### Database
+
+* PostgreSQL
+* Drizzle ORM
+* Drizzle Migrations
+
+### Authentication
+
+* Custom Authentication System
+* Email Verification
+* Password Recovery
+* Session Management
+
+### Storage
+
+* File Upload System
+* Image Processing
+* Thumbnail Generation
+
+### Internationalization
+
+* Multi-language Support (i18n)
+* Language Context Management
+
+### Testing
+
+* Playwright
+* End-to-End Testing
+* Automated Authentication Testing
+
+---
+
+## 🔒 Security Features
+
+* Password hashing
+* Protected routes
+* Email verification
+* Password reset tokens
+* Session validation
+* Access control
+* Rate limiting
+* Audit logging
+
+---
+
+## 📊 Main Modules
+
+| Module          | Description                     |
+| --------------- | ------------------------------- |
+| Feed            | Social posts, comments, stories |
+| Messages        | Private and group communication |
+| Communities     | Student communities             |
+| Courses         | Course management               |
+| Schedule        | Personal timetable              |
+| Events          | University events               |
+| Materials       | Study resources                 |
+| Photos          | Albums and media                |
+| Notifications   | Activity notifications          |
+| Library         | Educational resources           |
+| Lost & Found    | Campus item recovery            |
+| Admin Dashboard | Moderation and management       |
+
+---
+
+## 🚀 Installation
+
+### Prerequisites
+
+* Node.js 18+
+* PostgreSQL
+* npm
+
+### Clone Repository
+
 ```bash
-# Install dependencies
+git clone https://github.com/your-username/ufarnet.git
+cd ufarnet
+```
+
+### Install Dependencies
+
+```bash
 npm install
+```
 
-# Push schema to database
+### Configure Environment Variables
+
+Create a `.env.local` file:
+
+```env
+DATABASE_URL=postgresql://...
+NEXTAUTH_SECRET=your_secret
+NEXTAUTH_URL=http://localhost:3000
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_password
+```
+
+### Run Database Migrations
+
+```bash
 npx drizzle-kit push
+```
 
-# Start development server
+### Start Development Server
+
+```bash
 npm run dev
 ```
-The app will be running at `http://localhost:3000`.
+
+Application will be available at:
+
+```text
+http://localhost:3000
+```
 
 ---
 
-## 🛣 Roadmap
-- [ ] Migrate file storage to AWS S3 or Vercel Blob.
-- [ ] Implement WebSockets for true real-time chat and notifications.
-- [ ] Complete Zod validation across all server actions.
-- [ ] Full migration of legacy `.js` files to strictly typed TypeScript.
+## 🧪 Testing
+
+Run all tests:
+
+```bash
+npx playwright test
+```
+
+Run authentication tests:
+
+```bash
+npx playwright test tests/e2e/auth.spec.ts
+```
+
+Run dashboard tests:
+
+```bash
+npx playwright test tests/e2e/dashboard.spec.ts
+```
 
 ---
 
-<div align="center">
-  <i>Developed for educational and internal university use.</i>
-</div>
+## 📈 Future Improvements
+
+* Mobile application
+* Push notifications
+* WebSocket-based real-time communication
+* AI-powered recommendations
+* Advanced analytics
+* Cloud file storage integration
+* Enhanced moderation tools
+
+---
+
+## 📄 License
+
+This project was developed for educational and university purposes.
+
+---
+
+## 👨‍💻 Author
+
+Developed as a full-stack university platform focused on improving communication, collaboration, and academic productivity within the student community.

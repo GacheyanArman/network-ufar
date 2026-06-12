@@ -75,7 +75,7 @@ export default function CourseDetail({ course, materials, scheduleItems, events 
     <div className="course-detail">
       {/* Back link */}
       <Link
-        href="/schedule"
+        href="/courses"
         style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           fontSize: "0.82rem", color: "var(--text-secondary)",

@@ -172,13 +172,13 @@ export default async function SearchPage({ searchParams }) {
               icon="calendar"
               title={t.calendar}
               count={results.calendar.length}
-              seeAll={`/calendar?q=${encodeURIComponent(query)}`}
+              seeAll={`/courses?tab=calendar`}
               seeAllLabel={t.seeAll}
             >
               {results.calendar.map((c) => (
                 <Link
                   key={c.id}
-                  href={`/calendar`}
+                  href={`/courses?tab=calendar`}
                   className="uf-search-item"
                 >
                   <div className="uf-search-item-icon-wrap" style={{ background: "var(--warning-soft)", color: "#92400e" }}>

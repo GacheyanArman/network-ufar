@@ -31,7 +31,7 @@ export default function DeadlineList({
           <UiIcon name="clock" size={20} color="var(--french-gold)" />{" "}
           {t("today.deadlines")}
         </h2>
-        <Link href="/calendar" className="dash-view-all">
+        <Link href="/courses?tab=calendar" className="dash-view-all">
           {t("today.viewAll")}
         </Link>
       </div>
@@ -49,7 +49,7 @@ export default function DeadlineList({
             return (
               <Link
                 key={d.id}
-                href={`/calendar`}
+                href={`/courses?tab=calendar`}
                 className="dash-link-reset"
               >
                 <Card
@@ -90,7 +90,7 @@ export default function DeadlineList({
             icon="check-circle"
             title={t("today.noDeadlines")}
             action={
-              <Link href="/calendar">
+              <Link href="/courses?tab=calendar">
                 <Button variant="outline" size="sm">
                   {t("today.addDeadline") || "Add deadline"}
                 </Button>

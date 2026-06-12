@@ -53,7 +53,7 @@ export default async function RightPanelWidgets({ userId }: Props) {
           <h4 className="widget-title">
             <UiIcon name="book-open" size={16} color="var(--french-gold)" /> {t("widgets.today")}
           </h4>
-          <Link href="/schedule" className="right-widget-link">
+          <Link href="/courses?tab=schedule" className="right-widget-link">
             {t("widgets.all")}
           </Link>
         </div>

@@ -5,6 +5,7 @@ import { eq, and, count } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getCachedUserSchedule } from "@/shared/cache/cache";
 import CoursesHub from "@/features/courses/components/CoursesHub";
+import { getCalendarFeed } from "@/features/courses/server/calendar";
 import { getCampusNow, CAMPUS_TZ } from "@/features/dashboard/server/today-utils";
 import { PageHeader } from "@/shared/ui/Layout";
 import Link from "next/link";
@@ -12,10 +13,16 @@ import { Button } from "@/shared/ui/Button";
 
 const DAYS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export default async function CoursesDashboardPage() {
+export default async function CoursesDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
   const userId = session.userId as string;
+
+  const { tab } = (await searchParams) || {};
 
   // Get current semester
   const [currentSem] = await db
@@ -54,8 +61,9 @@ export default async function CoursesDashboardPage() {
   
   const materialsMap = new Map(materialsData.map((m: any) => [m.courseId, m.total]));
 
-  // Get user schedule and campus time
+  // Get user schedule, calendar feed and campus time
   const mySchedule = await getCachedUserSchedule(userId);
+  const { entries: calendarEntries, myCommunities } = await getCalendarFeed();
   const campus = getCampusNow(CAMPUS_TZ);
 
   const enrichedEnrollments = enrollmentsRaw.map((enr: any) => {
@@ -117,6 +125,9 @@ export default async function CoursesDashboardPage() {
           scheduleEntries={mySchedule as any}
           currentUserId={userId}
           activeSemesterName={currentSem ? currentSem.name : null}
+          calendarEntries={calendarEntries as any}
+          calendarCommunities={myCommunities as any}
+          initialTab={tab}
         />
       </div>
     </>

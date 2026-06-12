@@ -1209,6 +1209,7 @@ export async function rsvpToEvent(formData: FormData) {
     revalidatePath("/events");
     revalidatePath(`/events/${eventId}`);
     revalidatePath("/calendar");
+    revalidatePath("/courses");
     return {
       success: true,
       status: actualStatus,

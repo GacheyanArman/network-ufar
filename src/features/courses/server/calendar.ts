@@ -432,6 +432,7 @@ export async function createCalendarEntry(formData: FormData) {
     });
 
     revalidatePath("/calendar");
+    revalidatePath("/courses");
     return { success: true };
   } catch (err) {
     console.error("createCalendarEntry error:", err);
@@ -492,6 +493,7 @@ export async function updateCalendarEntry(formData: FormData) {
       .where(eq(academicCalendar.id, entryId));
 
     revalidatePath("/calendar");
+    revalidatePath("/courses");
     return { success: true };
   } catch (err) {
     console.error("updateCalendarEntry error:", err);
@@ -520,6 +522,7 @@ export async function deleteCalendarEntry(formData: FormData) {
 
     await db.delete(academicCalendar).where(eq(academicCalendar.id, entryId));
     revalidatePath("/calendar");
+    revalidatePath("/courses");
     return { success: true };
   } catch (err) {
     console.error("deleteCalendarEntry error:", err);
@@ -556,6 +559,7 @@ export async function addEventToCalendar(eventId: string) {
   });
 
   revalidatePath("/calendar");
+  revalidatePath("/courses");
   return { success: true };
 }
 

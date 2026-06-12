@@ -36,9 +36,10 @@ interface ScheduleEntry {
 interface ScheduleClientProps {
   entries: ScheduleEntry[];
   currentUserId: string;
+  onOpenCalendar?: () => void;
 }
 
-export default function ScheduleClient({ entries, currentUserId }: ScheduleClientProps) {
+export default function ScheduleClient({ entries, currentUserId, onOpenCalendar }: ScheduleClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
 
@@ -75,15 +76,26 @@ export default function ScheduleClient({ entries, currentUserId }: ScheduleClien
             </p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
-            <Link
-              href="/calendar"
-              className="btn btn-outline"
-              style={{ display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none", borderColor: "var(--french-blue)", color: "var(--french-blue)", fontWeight: 700 }}
-            >
-              <UiIcon name="calendar" size={16} />
-              View Academic Calendar
-              <UiIcon name="plus" size={14} />
-            </Link>
+            {onOpenCalendar ? (
+              <button
+                type="button"
+                onClick={onOpenCalendar}
+                className="btn btn-outline"
+                style={{ display: "inline-flex", alignItems: "center", gap: "8px", borderColor: "var(--french-blue)", color: "var(--french-blue)", fontWeight: 700 }}
+              >
+                <UiIcon name="calendar" size={16} />
+                View Academic Calendar
+              </button>
+            ) : (
+              <Link
+                href="/courses?tab=calendar"
+                className="btn btn-outline"
+                style={{ display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none", borderColor: "var(--french-blue)", color: "var(--french-blue)", fontWeight: 700 }}
+              >
+                <UiIcon name="calendar" size={16} />
+                View Academic Calendar
+              </Link>
+            )}
             <button
               onClick={() => setIsModalOpen(true)}
               className="btn btn-primary"

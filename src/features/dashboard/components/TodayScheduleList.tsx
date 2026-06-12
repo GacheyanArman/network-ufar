@@ -26,7 +26,7 @@ export default function TodayScheduleList({
           <UiIcon name="list" size={20} color="var(--french-gold)" />{" "}
           {t("today.todaySchedule") || "Today\u2019s schedule"}
         </h2>
-        <Link href="/schedule" className="dash-view-all">
+        <Link href="/courses?tab=schedule" className="dash-view-all">
           {t("today.viewAll")}
         </Link>
       </div>
@@ -73,7 +73,7 @@ export default function TodayScheduleList({
             icon="calendar"
             title={t("today.noClassesScheduledToday") || "No classes scheduled today"}
             action={
-              <Link href="/schedule">
+              <Link href="/courses?tab=schedule">
                 <Button variant="outline" size="sm">
                   {t("today.openSchedule") || "Open schedule"}
                 </Button>

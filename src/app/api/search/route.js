@@ -246,7 +246,7 @@ export async function GET(request) {
       })),
       ...libraryRows.map((l) => ({ ...l, href: `/library?id=${l.id}` })),
       ...postRows.map((p) => ({ ...p, href: `/?highlight=${p.id}` })),
-      ...calendarRows.map((c) => ({ ...c, href: `/calendar` })),
+      ...calendarRows.map((c) => ({ ...c, href: `/courses?tab=calendar` })),
       ...photoRows.map((p) => ({ ...p, href: `/photos/${p.id}` })),
       ...albumRows.map((a) => ({ ...a, href: `/photos/albums/${a.id}` })),
     ]

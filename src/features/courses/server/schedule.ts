@@ -41,6 +41,7 @@ export async function createScheduleEntry(formData: FormData) {
     });
 
     revalidatePath("/schedule");
+    revalidatePath("/courses");
     return { success: true };
   } catch (error) {
     console.error("Error creating schedule entry:", error);
@@ -81,6 +82,7 @@ export async function deleteScheduleEntry(formData: FormData) {
     await db.delete(schedule).where(eq(schedule.id, entryId));
 
     revalidatePath("/schedule");
+    revalidatePath("/courses");
     return { success: true };
   } catch (error) {
     console.error("Error deleting schedule entry:", error);

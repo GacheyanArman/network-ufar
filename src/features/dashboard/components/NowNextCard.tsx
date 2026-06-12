@@ -36,7 +36,7 @@ export default function NowNextCard({
             icon="calendar"
             title={t("today.noUpcomingClasses") || "No upcoming classes"}
             action={
-              <Link href="/schedule">
+              <Link href="/courses?tab=schedule">
                 <Button variant="outline" size="sm">
                   {t("today.seeSchedule")}
                 </Button>

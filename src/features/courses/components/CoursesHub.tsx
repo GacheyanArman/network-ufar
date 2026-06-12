@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import UiIcon from "@/shared/ui/UiIcon";
 import ScheduleClient from "@/features/courses/components/ScheduleClient";
+import CalendarPageClient from "@/features/courses/components/CalendarPageClient";
 
 type EnrolledCourse = {
   courseId: string;
@@ -37,23 +38,40 @@ type ScheduleEntry = {
   createdAt: Date;
 };
 
+type CalendarEntry = Parameters<typeof CalendarPageClient>[0]["entries"][number];
+type CalendarCommunity = Parameters<typeof CalendarPageClient>[0]["myCommunities"][number];
+
 type CoursesHubProps = {
   enrolledCourses: EnrolledCourse[];
   scheduleEntries: ScheduleEntry[];
   currentUserId: string;
   activeSemesterName: string | null;
+  calendarEntries?: CalendarEntry[];
+  calendarCommunities?: CalendarCommunity[];
+  initialTab?: string;
 };
 
-type TabView = "courses" | "schedule";
+type TabView = "courses" | "schedule" | "calendar";
 type FilterStatus = "all" | "active" | "finished" | "upcoming";
+
+function normalizeTab(value?: string): TabView {
+  return value === "schedule" || value === "calendar" ? value : "courses";
+}
 
 export default function CoursesHub({
   enrolledCourses,
   scheduleEntries,
   currentUserId,
   activeSemesterName,
+  calendarEntries = [],
+  calendarCommunities = [],
+  initialTab,
 }: CoursesHubProps) {
-  const [tab, setTab] = useState<TabView>("courses");
+  const [tab, setTab] = useState<TabView>(normalizeTab(initialTab));
+
+  useEffect(() => {
+    setTab(normalizeTab(initialTab));
+  }, [initialTab]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
 
@@ -108,8 +126,18 @@ export default function CoursesHub({
             className={`courses-tab ${tab === "schedule" ? "courses-tab--active" : ""}`}
             style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
           >
+            <UiIcon name="clock" size={16} />
+            Schedule
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === "calendar"}
+            onClick={() => setTab("calendar")}
+            className={`courses-tab ${tab === "calendar" ? "courses-tab--active" : ""}`}
+            style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+          >
             <UiIcon name="calendar" size={16} />
-            Weekly Schedule
+            Calendar
           </button>
         </div>
       </div>
@@ -145,9 +173,9 @@ export default function CoursesHub({
             <Link href="/communities" className="btn btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", padding: "8px 16px", border: "1px solid #cbd5e1" }}>
               <UiIcon name="users" size={14} /> Ask classmates
             </Link>
-            <Link href="/calendar" className="btn btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", padding: "8px 16px", border: "1px solid #cbd5e1" }}>
+            <button type="button" onClick={() => setTab("calendar")} className="btn btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", padding: "8px 16px", border: "1px solid #cbd5e1" }}>
               <UiIcon name="plus" size={14} /> Add deadline
-            </Link>
+            </button>
           </div>
 
           {/* Filters Bar */}
@@ -177,8 +205,18 @@ export default function CoursesHub({
           {/* Courses Grid */}
           <CoursesGrid courses={filteredCourses} totalCourses={enrolledCourses.length} />
         </>
+      ) : tab === "schedule" ? (
+        <ScheduleClient
+          entries={scheduleEntries}
+          currentUserId={currentUserId}
+          onOpenCalendar={() => setTab("calendar")}
+        />
       ) : (
-        <ScheduleClient entries={scheduleEntries} currentUserId={currentUserId} />
+        <CalendarPageClient
+          entries={calendarEntries}
+          myCommunities={calendarCommunities}
+          currentUserId={currentUserId}
+        />
       )}
     </div>
   );

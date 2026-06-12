@@ -726,9 +726,8 @@ export default function MaterialsPageClient({
             project examples — shared by students, for students.
           </p>
           <Link href="/library" className={styles.libraryLink}>
-            <UiIcon name="book-open" size={14} />
-            Looking for official books, reading lists or databases? Visit the
-            UFAR Library
+            <UiIcon name="book-open" size={16} />
+            Official books, reading lists &amp; databases — UFAR Library
           </Link>
         </div>
         <button className="btn btn-primary" onClick={openUpload}>

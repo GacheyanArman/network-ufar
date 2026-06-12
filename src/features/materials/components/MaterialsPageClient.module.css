@@ -39,15 +39,23 @@
 .libraryLink {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: var(--fs-xs);
-  color: var(--text-muted);
+  gap: 8px;
+  margin-top: 4px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-btn);
+  background: var(--bg-card);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
   text-decoration: none;
   width: fit-content;
+  transition: all 0.15s;
 }
 .libraryLink:hover {
+  border-color: var(--french-blue);
+  background: var(--french-blue-soft);
   color: var(--french-blue);
-  text-decoration: underline;
 }
 
 /* ------------------------------ Tabs ------------------------------ */

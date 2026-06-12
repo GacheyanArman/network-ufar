@@ -688,51 +688,6 @@ function StepGender({
   );
 }
 
-function StepRelationship({
-  value,
-  setValue,
-}: {
-  value: string;
-  setValue: (v: string) => void;
-}) {
-  const { t } = useLanguage();
-  const options = ["single", "in_relationship", "complicated", "prefer_not_to_say"];
-  return (
-    <div>
-      <h2 style={{ margin: "0 0 6px", fontSize: "1.15rem", fontWeight: 900, color: "var(--text-primary)" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-          <UiIcon name="heart" size={20} /> {t("onboarding.relationship.title")}
-        </span>
-      </h2>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 14 }}>
-        {options.map((opt) => {
-          const active = value === opt;
-          return (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => setValue(opt)}
-              style={{
-                borderRadius: 10,
-                padding: "12px 10px",
-                border: `1px solid ${active ? "var(--french-blue-deep)" : "var(--border-color)"}`,
-                background: active ? "var(--french-blue-soft)" : "var(--bg-card)",
-                color: active ? "var(--french-blue-deep)" : "var(--text-primary)",
-                fontWeight: 700,
-                cursor: "pointer",
-                fontSize: "0.85rem",
-                textAlign: "center",
-              }}
-            >
-              {t(`profile.relationshipOptions.${opt}`)}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function StepBirthDate({
   value,
   setValue,

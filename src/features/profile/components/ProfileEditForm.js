@@ -7,6 +7,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/shared/i18n/i18n";
 import UiIcon from "@/shared/ui/UiIcon";
 import CoverEditorModal from "./CoverEditorModal";
+import {
+  OPEN_TO_VALUES,
+  parseOpenTo,
+  parseLookingForRest,
+  serializeLookingFor,
+} from "@/features/profile/server/utils";
 import "./ProfileEditForm.css";
 
 const editProfileText = {
@@ -35,6 +41,12 @@ const editProfileText = {
     aboutYou: "About You",
     bio: "Bio",
     bioPlaceholder: "Write a short bio...",
+    social: "Social",
+    relationshipStatus: "Relationship status",
+    hiddenPrivate: "Hidden / private",
+    relationshipHint: "Optional. Hidden by default — it only appears in the About tab of your profile if you pick a status.",
+    openTo: "Open to",
+    openToHint: "Optional. Pick what you're open to — choose Private to keep it off your profile.",
     privacy: "Privacy",
     profileVisibility: "Profile visibility",
     public: "Public",
@@ -75,6 +87,12 @@ const editProfileText = {
     aboutYou: "À propos de vous",
     bio: "Bio",
     bioPlaceholder: "Écrivez une courte bio...",
+    social: "Social",
+    relationshipStatus: "Statut relationnel",
+    hiddenPrivate: "Masqué / privé",
+    relationshipHint: "Optionnel. Masqué par défaut — il n'apparaît dans l'onglet À propos de votre profil que si vous choisissez un statut.",
+    openTo: "Ouvert à",
+    openToHint: "Optionnel. Choisissez ce à quoi vous êtes ouvert — choisissez Privé pour ne rien afficher sur votre profil.",
     privacy: "Confidentialité",
     profileVisibility: "Visibilité du profil",
     public: "Public",
@@ -115,6 +133,12 @@ const editProfileText = {
     aboutYou: "Ձեր մասին",
     bio: "Կենսագրություն",
     bioPlaceholder: "Գրեք կարճ կենսագրություն...",
+    social: "Սոցիալական",
+    relationshipStatus: "Հարաբերությունների կարգավիճակ",
+    hiddenPrivate: "Թաքցված / գաղտնի",
+    relationshipHint: "Ոչ պարտադիր։ Լռելյայն թաքցված է — այն երևում է ձեր պրոֆիլի «Մասին» բաժնում միայն եթե ընտրեք կարգավիճակ։",
+    openTo: "Բաց եմ",
+    openToHint: "Ոչ պարտադիր։ Ընտրեք, ինչին եք բաց — ընտրեք «Գաղտնի», որ ոչինչ չերևա ձեր պրոֆիլում։",
     privacy: "Գաղտնիություն",
     profileVisibility: "Պրոֆիլի տեսանելիություն",
     public: "Հանրային",
@@ -153,6 +177,8 @@ const YEARS = [
   "phd",
 ];
 
+const RELATIONSHIP_VALUES = ["single", "in_relationship", "complicated", "prefer_not_to_say"];
+
 export default function ProfileEditForm({ user, error }) {
   const { language } = useLanguage();
   const text = editProfileText[language] || editProfileText.en;
@@ -160,6 +186,8 @@ export default function ProfileEditForm({ user, error }) {
   const lang = translations[language] || translations.en;
   const facultyLabels = lang.onboarding?.faculty || {};
   const yearLabels = lang.onboarding?.year || {};
+  const relationshipLabels = lang.profile?.relationshipOptions || {};
+  const openToLabels = lang.profile?.openToOptions || {};
 
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
@@ -178,6 +206,25 @@ export default function ProfileEditForm({ user, error }) {
   const [year, setYear] = useState(user.year || "");
   const [studyGroup, setStudyGroup] = useState(user.studyGroup || "");
   const [bio, setBio] = useState(user.bio || "");
+
+  // Social (Task: optional, hidden by default, no dating-app vibes)
+  const [openToSet, setOpenToSet] = useState(() => new Set(parseOpenTo(user.lookingFor)));
+  const lookingForRest = parseLookingForRest(user.lookingFor);
+
+  function toggleOpenTo(value) {
+    setOpenToSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) {
+        next.delete(value);
+      } else {
+        // "private" hides the block entirely, so it clears other picks (and vice versa)
+        if (value === "private") next.clear();
+        else next.delete("private");
+        next.add(value);
+      }
+      return next;
+    });
+  }
   
   // Validation errors state
   const [avatarError, setAvatarError] = useState("");
@@ -502,7 +549,52 @@ export default function ProfileEditForm({ user, error }) {
               </label>
             </div>
 
-            {/* 5. Privacy */}
+            {/* 5. Social — optional, hidden by default */}
+            <div className="uf-edit-card">
+              <h2 className="uf-edit-section-title">{text.social}</h2>
+              <div className="uf-edit-grid">
+                <label className="uf-edit-field" style={{ maxWidth: 300 }}>
+                  <span className="uf-edit-label">{text.relationshipStatus}</span>
+                  <select
+                    className="uf-edit-select"
+                    name="relationshipStatus"
+                    defaultValue={user.relationshipStatus || ""}
+                  >
+                    <option value="">{text.hiddenPrivate}</option>
+                    {RELATIONSHIP_VALUES.map((value) => (
+                      <option key={value} value={value}>
+                        {relationshipLabels[value] || value}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="uf-edit-field-hint">{text.relationshipHint}</span>
+                </label>
+
+                <div className="uf-edit-field uf-edit-field-full">
+                  <span className="uf-edit-label">{text.openTo}</span>
+                  <div className="uf-edit-chips">
+                    {OPEN_TO_VALUES.map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`uf-edit-chip${openToSet.has(value) ? " active" : ""}`}
+                        onClick={() => toggleOpenTo(value)}
+                      >
+                        {openToLabels[value] || value}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="uf-edit-field-hint">{text.openToHint}</span>
+                  <input
+                    type="hidden"
+                    name="lookingFor"
+                    value={serializeLookingFor(lookingForRest, Array.from(openToSet))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 6. Privacy */}
             <div className="uf-edit-card">
               <h2 className="uf-edit-section-title">{text.privacy}</h2>
               <label className="uf-edit-field" style={{ maxWidth: 300 }}>

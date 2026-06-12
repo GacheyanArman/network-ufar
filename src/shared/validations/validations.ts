@@ -42,6 +42,13 @@ export const profileSchema = z.object({
     .optional()
     .or(z.literal("")),
 
+  lookingFor: z
+    .string()
+    .trim()
+    .max(300, "Looking for must be 300 characters or less")
+    .optional()
+    .or(z.literal("")),
+
   birthDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format")

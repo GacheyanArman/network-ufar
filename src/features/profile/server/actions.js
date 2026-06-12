@@ -67,6 +67,7 @@ export async function updateProfile(formData) {
       relationshipStatus: users.relationshipStatus,
       birthDate: users.birthDate,
       privacyLevel: users.privacyLevel,
+      lookingFor: users.lookingFor,
     })
     .from(users)
     .where(eq(users.id, session.userId))
@@ -91,6 +92,7 @@ export async function updateProfile(formData) {
     ? clean(formData.get("birthDate"))
     : (currentUser.birthDate ? currentUser.birthDate.toISOString().split("T")[0] : "");
   const privacyLevel = formData.has("privacyLevel") ? clean(formData.get("privacyLevel")) : (currentUser.privacyLevel || "public");
+  const lookingFor = formData.has("lookingFor") ? clean(formData.get("lookingFor")) : (currentUser.lookingFor || "");
 
   const avatarFile = formData.get("avatarFile");
   const coverFile = formData.get("coverFile");
@@ -107,6 +109,7 @@ export async function updateProfile(formData) {
     relationshipStatus,
     birthDate: birthDateRaw,
     privacyLevel,
+    lookingFor,
   });
 
   if (!validatedFields.success) {
@@ -148,6 +151,7 @@ export async function updateProfile(formData) {
       relationshipStatus: validatedData.relationshipStatus || null,
       birthDate: birthDate || null,
       privacyLevel: validatedData.privacyLevel || "public",
+      lookingFor: validatedData.lookingFor || null,
       image: nextImage,
       coverImage: nextCoverImage,
       updatedAt: new Date(),

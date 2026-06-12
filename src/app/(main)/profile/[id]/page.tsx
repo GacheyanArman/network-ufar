@@ -16,7 +16,12 @@ import {
   semesters,
   photoAlbums,
 } from "@/shared/db/schema";
-import { getFacultyLabel } from "@/features/profile/server/utils";
+import {
+  getFacultyLabel,
+  getRelationshipStatusLabel,
+  getOpenToLabel,
+  parseOpenTo,
+} from "@/features/profile/server/utils";
 import { getSession } from "@/shared/auth/session";
 import { followUser, unfollowUser } from "@/features/profile/server/follow";
 import { sendFriendRequest } from "@/features/profile/server/friends";
@@ -87,6 +92,8 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
       coverImage: users.coverImage,
       year: users.year,
       studyGroup: users.studyGroup,
+      relationshipStatus: users.relationshipStatus,
+      lookingFor: users.lookingFor,
       createdAt: users.createdAt,
     })
     .from(users)
@@ -280,6 +287,13 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
         year: "numeric",
       })
     : "Recently";
+
+  // Social info: optional, hidden unless the user explicitly set it ("private" hides "Open to")
+  const openToTokens = parseOpenTo(profileUser.lookingFor);
+  const openToList = openToTokens.includes("private") ? [] : openToTokens;
+  const relationshipLabel = profileUser.relationshipStatus
+    ? getRelationshipStatusLabel(profileUser.relationshipStatus, lang)
+    : "";
 
   const normalizedPosts = userPosts.map((post: any) => {
     const imageUrl = post.imageUrl || null;
@@ -654,6 +668,25 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
                     <InfoBlock label="Joined" value={joinedAt} />
                   </div>
                 </div>
+
+                {(relationshipLabel || openToList.length > 0) && (
+                  <div className="uf-card uf-about-card">
+                    <h3>Social</h3>
+                    <div className="uf-personal-info-list">
+                      {relationshipLabel && (
+                        <InfoBlock label="Relationship" value={relationshipLabel} />
+                      )}
+                      {openToList.length > 0 && (
+                        <div className="uf-info-block">
+                          <span>{t.profile?.openToTitle || "Open to"}</span>
+                          <strong>
+                            {openToList.map((v: string) => getOpenToLabel(v, lang)).join(" · ")}
+                          </strong>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </section>
             ) : null}
           </main>

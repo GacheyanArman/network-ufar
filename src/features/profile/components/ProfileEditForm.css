@@ -633,3 +633,32 @@ body:has(.uf-edit-page) .old-social-grid {
     width: 100%;
   }
 }
+
+/* Social: "Open to" chips */
+.uf-edit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.uf-edit-chip {
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-card, #fff);
+  color: var(--text-primary, #0f172a);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.uf-edit-chip:hover {
+  border-color: var(--french-blue-deep, #1d4ed8);
+}
+
+.uf-edit-chip.active {
+  background: var(--french-blue-soft, #dbeafe);
+  border-color: var(--french-blue-deep, #1d4ed8);
+  color: var(--french-blue-deep, #1d4ed8);
+}

@@ -24,7 +24,12 @@ import {
 import PostComposer from "@/features/feed/components/PostComposer";
 import ProfilePostsClient from "@/features/profile/components/ProfilePostsClient";
 import UiIcon from "@/shared/ui/UiIcon";
-import { getFacultyLabel } from "@/features/profile/server/utils";
+import {
+  getFacultyLabel,
+  getRelationshipStatusLabel,
+  getOpenToLabel,
+  parseOpenTo,
+} from "@/features/profile/server/utils";
 import { translations } from "@/shared/i18n/i18n";
 
 import "@/features/profile/profile.css";
@@ -78,6 +83,8 @@ export default async function ProfilePage({ searchParams }: PageProps) {
       coverImage: users.coverImage,
       year: users.year,
       studyGroup: users.studyGroup,
+      relationshipStatus: users.relationshipStatus,
+      lookingFor: users.lookingFor,
       createdAt: users.createdAt,
     })
     .from(users)
@@ -286,6 +293,13 @@ export default async function ProfilePage({ searchParams }: PageProps) {
         year: "numeric",
       })
     : "Recently";
+
+  // Social info: optional and hidden by default ("private" hides "Open to" entirely)
+  const openToTokens = parseOpenTo(currentUser.lookingFor);
+  const openToList = openToTokens.includes("private") ? [] : openToTokens;
+  const relationshipLabel = currentUser.relationshipStatus
+    ? getRelationshipStatusLabel(currentUser.relationshipStatus, lang)
+    : "";
 
   const TABS = [
     { key: "posts", label: "Posts" },
@@ -586,6 +600,25 @@ export default async function ProfilePage({ searchParams }: PageProps) {
                       </div>
                     </div>
                   </div>
+
+                  {(relationshipLabel || openToList.length > 0) && (
+                    <div className="uf-card uf-about-card">
+                      <h3>Social</h3>
+                      <div className="uf-personal-info-list">
+                        {relationshipLabel && (
+                          <InfoBlock label="Relationship" value={relationshipLabel} />
+                        )}
+                        {openToList.length > 0 && (
+                          <div className="uf-info-block">
+                            <span>{t.profile?.openToTitle || "Open to"}</span>
+                            <strong>
+                              {openToList.map((v: string) => getOpenToLabel(v, lang)).join(" · ")}
+                            </strong>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="uf-card uf-about-card">

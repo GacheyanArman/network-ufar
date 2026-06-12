@@ -111,7 +111,13 @@ export default function MessagesPageClient({
       startConversation: "Search for a student to start chatting",
       noCourseChats: "No course chats yet",
       direct: "Direct",
-      courseChats: "Course Chats",
+      groups: "Groups",
+      courseChats: "Courses",
+      unread: "Unread",
+      noGroupChats: "No group chats yet",
+      joinFromGroups: "Open the Chat tab in one of your groups to start chatting.",
+      allCaughtUp: "All caught up!",
+      noUnread: "You have no unread messages.",
       searchPlaceholder: "Search people or chats...",
       searchLabel: "Search Results",
       noMatches: "No matches found",
@@ -127,7 +133,13 @@ export default function MessagesPageClient({
       startConversation: "Rechercher un étudiant pour discuter",
       noCourseChats: "Pas encore de discussions de cours",
       direct: "Direct",
+      groups: "Groupes",
       courseChats: "Cours",
+      unread: "Non lus",
+      noGroupChats: "Pas encore de discussions de groupe",
+      joinFromGroups: "Ouvrez l’onglet Chat d’un de vos groupes pour commencer à discuter.",
+      allCaughtUp: "Tout est à jour !",
+      noUnread: "Vous n’avez aucun message non lu.",
       searchPlaceholder: "Rechercher des personnes ou des discussions...",
       searchLabel: "Résultats de recherche",
       noMatches: "Aucun résultat trouvé",
@@ -143,7 +155,13 @@ export default function MessagesPageClient({
       startConversation: "Փնտրեք ուսանողի զրույցը սկսելու համար",
       noCourseChats: "Դասընթացների զրույցներ չկան",
       direct: "Ուղղակի",
+      groups: "Խմբեր",
       courseChats: "Դասընթացներ",
+      unread: "Չկարդացած",
+      noGroupChats: "Խմբային զրույցներ դեռ չկան",
+      joinFromGroups: "Բացեք ձեր խմբերից մեկի Chat բաժինը՝ զրույցը սկսելու համար։",
+      allCaughtUp: "Ամեն ինչ կարդացված է",
+      noUnread: "Չկարդացած հաղորդագրություններ չկան։",
       searchPlaceholder: "Որոնել մարդկանց կամ զրույցներ...",
       searchLabel: "Որոնման արդյունքներ",
       noMatches: "Համընկնումներ չգտնվեցին",
@@ -158,7 +176,13 @@ export default function MessagesPageClient({
 
   const dict = localizations[language] || localizations.en;
 
-  const [activeTab, setActiveTab] = useState(selectedGroupId ? "group" : "direct");
+  // Course chats are tied to a course; the rest are group chats (incl. groups from the Groups section).
+  const tabForGroupId = (gid) =>
+    userGroupChats.find((g) => g.id === gid)?.course ? "courses" : "groups";
+
+  const [activeTab, setActiveTab] = useState(
+    selectedGroupId ? tabForGroupId(selectedGroupId) : "direct"
+  );
 
   const [prevSelectedGroupId, setPrevSelectedGroupId] = useState(selectedGroupId);
   const [prevSelectedUserId, setPrevSelectedUserId] = useState(selectedUserId);
@@ -167,14 +191,102 @@ export default function MessagesPageClient({
     setPrevSelectedGroupId(selectedGroupId);
     setPrevSelectedUserId(selectedUserId);
     if (selectedGroupId) {
-      setActiveTab("group");
+      setActiveTab(tabForGroupId(selectedGroupId));
     } else if (selectedUserId) {
       setActiveTab("direct");
     }
   }
 
+  const groupChatsList = userGroupChats.filter((g) => !g.course);
+  const courseChatsList = userGroupChats.filter((g) => g.course);
+
   const directUnreadTotal = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
-  const groupUnreadTotal = userGroupChats.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+  const groupsUnreadTotal = groupChatsList.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+  const coursesUnreadTotal = courseChatsList.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+  const unreadTotal = directUnreadTotal + groupsUnreadTotal + coursesUnreadTotal;
+
+  const unreadConversations = conversations.filter((c) => (c.unreadCount || 0) > 0);
+  const unreadGroupChats = userGroupChats.filter((g) => (g.unreadCount || 0) > 0);
+
+  const renderConversationItem = ({ user, lastMessage, unreadCount }) => (
+    <Link
+      key={user.id}
+      href={`/messages?user=${user.id}`}
+      className={`tg-chat-item ${user.id === selectedUserId ? "active" : ""}`}
+      onClick={closeSidebarOnMobile}
+    >
+      <div className="tg-chat-avatar">
+        {user.image ? (
+          <Image src={user.image} alt={user.fullName} width={52} height={52} />
+        ) : (
+          <span>{user.fullName?.[0] || "U"}</span>
+        )}
+      </div>
+
+      <div className="tg-chat-content">
+        <div className="tg-chat-top">
+          <h3 className="tg-chat-name">{user.fullName}</h3>
+          <span className="tg-chat-time">
+            {isClient && lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }) : ""}
+          </span>
+        </div>
+        <div className="tg-chat-bottom">
+          <p className="tg-chat-preview">
+            {lastMessage ? (lastMessage.senderId === sessionUserId ? "You: " : "") : ""}
+            {lastMessage ? lastMessage.content : ""}
+          </p>
+          {unreadCount > 0 && (
+            <span className="tg-unread-badge">{unreadCount}</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+
+  const renderGroupChatItem = (group) => (
+    <Link
+      key={group.id}
+      href={`/messages?group=${group.id}`}
+      className={`tg-chat-item ${group.id === selectedGroupId ? "active" : ""}`}
+      onClick={closeSidebarOnMobile}
+    >
+      <div className="tg-chat-avatar tg-group-avatar">
+        {group.avatar ? (
+          <Image src={group.avatar} alt={group.name} width={52} height={52} />
+        ) : (
+          <UiIcon name="users" size={20} />
+        )}
+      </div>
+
+      <div className="tg-chat-content">
+        <div className="tg-chat-top">
+          <h3 className="tg-chat-name">{group.name}</h3>
+          <span className="tg-chat-time">
+            {isClient && group.lastMessage
+              ? new Date(group.lastMessage.createdAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : isClient
+              ? new Date(group.createdAt).toLocaleDateString()
+              : ""}
+          </span>
+        </div>
+        <div className="tg-chat-bottom">
+          <p className="tg-chat-preview">
+            {group.lastMessage ? `${group.lastMessage.senderName}: ` : ""}
+            {group.lastMessage ? group.lastMessage.content : ""}
+          </p>
+          {group.unreadCount > 0 && (
+            <span className="tg-unread-badge">{group.unreadCount}</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
 
   const localDirectMatches = isSearching
     ? conversations.filter(c => c.user?.fullName?.toLowerCase().includes(trimmedQuery.toLowerCase()))
@@ -237,12 +349,32 @@ export default function MessagesPageClient({
             </button>
             <button
               type="button"
-              className={`tg-tab-btn ${activeTab === "group" ? "active" : ""}`}
-              onClick={() => setActiveTab("group")}
+              className={`tg-tab-btn ${activeTab === "groups" ? "active" : ""}`}
+              onClick={() => setActiveTab("groups")}
+            >
+              {dict.groups}
+              {groupsUnreadTotal > 0 && (
+                <span className="tg-tab-unread-badge">{groupsUnreadTotal}</span>
+              )}
+            </button>
+            <button
+              type="button"
+              className={`tg-tab-btn ${activeTab === "courses" ? "active" : ""}`}
+              onClick={() => setActiveTab("courses")}
             >
               {dict.courseChats}
-              {groupUnreadTotal > 0 && (
-                <span className="tg-tab-unread-badge">{groupUnreadTotal}</span>
+              {coursesUnreadTotal > 0 && (
+                <span className="tg-tab-unread-badge">{coursesUnreadTotal}</span>
+              )}
+            </button>
+            <button
+              type="button"
+              className={`tg-tab-btn ${activeTab === "unread" ? "active" : ""}`}
+              onClick={() => setActiveTab("unread")}
+            >
+              {dict.unread}
+              {unreadTotal > 0 && (
+                <span className="tg-tab-unread-badge">{unreadTotal}</span>
               )}
             </button>
           </div>
@@ -386,13 +518,30 @@ export default function MessagesPageClient({
                     ))
                 )}
               </>
-            ) : activeTab === "group" ? (
+            ) : activeTab === "groups" ? (
               <>
-                {/* Course Chats Section */}
-                {userGroupChats.length === 0 ? (
+                {/* Group Chats Section */}
+                {groupChatsList.length === 0 ? (
                   <div className="tg-empty-state">
                     <div className="tg-empty-icon">
                       <UiIcon name="users" size={36} />
+                    </div>
+                    <h3>{dict.noGroupChats}</h3>
+                    <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+                      {dict.joinFromGroups}
+                    </p>
+                  </div>
+                ) : (
+                  groupChatsList.map(renderGroupChatItem)
+                )}
+              </>
+            ) : activeTab === "courses" ? (
+              <>
+                {/* Course Chats Section */}
+                {courseChatsList.length === 0 ? (
+                  <div className="tg-empty-state">
+                    <div className="tg-empty-icon">
+                      <UiIcon name="book-open" size={36} />
                     </div>
                     <h3>{dict.noCourseChats}</h3>
                     <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
@@ -400,47 +549,27 @@ export default function MessagesPageClient({
                     </p>
                   </div>
                 ) : (
-                  userGroupChats.map((group) => (
-                    <Link
-                      key={group.id}
-                      href={`/messages?group=${group.id}`}
-                      className={`tg-chat-item ${group.id === selectedGroupId ? "active" : ""}`}
-                      onClick={closeSidebarOnMobile}
-                    >
-                      <div className="tg-chat-avatar tg-group-avatar">
-                        {group.avatar ? (
-                          <Image src={group.avatar} alt={group.name} width={52} height={52} />
-                        ) : (
-                          <UiIcon name="users" size={20} />
-                        )}
-                      </div>
-
-                      <div className="tg-chat-content">
-                        <div className="tg-chat-top">
-                          <h3 className="tg-chat-name">{group.name}</h3>
-                          <span className="tg-chat-time">
-                            {isClient && group.lastMessage
-                              ? new Date(group.lastMessage.createdAt).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : isClient
-                              ? new Date(group.createdAt).toLocaleDateString()
-                              : ""}
-                          </span>
-                        </div>
-                        <div className="tg-chat-bottom">
-                          <p className="tg-chat-preview">
-                            {group.lastMessage ? `${group.lastMessage.senderName}: ` : ""}
-                            {group.lastMessage ? group.lastMessage.content : ""}
-                          </p>
-                          {group.unreadCount > 0 && (
-                            <span className="tg-unread-badge">{group.unreadCount}</span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  ))
+                  courseChatsList.map(renderGroupChatItem)
+                )}
+              </>
+            ) : activeTab === "unread" ? (
+              <>
+                {/* Unread Section */}
+                {unreadConversations.length === 0 && unreadGroupChats.length === 0 ? (
+                  <div className="tg-empty-state">
+                    <div className="tg-empty-icon">
+                      <UiIcon name="check" size={36} />
+                    </div>
+                    <h3>{dict.allCaughtUp}</h3>
+                    <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+                      {dict.noUnread}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {unreadConversations.map(renderConversationItem)}
+                    {unreadGroupChats.map(renderGroupChatItem)}
+                  </>
                 )}
               </>
             ) : (
@@ -455,43 +584,7 @@ export default function MessagesPageClient({
                     <p>{dict.startConversation}</p>
                   </div>
                 ) : (
-                  conversations.map(({ user, lastMessage, unreadCount }) => (
-                    <Link
-                      key={user.id}
-                      href={`/messages?user=${user.id}`}
-                      className={`tg-chat-item ${user.id === selectedUserId ? "active" : ""}`}
-                      onClick={closeSidebarOnMobile}
-                    >
-                      <div className="tg-chat-avatar">
-                        {user.image ? (
-                          <Image src={user.image} alt={user.fullName} width={52} height={52} />
-                        ) : (
-                          <span>{user.fullName?.[0] || "U"}</span>
-                        )}
-                      </div>
-
-                      <div className="tg-chat-content">
-                        <div className="tg-chat-top">
-                          <h3 className="tg-chat-name">{user.fullName}</h3>
-                          <span className="tg-chat-time">
-                            {isClient && lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }) : ""}
-                          </span>
-                        </div>
-                        <div className="tg-chat-bottom">
-                          <p className="tg-chat-preview">
-                            {lastMessage ? (lastMessage.senderId === sessionUserId ? "You: " : "") : ""}
-                            {lastMessage ? lastMessage.content : ""}
-                          </p>
-                          {unreadCount > 0 && (
-                            <span className="tg-unread-badge">{unreadCount}</span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  ))
+                  conversations.map(renderConversationItem)
                 )}
               </>
             )}

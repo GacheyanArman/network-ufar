@@ -65,7 +65,7 @@ const PRIMARY_ITEMS = [
   { href: "/feed", icon: "message-circle", key: "nav.feed" },
   { href: "/courses", icon: "graduation", key: "nav.courses", activeHrefs: ["/schedule", "/calendar"] },
   { href: "/study-materials", icon: "folder", key: "nav.materials", activeHrefs: ["/materials", "/library"] },
-  { href: "/communities", icon: "users", key: "nav.communities", activeHrefs: ["/groups", "/study-groups", "/group-chats"] },
+  { href: "/communities", icon: "users", key: "nav.communities", activeHrefs: ["/groups", "/study-groups"] },
   { href: "/messages", icon: "send", key: "nav.messages" },
 ];
 

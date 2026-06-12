@@ -2,14 +2,23 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/shared/db/db";
 import { getSession } from "@/shared/auth/session";
-import { notificationPreferences, users } from "@/shared/db/schema";
+import { blockedUsers, notificationPreferences, users } from "@/shared/db/schema";
 import ProfileSettingsClient from "@/features/profile/components/ProfileSettingsClient";
 
 export const metadata = {
   title: "Settings",
 };
 
-export default async function SettingsPage() {
+const VALID_TABS = ["account", "privacy", "notifications", "language", "password", "deleteAccount"];
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
+  const params = (await searchParams) || {};
+  const initialTab = VALID_TABS.includes(params.tab || "") ? (params.tab as string) : "account";
+
   const session = await getSession();
 
   if (!session?.userId) {
@@ -54,11 +63,24 @@ export default async function SettingsPage() {
     social: prefRow?.social ?? true,
   };
 
+  const blocked = await db
+    .select({
+      id: blockedUsers.id,
+      blockedId: blockedUsers.blockedId,
+      createdAt: blockedUsers.createdAt,
+      blockedUserName: users.fullName,
+      blockedUserImage: users.image,
+      blockedUserUsername: users.username,
+    })
+    .from(blockedUsers)
+    .innerJoin(users, eq(blockedUsers.blockedId, users.id))
+    .where(eq(blockedUsers.blockerId, currentUserId));
+
   return (
     <div className="uf-settings-page" style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px" }}>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0f172a", marginBottom: 24 }}>Settings</h1>
       <div className="uf-card" style={{ padding: "24px", background: "#ffffff", borderRadius: "16px", border: "1px solid #d9e2ef", boxShadow: "0 2px 10px rgba(15, 23, 42, 0.04)" }}>
-        <ProfileSettingsClient user={currentUser} prefs={prefs} />
+        <ProfileSettingsClient user={currentUser} prefs={prefs} blocked={blocked} initialTab={initialTab} />
       </div>
     </div>
   );

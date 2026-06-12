@@ -403,6 +403,9 @@ export default async function ProfilePage({ searchParams }: PageProps) {
                   <Link href="/profile/edit" className="uf-profile-edit-btn primary">
                     {t.profile?.editProfile || "Edit profile"}
                   </Link>
+                  <Link href="/settings" className="uf-profile-edit-btn">
+                    {t.nav?.settings || "Settings"}
+                  </Link>
                 </div>
               </div>
             </section>

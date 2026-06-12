@@ -6,7 +6,7 @@ import { and, eq, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { db } from "@/shared/db/db";
-import { users } from "@/shared/db/schema";
+import { auditLog, users } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
 import { profileSchema } from "@/shared/validations/validations";
 import { saveUploadFileWithMeta } from "@/shared/storage/upload";
@@ -238,6 +238,45 @@ export async function changePassword(currentPassword, newPassword) {
     .update(users)
     .set({ password: passwordHash, updatedAt: new Date() })
     .where(eq(users.id, session.userId));
+
+  return { success: true };
+}
+
+export async function deleteAccount(password) {
+  const session = await getSession();
+  if (!session?.userId) {
+    return { error: "Unauthorized" };
+  }
+
+  if (!password) {
+    return { error: "Password is required" };
+  }
+
+  const bcrypt = (await import("bcryptjs")).default;
+
+  const [user] = await db
+    .select({ password: users.password })
+    .from(users)
+    .where(eq(users.id, session.userId))
+    .limit(1);
+
+  if (!user || !user.password) {
+    return { error: "User not found or no password set" };
+  }
+
+  const isValid = await bcrypt.compare(password, user.password);
+  if (!isValid) {
+    return { error: "Incorrect password" };
+  }
+
+  // audit_log.actor_id is NOT NULL with ON DELETE SET NULL, so remove those rows first.
+  await db.delete(auditLog).where(eq(auditLog.actorId, session.userId));
+
+  // All other user-owned rows are removed via ON DELETE CASCADE / SET NULL.
+  await db.delete(users).where(eq(users.id, session.userId));
+
+  const cookieStore = await cookies();
+  cookieStore.delete("session");
 
   return { success: true };
 }

@@ -57,19 +57,22 @@ export async function completeOnboarding(prevState, formData) {
         semesterId = sem[0].id;
       }
 
-      // 4. Update User
+      // 4. Update User — onboarding only sets the required basics.
+      // Optional profile fields (avatar, bio, interests, languages, looking for,
+      // relationship status, birth date, gender) are filled later in profile edit,
+      // so we only write them if they were actually submitted.
       await tx
         .update(users)
         .set({
           faculty: data.faculty,
           year: data.year,
           studyGroup: data.studyGroup || null,
-          gender: data.gender || null,
-          relationshipStatus: data.relationshipStatus || null,
-          birthDate: birthDate || null,
-          interests: data.interests || null,
-          languages: data.languages || null,
-          lookingFor: data.lookingFor || null,
+          ...(data.gender ? { gender: data.gender } : {}),
+          ...(data.relationshipStatus ? { relationshipStatus: data.relationshipStatus } : {}),
+          ...(birthDate ? { birthDate } : {}),
+          ...(data.interests ? { interests: data.interests } : {}),
+          ...(data.languages ? { languages: data.languages } : {}),
+          ...(data.lookingFor ? { lookingFor: data.lookingFor } : {}),
           onboardingComplete: true,
           updatedAt: new Date(),
         })
@@ -111,5 +114,5 @@ export async function completeOnboarding(prevState, formData) {
     return { error: "Failed to save profile. Please try again." };
   }
 
-  redirect("/");
+  redirect("/today");
 }

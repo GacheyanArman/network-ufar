@@ -16,12 +16,6 @@ export default async function OnboardingPage() {
       faculty: users.faculty,
       year: users.year,
       studyGroup: users.studyGroup,
-      gender: users.gender,
-      relationshipStatus: users.relationshipStatus,
-      birthDate: users.birthDate,
-      interests: users.interests,
-      languages: users.languages,
-      lookingFor: users.lookingFor,
       onboardingComplete: users.onboardingComplete,
     })
     .from(users)
@@ -29,19 +23,13 @@ export default async function OnboardingPage() {
     .limit(1);
 
   if (!user) redirect("/login");
-  if (user.onboardingComplete) redirect("/");
+  if (user.onboardingComplete) redirect("/today");
 
   return (
     <OnboardingClient
       initialFaculty={user.faculty || ""}
       initialYear={user.year || ""}
       initialGroup={user.studyGroup || ""}
-      initialGender={user.gender || ""}
-      initialRelationshipStatus={user.relationshipStatus || ""}
-      initialBirthDate={user.birthDate ? user.birthDate.toISOString().split("T")[0] : ""}
-      initialInterests={user.interests || ""}
-      initialLanguages={user.languages || ""}
-      initialLookingFor={user.lookingFor || ""}
     />
   );
 }

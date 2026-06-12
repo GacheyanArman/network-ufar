@@ -675,7 +675,7 @@ export const translations = {
     // Onboarding
     onboarding: {
       welcome: "Welcome to UFARnet!",
-      subtitle: "Tell us about yourself so we can personalize your experience",
+      subtitle: "3 quick steps — you can complete the rest of your profile later",
       step: "Step {n} of {total}",
       next: "Next",
       back: "Back",
@@ -1697,7 +1697,7 @@ export const translations = {
     // Onboarding
     onboarding: {
       welcome: "Bienvenue sur UFARnet !",
-      subtitle: "Parlez-nous de vous pour personnaliser votre expérience",
+      subtitle: "3 étapes rapides — vous pourrez compléter votre profil plus tard",
       step: "Étape {n} sur {total}",
       next: "Suivant",
       back: "Retour",
@@ -2753,7 +2753,7 @@ export const translations = {
     // Onboarding
     onboarding: {
       welcome: "Բարի գալուստ UFARnet!",
-      subtitle: "Պատմեք ձեր մասին՝ կայքը ձեր համար անհատականացնելու համար",
+      subtitle: "3 արագ քայլ — պրոֆիլը կարող եք լրացնել ավելի ուշ",
       step: "Քայլ {n}-ը {total}-ից",
       next: "Առաջ",
       back: "Հետ",

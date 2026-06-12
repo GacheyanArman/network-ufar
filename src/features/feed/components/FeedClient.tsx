@@ -55,6 +55,7 @@ type FeedClientProps = {
   initialItems: UnifiedFeedItem[];
   currentUser: CurrentUser;
   myCommunityIds?: string[];
+  initialFilter?: FilterMode;
 };
 
 type FilterMode = "all" | "my_groups" | "campus" | "questions" | "events" | "materials";
@@ -142,6 +143,7 @@ export default function FeedClient({
   initialItems,
   currentUser,
   myCommunityIds = [],
+  initialFilter = "all",
 }: FeedClientProps) {
   const { t } = useLanguage();
 
@@ -180,7 +182,7 @@ export default function FeedClient({
     }
   );
 
-  const [filterBy, setFilterBy] = useState<FilterMode>("all");
+  const [filterBy, setFilterBy] = useState<FilterMode>(initialFilter);
   const communityIdSet = new Set(myCommunityIds);
   const filtered = filterItems(items, filterBy, communityIdSet);
   const [displayed, setDisplayed] = useState<UnifiedFeedItem[]>(filtered.slice(0, 15));

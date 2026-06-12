@@ -6,7 +6,10 @@ import FeedClient from "@/features/feed/components/FeedClient";
 import { PageShell } from "@/shared/ui/Layout";
 import FeedLoading from "./loading";
 
-async function FeedContent({ userId }: { userId: string }) {
+const FILTER_MODES = ["all", "my_groups", "campus", "questions", "events", "materials"] as const;
+type FilterMode = (typeof FILTER_MODES)[number];
+
+async function FeedContent({ userId, initialFilter }: { userId: string; initialFilter: FilterMode }) {
   const { currentUser, items, myCommunityIds } = await getUnifiedFeed(userId);
 
   if (!currentUser) {
@@ -18,11 +21,16 @@ async function FeedContent({ userId }: { userId: string }) {
       initialItems={items}
       currentUser={currentUser}
       myCommunityIds={myCommunityIds}
+      initialFilter={initialFilter}
     />
   );
 }
 
-export default async function FeedPage() {
+export default async function FeedPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ filter?: string }>;
+}) {
   const session = await getSession();
   const userId = session?.userId as string | undefined;
 
@@ -30,10 +38,15 @@ export default async function FeedPage() {
     redirect("/login");
   }
 
+  const params = (await searchParams) || {};
+  const initialFilter: FilterMode = FILTER_MODES.includes(params.filter as FilterMode)
+    ? (params.filter as FilterMode)
+    : "all";
+
   return (
     <PageShell variant="narrow">
       <Suspense fallback={<FeedLoading />}>
-        <FeedContent userId={userId} />
+        <FeedContent userId={userId} initialFilter={initialFilter} />
       </Suspense>
     </PageShell>
   );

@@ -195,13 +195,6 @@ export default async function CommunitiesPage({ searchParams }) {
             { id: "faculty", label: "Faculty Groups" },
             { id: "courses", label: "Course Groups" },
             { id: "clubs", label: "Clubs" },
-            {
-              id: "study",
-              label: "Study Groups",
-              href: "/study-groups",
-              icon: "book",
-              title: "Open Study Groups — find or create a study group for your subject",
-            },
           ].map((t) => {
             const isActive = tab === t.id;
             return (
@@ -232,6 +225,49 @@ export default async function CommunitiesPage({ searchParams }) {
             );
           })}
         </div>
+      )}
+
+      {/* Study Groups banner link */}
+      {!query && (
+        <Link
+          href="/study-groups"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            padding: "14px 18px",
+            borderRadius: 14,
+            textDecoration: "none",
+            background: "var(--bg-soft, #f8fafc)",
+            border: "1px solid var(--border-color, #e2e8f0)",
+            transition: "all 0.2s",
+          }}
+        >
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 12,
+              background: "var(--french-blue, #2563eb)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <UiIcon name="book" size={20} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: "var(--text-primary)" }}>
+              Study Groups
+            </div>
+            <div style={{ fontSize: 13.5, color: "var(--text-secondary)" }}>
+              Find or create a study group to prepare for exams and courses together
+            </div>
+          </div>
+          <UiIcon name="arrow-right" size={18} color="var(--text-secondary)" />
+        </Link>
       )}
 
       {/* Search results override */}

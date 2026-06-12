@@ -53,7 +53,9 @@ export default async function MainLayout({ children }) {
             </Link>
           </div>
 
-          <div className="topbar-actions" />
+          <div className="topbar-actions">
+            <TopbarSearch />
+          </div>
 
           <div className="clean-topbar-profile">
             <LanguageSwitcher />
@@ -92,12 +94,6 @@ export default async function MainLayout({ children }) {
         <main className="main-content">{children}</main>
 
         <aside className="sidebar-right">
-          <div className="card right-widget" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", overflow: "visible", position: "relative", zIndex: 100 }}>
-            <h4 className="widget-title" style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--french-navy)", margin: 0 }}>
-              <UiIcon name="search" size={16} color="var(--french-gold)" /> {t("nav.search") || "Search"}
-            </h4>
-            <TopbarSearch />
-          </div>
           <RightPanelWidgets userId={session.userId} />
         </aside>
       </div>

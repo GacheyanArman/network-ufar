@@ -11,13 +11,15 @@ type NavItemProps = {
   icon: string;
   translationKey: string;
   badge?: number;
+  activeHrefs?: string[];
 };
 
-function NavItem({ href, icon, translationKey, badge }: NavItemProps) {
+function NavItem({ href, icon, translationKey, badge, activeHrefs = [] }: NavItemProps) {
   const { t } = useLanguage();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [baseHref, queryStr] = href.split("?");
+  const activeTargets = [baseHref, ...activeHrefs];
 
   let isActive = false;
   if (queryStr) {
@@ -26,10 +28,10 @@ function NavItem({ href, icon, translationKey, badge }: NavItemProps) {
       searchParams ? searchParams.get(key) === val : false
     );
     isActive = pathname === baseHref && allQueryMatches;
-  } else if (pathname === href) {
-    isActive = true;
-  } else if (href !== "/" && pathname?.startsWith(href)) {
-    isActive = true;
+  } else {
+    isActive = activeTargets.some((target) =>
+      pathname === target || (target !== "/" && pathname?.startsWith(`${target}/`))
+    );
   }
 
   return (
@@ -61,13 +63,15 @@ type NavigationMenuProps = {
 const PRIMARY_ITEMS = [
   { href: "/today", icon: "home", key: "nav.today" },
   { href: "/feed", icon: "message-circle", key: "nav.feed" },
-  { href: "/communities", icon: "users", key: "nav.communities" },
-  { href: "/study-materials", icon: "folder", key: "nav.materials" },
-  { href: "/profile", icon: "user", key: "nav.myProfile" },
+  { href: "/courses", icon: "graduation", key: "nav.courses", activeHrefs: ["/schedule", "/calendar"] },
+  { href: "/study-materials", icon: "folder", key: "nav.materials", activeHrefs: ["/materials", "/library"] },
+  { href: "/communities", icon: "users", key: "nav.communities", activeHrefs: ["/groups", "/study-groups", "/group-chats"] },
+  { href: "/messages", icon: "send", key: "nav.messages" },
 ];
 
-const UTILITY_ITEMS = [
-  { href: "/notifications", icon: "bell", key: "nav.notifications" },
+const MORE_ITEMS = [
+  { href: "/lost-found", icon: "search", key: "nav.lostFound" },
+  { href: "/help", icon: "help", key: "nav.help" },
   { href: "/settings", icon: "settings", key: "nav.settings" },
 ];
 
@@ -79,13 +83,20 @@ function NavigationMenuContent({ userRole }: NavigationMenuProps) {
     <nav className="student-nav card" aria-label={t("nav.primary") || "Primary navigation"}>
       <div className="nav-section">
         {PRIMARY_ITEMS.map((item) => (
-          <NavItem key={item.href} href={item.href} icon={item.icon} translationKey={item.key} />
+          <NavItem
+            key={item.href}
+            href={item.href}
+            icon={item.icon}
+            translationKey={item.key}
+            activeHrefs={item.activeHrefs}
+          />
         ))}
       </div>
 
       <div className="divider" aria-hidden="true" />
-      <div className="nav-section nav-secondary-section">
-        {UTILITY_ITEMS.map((item) => (
+      <div className="nav-section nav-secondary-section" aria-label={t("nav.more") || "More"}>
+        <div className="nav-section-title">{t("nav.more") || "More"}</div>
+        {MORE_ITEMS.map((item) => (
           <NavItem key={item.href} href={item.href} icon={item.icon} translationKey={item.key} />
         ))}
       </div>
@@ -94,7 +105,7 @@ function NavigationMenuContent({ userRole }: NavigationMenuProps) {
         <>
           <div className="divider" aria-hidden="true" />
           <div className="nav-section">
-            <NavItem href="/admin" icon="shield" translationKey="nav.admin" />
+            <NavItem href="/admin" icon="shield-check" translationKey="nav.admin" />
           </div>
         </>
       ) : null}

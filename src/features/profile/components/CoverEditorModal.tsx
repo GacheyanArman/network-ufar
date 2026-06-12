@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import type { ChangeEvent, MouseEvent } from "react";
 import UiIcon from "@/shared/ui/UiIcon";
 import "./CoverEditorModal.css";
 
@@ -15,23 +16,32 @@ const PRESET_COLORS = [
   "#333333", // Dark Gray
 ];
 
+type CoverEditorModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  initialImageFile?: File | null;
+  onApply: (file: File, previewUrl: string) => void;
+};
+
+type CoverTab = "image" | "color";
+
 export default function CoverEditorModal({
   isOpen,
   onClose,
   initialImageFile,
   onApply,
-}) {
-  const [activeTab, setActiveTab] = useState(initialImageFile ? "image" : "color");
+}: CoverEditorModalProps) {
+  const [activeTab, setActiveTab] = useState<CoverTab>(initialImageFile ? "image" : "color");
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]);
   
   // Image crop state
-  const [imageSrc, setImageSrc] = useState(null);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
-  const imageRef = useRef(null);
-  const containerRef = useRef(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (initialImageFile) {
@@ -46,7 +56,7 @@ export default function CoverEditorModal({
 
   if (!isOpen) return null;
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     setIsDragging(true);
     dragStart.current = {
       x: e.clientX - offset.x,
@@ -54,7 +64,7 @@ export default function CoverEditorModal({
     };
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!isDragging) return;
     setOffset({
       x: e.clientX - dragStart.current.x,
@@ -66,28 +76,35 @@ export default function CoverEditorModal({
     setIsDragging(false);
   };
 
-  const generateColorBlob = async (color) => {
+  const generateColorBlob = async (color: string): Promise<File> => {
     const canvas = document.createElement("canvas");
     canvas.width = 1200;
     canvas.height = 400;
     const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas is not available");
+
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Could not generate cover image"));
+          return;
+        }
         resolve(new File([blob], "cover_color.jpg", { type: "image/jpeg" }));
       }, "image/jpeg", 0.9);
     });
   };
 
-  const generateImageBlob = async () => {
+  const generateImageBlob = async (): Promise<File | null> => {
     if (!imageRef.current || !containerRef.current) return null;
     
     const canvas = document.createElement("canvas");
     canvas.width = 1200;
     canvas.height = 400;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
 
     const img = imageRef.current;
     const container = containerRef.current;
@@ -109,15 +126,19 @@ export default function CoverEditorModal({
 
     ctx.drawImage(img, dx, dy, imgDrawWidth, imgDrawHeight);
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Could not generate cover image"));
+          return;
+        }
         resolve(new File([blob], "cover_image.jpg", { type: "image/jpeg" }));
       }, "image/jpeg", 0.9);
     });
   };
 
   const handleApply = async () => {
-    let file = null;
+    let file: File | null = null;
     let preview = "";
 
     if (activeTab === "color") {
@@ -126,13 +147,14 @@ export default function CoverEditorModal({
     } else {
       if (!imageSrc) return;
       file = await generateImageBlob();
+      if (!file) return;
       preview = URL.createObjectURL(file);
     }
 
     onApply(file, preview);
   };
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);

@@ -4767,7 +4767,7 @@ video.composer-preview-media {
         border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
         justify-content: space-around !important;
         align-items: center !important;
-        padding: 0 10px !important;
+        padding: 0 6px !important;
         z-index: 1000 !important;
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04) !important;
     }
@@ -4777,11 +4777,12 @@ video.composer-preview-media {
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-        flex: 1 !important;
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
         height: 100% !important;
         color: #64748b !important;
         text-decoration: none !important;
-        gap: 4px !important;
+        gap: 3px !important;
         transition: all 0.2s ease !important;
     }
 
@@ -4789,14 +4790,14 @@ video.composer-preview-media {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        width: 32px !important;
-        height: 32px !important;
+        width: 30px !important;
+        height: 30px !important;
         border-radius: 50% !important;
         transition: all 0.2s ease !important;
     }
 
     .mobile-nav-label {
-        font-size: 10px !important;
+        font-size: 9px !important;
         font-weight: 700 !important;
         letter-spacing: -0.01em !important;
         transition: all 0.2s ease !important;

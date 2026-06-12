@@ -256,8 +256,8 @@ export const translations = {
       title: "Study Groups",
       subtitle:
         "Join or create study groups to prepare together for exams and courses.",
-      createGroup: "Create Group",
-      createFirst: "Create the first group",
+      createGroup: "Create Study Group",
+      createFirst: "Create the first study group",
       emptyTitle: "No study groups yet",
       emptyHint: "Be the first to create a study group for your subject.",
       joinGroup: "Join",
@@ -1260,8 +1260,8 @@ export const translations = {
       title: "Groupes d'étude",
       subtitle:
         "Rejoignez ou créez des groupes d'étude pour préparer les examens ensemble.",
-      createGroup: "Créer un groupe",
-      createFirst: "Créer le premier groupe",
+      createGroup: "Créer un groupe d'étude",
+      createFirst: "Créer le premier groupe d'étude",
       emptyTitle: "Aucun groupe d'étude",
       emptyHint:
         "Soyez le premier à créer un groupe d'étude pour votre matière.",
@@ -2324,8 +2324,8 @@ export const translations = {
       title: "Ուսումնական Խմբեր",
       subtitle:
         "Միացեք կամ ստեղծեք ուսումնական խմբեր՝ քննություններին միասին պատրաստվելու համար։",
-      createGroup: "Ստեղծել խումբ",
-      createFirst: "Ստեղծեք առաջին խումբը",
+      createGroup: "Ստեղծել ուսումնական խումբ",
+      createFirst: "Ստեղծեք առաջին ուսումնական խումբը",
       emptyTitle: "Դեռ ուսումնական խմբեր չկան",
       emptyHint:
         "Եղեք առաջինը, ով կստեղծի ուսումնական խումբ ձեր առարկայի համար։",

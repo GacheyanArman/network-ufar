@@ -195,13 +195,20 @@ export default async function CommunitiesPage({ searchParams }) {
             { id: "faculty", label: "Faculty Groups" },
             { id: "courses", label: "Course Groups" },
             { id: "clubs", label: "Clubs" },
-            { id: "study", label: "Study Groups", href: "/study-groups" },
+            {
+              id: "study",
+              label: "Study Groups",
+              href: "/study-groups",
+              icon: "book",
+              title: "Open Study Groups — find or create a study group for your subject",
+            },
           ].map((t) => {
             const isActive = tab === t.id;
             return (
               <Link
                 key={t.id}
                 href={t.href || `/communities?tab=${t.id}`}
+                title={t.title}
                 style={{
                   padding: "8px 16px",
                   borderRadius: 20,
@@ -209,13 +216,18 @@ export default async function CommunitiesPage({ searchParams }) {
                   fontSize: 14,
                   textDecoration: "none",
                   whiteSpace: "nowrap",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
                   background: isActive ? "var(--french-blue, #2563eb)" : "var(--bg-soft, #f8fafc)",
                   color: isActive ? "#ffffff" : "var(--text-secondary, #475569)",
                   border: `1px solid ${isActive ? "var(--french-blue, #2563eb)" : "var(--border-color, #e2e8f0)"}`,
                   transition: "all 0.2s",
                 }}
               >
+                {t.icon && <UiIcon name={t.icon} size={15} />}
                 {t.label}
+                {t.href && <UiIcon name="arrow-right" size={14} />}
               </Link>
             );
           })}

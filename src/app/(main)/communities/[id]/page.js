@@ -260,7 +260,7 @@ export default async function CommunityDetailPage({ params, searchParams }) {
 
   const typeLabels = {
     faculty_group: "Faculty Group",
-    year_group: "Year Group",
+    year_group: "Course Group",
     club: "Club",
     student_council: "Student Council",
     interest_group: "Interest Group",
@@ -397,6 +397,75 @@ export default async function CommunityDetailPage({ params, searchParams }) {
                 isPrivate
                 state={joinState}
               />
+            </div>
+          ) : activeTab.id === "members" ? (
+            <div className="card uf-sidebar-card">
+              <h3 className="uf-sidebar-title">
+                <UiIcon name="users" size={14} />
+                Members ({allMembers.length})
+              </h3>
+              {allMembers.length === 0 ? (
+                <p className="uf-empty-description" style={{ fontSize: 13 }}>
+                  No members yet.
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {allMembers.map((m) => (
+                    <Link
+                      key={m.userId}
+                      href={`/profile/${m.userId}`}
+                      className="uf-sidebar-member-row"
+                    >
+                      <Avatar name={m.fullName} src={m.image || m.avatarUrl} />
+                      <span className="uf-sidebar-member-name">
+                        {m.fullName || "Student"}
+                      </span>
+                      {m.userId === communityRow.creatorId ||
+                      m.role === "owner" ||
+                      m.role === "admin" ? (
+                        <span className="uf-role-badge gold">Owner</span>
+                      ) : m.role === "moderator" ? (
+                        <span className="uf-role-badge blue">Mod</span>
+                      ) : null}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : activeTab.id === "about" ? (
+            <div className="card uf-sidebar-card">
+              <h3 className="uf-sidebar-title">
+                <UiIcon name="help" size={14} />
+                About this group
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: 14, color: "var(--text-secondary)" }}>
+                <p style={{ margin: 0 }}>
+                  {communityRow.description || "No description yet."}
+                </p>
+                <div className="uf-community-meta" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <span className="uf-community-pill">{typeLabel}</span>
+                  <span className="uf-community-pill">
+                    {communityRow.isPrivate ? "Private" : "Public"}
+                  </span>
+                  <span className="uf-community-pill">
+                    {communityRow.memberCount} members
+                  </span>
+                  <span className="uf-community-pill">
+                    Created {new Date(communityRow.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                {rules.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <strong style={{ color: "var(--text-primary)" }}>Group rules</strong>
+                    {rules.map((rule, i) => (
+                      <div key={i} className="uf-sidebar-rule">
+                        <strong>{i + 1}</strong>
+                        <span>{rule}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : (
             <>
@@ -598,7 +667,7 @@ function emptyTitleFor(tabId) {
 }
 
 function emptyDescFor(tabId, isMember) {
-  if (!isMember) return "Join the community to see and share content here.";
+  if (!isMember) return "Join the group to see and share content here.";
   switch (tabId) {
     case "questions":
       return "Be the first to ask a question — your peers will help.";

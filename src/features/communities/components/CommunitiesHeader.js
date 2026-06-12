@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import UiIcon from "@/shared/ui/UiIcon";
 import CreateGroupModal from "@/shared/ui/CreateGroupModal";
 
@@ -29,7 +28,7 @@ export default function CommunitiesHeader({ rawQuery, tab }) {
             fontSize: 15,
           }}
         >
-          Find and join faculty groups, year groups, clubs, and other student communities.
+          Find and join faculty groups, course groups, clubs, and study groups.
         </p>
 
         <form
@@ -82,21 +81,6 @@ export default function CommunitiesHeader({ rawQuery, tab }) {
             <UiIcon name="plus" size={18} />
             Create Group
           </button>
-          <Link
-            href="/study-groups"
-            className="btn btn-outline"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              border: "1px solid var(--border-color)",
-              background: "var(--bg-card)",
-              textDecoration: "none",
-            }}
-          >
-            <UiIcon name="users" size={18} />
-            Study Groups
-          </Link>
         </form>
       </div>
 

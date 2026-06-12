@@ -24,7 +24,7 @@ export default function CommunityTabs({
   counts,
 }: CommunityTabsProps) {
   return (
-    <nav className="uf-community-tabs" aria-label="Community sections">
+    <nav className="uf-community-tabs" aria-label="Group sections">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         const count = counts[tab.id] ?? 0;

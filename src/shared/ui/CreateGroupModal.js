@@ -202,7 +202,7 @@ export default function CreateGroupModal({ mode = "community", onClose }) {
                   style={inputStyle}
                 >
                   <option value="faculty_group">Faculty Group</option>
-                  <option value="year_group">Year Group</option>
+                  <option value="year_group">Course Group</option>
                   <option value="club">Club</option>
                   <option value="student_council">Student Council</option>
                   <option value="interest_group">Interest Group</option>

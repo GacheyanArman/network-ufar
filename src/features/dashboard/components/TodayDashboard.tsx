@@ -315,7 +315,7 @@ export default async function TodayDashboard({
                 <div className="mini-user-avatar">{group.avatar ? "★" : "#"}</div>
                 <div className="mini-user-main">
                   <strong>{group.name}</strong>
-                  <span>{group.description || group.facultyTag || "Student community"}</span>
+                  <span>{group.description || group.facultyTag || "Student group"}</span>
                 </div>
               </Link>
             ))}

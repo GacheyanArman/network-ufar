@@ -59,7 +59,7 @@ const CATEGORY_META: Record<
   project:     { color: "var(--purple)", bg: "var(--purple-soft)", icon: "lightbulb", label: "Project" },
   event:       { color: "#0891b2", bg: "#ecfeff", icon: "party", label: "Event" },
   personal:    { color: "var(--text-secondary)", bg: "var(--bg-soft)", icon: "bookmark", label: "Personal" },
-  community:   { color: "var(--success)", bg: "var(--success-soft)", icon: "users", label: "Community" },
+  community:   { color: "var(--success)", bg: "var(--success-soft)", icon: "users", label: "Group" },
   lecture:     { color: "var(--purple)", bg: "var(--purple-soft)", icon: "graduation", label: "Lecture" },
   deadline:    { color: "#ea580c", bg: "#fff7ed", icon: "clock", label: "Deadline" },
   holiday:     { color: "var(--success)", bg: "var(--success-soft)", icon: "party", label: "Holiday" },
@@ -1851,7 +1851,7 @@ function EntryModal({
           </div>
 
           {myCommunities.length > 0 && (
-            <Field label="Community (optional)">
+            <Field label="Group (optional)">
               <select
                 name="communityId"
                 defaultValue={initial?.communityId ?? ""}

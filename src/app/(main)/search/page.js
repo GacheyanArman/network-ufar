@@ -225,7 +225,7 @@ export default async function SearchPage({ searchParams }) {
                   </div>
                   <div className="uf-search-item-info">
                     <strong>{c.name}</strong>
-                    <span>{c.description || "Community"}</span>
+                    <span>{c.description || "Group"}</span>
                   </div>
                 </Link>
               ))}

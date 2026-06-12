@@ -139,6 +139,7 @@ export default async function CommunitiesPage({ searchParams }) {
   }
 
   const facultyCommunities = allCommunities.filter(c => getGroupType(c) === "faculty_group");
+  const courseCommunities = allCommunities.filter(c => getGroupType(c) === "year_group");
   const clubs = allCommunities.filter(c => {
     const type = getGroupType(c);
     return type === "club" || type === "student_council";
@@ -161,9 +162,13 @@ export default async function CommunitiesPage({ searchParams }) {
     displayedCommunities = facultyCommunities;
     emptyTitle = "No faculty groups";
     emptyDesc = "No faculty-specific groups have been created yet.";
+  } else if (tab === "courses") {
+    displayedCommunities = courseCommunities;
+    emptyTitle = "No course groups";
+    emptyDesc = "No course or year groups have been created yet.";
   } else if (tab === "clubs") {
     displayedCommunities = clubs;
-    emptyTitle = "No clubs or councils";
+    emptyTitle = "No clubs";
     emptyDesc = "No student clubs or council groups have been created yet.";
   }
 
@@ -188,13 +193,15 @@ export default async function CommunitiesPage({ searchParams }) {
             { id: "my", label: "My Groups" },
             { id: "discover", label: "Discover" },
             { id: "faculty", label: "Faculty Groups" },
-            { id: "clubs", label: "Clubs & Councils" },
+            { id: "courses", label: "Course Groups" },
+            { id: "clubs", label: "Clubs" },
+            { id: "study", label: "Study Groups", href: "/study-groups" },
           ].map((t) => {
             const isActive = tab === t.id;
             return (
               <Link
                 key={t.id}
-                href={`/communities?tab=${t.id}`}
+                href={t.href || `/communities?tab=${t.id}`}
                 style={{
                   padding: "8px 16px",
                   borderRadius: 20,
@@ -244,7 +251,9 @@ export default async function CommunitiesPage({ searchParams }) {
                   ? "All Groups"
                   : tab === "faculty"
                     ? "Faculty Groups"
-                    : "Clubs & Councils"
+                    : tab === "courses"
+                      ? "Course Groups"
+                      : "Clubs"
             }
             count={displayedCommunities.length}
             emptyText={emptyDesc}

@@ -27,7 +27,7 @@ type CommunityCardProps = {
 
 const typeLabels: Record<string, string> = {
   faculty_group: "Faculty",
-  year_group: "Class / Year",
+  year_group: "Course Group",
   club: "Club",
   student_council: "Student Council",
   interest_group: "Interest Group",

@@ -264,7 +264,7 @@ function scorePost(params: {
     relationshipScore += 80;
 
     if (!isFriend && !isFollowing) {
-      reason = "From your community";
+      reason = "From your group";
     }
   }
 
@@ -619,7 +619,7 @@ export const getUnifiedFeed = cache((userId: string, limit = 80) => {
 
     if (evt.communityId && communityIds.has(evt.communityId)) {
       score += 60;
-      if (!reason.includes("your")) reason = "Event in your community";
+      if (!reason.includes("your")) reason = "Event in your group";
     }
 
     allItems.push({

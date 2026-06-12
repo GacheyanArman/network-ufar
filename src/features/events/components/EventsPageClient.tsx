@@ -409,10 +409,10 @@ export default function EventsPageClient({
                 }}
               >
                 {language === "hy"
-                  ? "Համայնքներ"
+                  ? "Խմբեր"
                   : language === "fr"
-                    ? "Communautés"
-                    : "Communities"}
+                    ? "Groupes"
+                    : "Groups"}
               </span>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <button

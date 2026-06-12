@@ -50,7 +50,6 @@ function MobileNavItem({ href, icon, translationKey, activeHrefs = [] }: MobileN
 const MOBILE_ITEMS = [
   { href: "/today", icon: "home", key: "nav.today" },
   { href: "/feed", icon: "message-circle", key: "nav.feed" },
-  { href: "/courses", icon: "graduation", key: "nav.courses", activeHrefs: ["/schedule", "/calendar"] },
   { href: "/study-materials", icon: "folder", key: "nav.materials", activeHrefs: ["/materials", "/library"] },
   { href: "/communities", icon: "users", key: "nav.communities", activeHrefs: ["/groups", "/study-groups", "/group-chats"] },
   { href: "/messages", icon: "send", key: "nav.messages" },
@@ -79,7 +78,7 @@ export default function MobileBottomNav() {
     <Suspense fallback={
       <nav className="mobile-bottom-nav" style={{ height: "64px", background: "rgba(255, 255, 255, 0.8)" }}>
         <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "space-around", alignItems: "center" }}>
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+          {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="animate-pulse" style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#e2e8f0" }} />
           ))}
         </div>

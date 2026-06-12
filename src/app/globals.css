@@ -486,6 +486,31 @@ select:focus {
     gap: 10px !important;
 }
 
+.topbar-nav-links {
+    justify-content: flex-end !important;
+}
+
+.topbar-nav-link {
+    height: 38px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 0 14px !important;
+    border: 1px solid var(--border-color-light) !important;
+    border-radius: 999px !important;
+    background: #ffffff !important;
+    color: var(--french-navy) !important;
+    text-decoration: none !important;
+    font-size: 13px !important;
+    font-weight: var(--fw-bold) !important;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06) !important;
+}
+
+.topbar-nav-link:hover {
+    border-color: rgba(11, 58, 168, 0.24) !important;
+    color: var(--french-blue) !important;
+}
+
 .action-icon-btn {
     width: 42px !important;
     height: 42px !important;
@@ -2000,7 +2025,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
     }
 
     .topbar-inner {
-        grid-template-columns: 1fr auto !important;
+        grid-template-columns: auto 1fr auto !important;
         padding: 0 14px !important;
     }
 
@@ -2059,6 +2084,13 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 @media (max-width: 620px) {
     .topbar-actions {
         gap: 4px !important;
+    }
+
+    .topbar-nav-link {
+        height: 36px !important;
+        padding: 0 10px !important;
+        font-size: 12px !important;
+        gap: 6px !important;
     }
 
     .action-icon-btn {
@@ -2606,7 +2638,7 @@ body:has(form[action]) main[style*="min-height: 100vh"] section {
 
 @media (max-width: 820px) {
   .clean-topbar-inner {
-    grid-template-columns: auto auto !important;
+    grid-template-columns: auto 1fr auto !important;
   }
 
     .clean-logout-btn span {

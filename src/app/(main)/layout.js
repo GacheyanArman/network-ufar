@@ -5,15 +5,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSession } from "@/shared/auth/session";
 import { logoutUser } from "@/features/auth/server/actions";
-import {
-  getCachedUserBasicInfo,
-  getCachedUnreadNotifications,
-} from "@/shared/cache/cache";
+import { getCachedUserBasicInfo } from "@/shared/cache/cache";
 import UiIcon from "@/shared/ui/UiIcon";
 import LanguageSwitcher from "@/shared/ui/LanguageSwitcher";
 import NavigationMenu from "@/shared/ui/NavigationMenu";
-import TopbarSearch from "@/shared/ui/TopbarSearch";
-import TopbarNotifications from "@/shared/ui/TopbarNotifications";
 import RightPanelWidgets from "@/features/dashboard/components/RightPanelWidgets";
 import MobileBottomNav from "@/shared/ui/MobileBottomNav";
 
@@ -28,11 +23,7 @@ export default async function MainLayout({ children }) {
   const lang = cookieStore.get("language")?.value || "en";
   const t = getServerTranslator(lang);
 
-  const [currentUser, unreadNotifications] =
-    await Promise.all([
-      getCachedUserBasicInfo(session.userId),
-      getCachedUnreadNotifications(session.userId),
-    ]);
+  const currentUser = await getCachedUserBasicInfo(session.userId);
 
   if (currentUser && !currentUser.onboardingComplete) {
     redirect("/onboarding");
@@ -53,14 +44,15 @@ export default async function MainLayout({ children }) {
             </Link>
           </div>
 
-          <div className="topbar-actions">
-            <TopbarSearch />
+          <div className="topbar-actions topbar-nav-links">
+            <Link href="/courses" className="topbar-nav-link">
+              <UiIcon name="graduation" size={16} />
+              <span>{t("nav.courses")}</span>
+            </Link>
           </div>
 
           <div className="clean-topbar-profile">
             <LanguageSwitcher />
-
-            <TopbarNotifications unread={unreadNotifications} />
 
             <Link href="/profile" className="topbar-avatar-link">
               {avatarImage ? (

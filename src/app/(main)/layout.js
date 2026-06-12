@@ -11,6 +11,9 @@ import LanguageSwitcher from "@/shared/ui/LanguageSwitcher";
 import NavigationMenu from "@/shared/ui/NavigationMenu";
 import RightPanelWidgets from "@/features/dashboard/components/RightPanelWidgets";
 import MobileBottomNav from "@/shared/ui/MobileBottomNav";
+import TopbarSearch from "@/shared/ui/TopbarSearch";
+import TopbarNotifications from "@/shared/ui/TopbarNotifications";
+import { getCachedUnreadNotifications } from "@/shared/cache/cache";
 
 export default async function MainLayout({ children }) {
   const session = await getSession();
@@ -28,6 +31,8 @@ export default async function MainLayout({ children }) {
   if (currentUser && !currentUser.onboardingComplete) {
     redirect("/onboarding");
   }
+
+  const unreadNotifications = await getCachedUnreadNotifications(session.userId);
 
   const safeName = currentUser?.fullName || session?.fullName || "User";
   const safeInitial = safeName.charAt(0).toUpperCase();
@@ -52,6 +57,8 @@ export default async function MainLayout({ children }) {
           </div>
 
           <div className="clean-topbar-profile">
+            <TopbarSearch />
+            <TopbarNotifications unread={unreadNotifications} />
             <LanguageSwitcher />
 
             <Link href="/profile" className="topbar-avatar-link">

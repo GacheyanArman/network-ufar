@@ -359,7 +359,7 @@ export const translations = {
         noUploaded: "You haven't uploaded any materials yet.",
         noUploadedHint:
           "Share your notes with the community — uploads go through quick moderation.",
-        upload: "Upload material",
+        upload: "Share notes with classmates",
         noSaved: "No saved materials yet.",
         noSavedHint:
           "Bookmark materials you'd like to come back to and they'll show up here.",
@@ -398,9 +398,9 @@ export const translations = {
         browseEvents: "Browse events",
       },
       groups: {
-        noGroups: "No groups found.",
-        noGroupsHint: "Create the first group for your faculty or course!",
-        createGroup: "Create group",
+        noGroups: "This space is quiet.",
+        noGroupsHint: "Start a group for your people.",
+        createGroup: "Start a group for your people",
       },
       lostFound: {
         emptyTitle: "No items reported.",
@@ -430,7 +430,7 @@ export const translations = {
     feed: {
       whatsOnYourMind: "What's on your mind?",
       createPost: "Create Post",
-      noPostsYet: "No posts yet. Be the first to post something.",
+      noPostsYet: "This space is quiet. Be the first to share something.",
       sortBy: "Sort:",
       filterBy: "Filter:",
       ranked: "Ranked for You",
@@ -450,8 +450,8 @@ export const translations = {
       post: "Post",
       noQuestions: "No questions yet",
       noAnnouncements: "No announcements yet",
-      noPosts: "No posts yet",
-      beFirst: "Be the first to share something!",
+      noPosts: "This space is quiet",
+      beFirst: "Be the first to share something.",
       reachedEnd: "You\u2019ve reached the end",
     },
 
@@ -1374,7 +1374,7 @@ export const translations = {
         noUploaded: "Vous n'avez encore téléchargé aucun matériel.",
         noUploadedHint:
           "Partagez vos notes avec la communauté — les téléchargements passent par une modération rapide.",
-        upload: "Télécharger un matériel",
+        upload: "Partagez vos notes avec vos camarades",
         noSaved: "Pas encore de matériaux sauvegardés.",
         noSavedHint:
           "Ajoutez aux favoris les matériaux auxquels vous voulez revenir.",
@@ -1415,10 +1415,9 @@ export const translations = {
         browseEvents: "Parcourir les événements",
       },
       groups: {
-        noGroups: "Aucun groupe trouvé.",
-        noGroupsHint:
-          "Créez le premier groupe pour votre faculté ou votre cours!",
-        createGroup: "Créer un groupe",
+        noGroups: "C'est calme ici.",
+        noGroupsHint: "Créez un groupe pour vos proches.",
+        createGroup: "Créez un groupe pour vos proches",
       },
       lostFound: {
         emptyTitle: "Aucun objet signalé.",
@@ -1452,7 +1451,7 @@ export const translations = {
       whatsOnYourMind: "Qu'avez-vous en tête?",
       createPost: "Créer une Publication",
       noPostsYet:
-        "Aucune publication pour le moment. Soyez le premier à publier quelque chose.",
+        "C'est calme ici. Soyez le premier à partager quelque chose.",
       sortBy: "Trier par:",
       filterBy: "Filtrer par:",
       ranked: "Classé pour Vous",
@@ -1472,8 +1471,8 @@ export const translations = {
       post: "Publier",
       noQuestions: "Pas encore de questions",
       noAnnouncements: "Pas encore d'annonces",
-      noPosts: "Pas encore de publications",
-      beFirst: "Soyez le premier à partager !",
+      noPosts: "C'est calme ici",
+      beFirst: "Soyez le premier à partager quelque chose.",
       reachedEnd: "Vous êtes arrivé à la fin",
     },
 
@@ -2449,7 +2448,7 @@ export const translations = {
         noUploaded: "Դուք դեռ նյութեր չեք վերբեռնել։",
         noUploadedHint:
           "Կիսվեք ձեր նշումներով համայնքի հետ — վերբեռնումներն անցնում են արագ մոդերացիա։",
-        upload: "Վերբեռնել նյութ",
+        upload: "Կիսվեք նշումներով համակուրսեցիների հետ",
         noSaved: "Դեռ պահպանված նյութեր չկան։",
         noSavedHint: "Էջանշեք այն նյութերը, որոնց ցանկանում եք վերադառնալ։",
         browse: "Դիտել նյութերը",
@@ -2488,9 +2487,9 @@ export const translations = {
         browseEvents: "Դիտել իրադարձությունները",
       },
       groups: {
-        noGroups: "Խմբեր չեն գտնվել։",
-        noGroupsHint: "Ստեղծեք առաջին խումբը ձեր ֆակուլտետի կամ կուրսի համար:",
-        createGroup: "Ստեղծել խումբ",
+        noGroups: "Այստեղ դեռ հանգիստ է։",
+        noGroupsHint: "Ստեղծեք խումբ ձեր մարդկանց համար։",
+        createGroup: "Ստեղծեք խումբ ձեր մարդկանց համար",
       },
       lostFound: {
         emptyTitle: "Ոչ մի իր չի տեղեկացվել։",
@@ -2521,7 +2520,9 @@ export const translations = {
     feed: {
       whatsOnYourMind: "Ի՞նչ եք մտածում:",
       createPost: "Ստեղծել Գրառում",
-      noPostsYet: "Դեռ գրառումներ չկան։ Եղեք առաջինը, ով կգրի ինչ-որ բան։",
+      noPostsYet: "Այստեղ դեռ հանգիստ է։ Եղեք առաջինը, ով կկիսվի ինչ-որ բանով։",
+      noPosts: "Այստեղ դեռ հանգիստ է",
+      beFirst: "Եղեք առաջինը, ով կկիսվի ինչ-որ բանով։",
       sortBy: "Դասավորել:",
       filterBy: "Զտել:",
       ranked: "Ձեզ Համար",

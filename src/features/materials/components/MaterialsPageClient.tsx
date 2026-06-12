@@ -732,7 +732,7 @@ export default function MaterialsPageClient({
         </div>
         <button className="btn btn-primary" onClick={openUpload}>
           <UiIcon name="upload" size={16} />
-          Upload Material
+          Share notes with classmates
         </button>
       </div>
 
@@ -835,19 +835,19 @@ export default function MaterialsPageClient({
               </span>
               <h3 className={styles.emptyTitle}>
                 {activeTab === "saved"
-                  ? "No saved materials"
-                  : "No materials found"}
+                  ? "Nothing saved yet"
+                  : "This space is quiet"}
               </h3>
               <p className={styles.emptyText}>
                 {activeTab === "saved"
                   ? "Files you save will show up here for fast access."
                   : searchQuery
                   ? "Try adjusting your search terms or filters."
-                  : "Be the first to upload study notes for your courses."}
+                  : "Be the first to share notes with your classmates."}
               </p>
               {activeTab !== "saved" && !searchQuery && (
                 <button className="btn btn-secondary btn-sm" onClick={openUpload}>
-                  Upload the first material
+                  Share the first notes
                 </button>
               )}
             </div>

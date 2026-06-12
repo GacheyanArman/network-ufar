@@ -148,28 +148,28 @@ export default async function CommunitiesPage({ searchParams }) {
   const tab = search.tab || (myCommunities.length > 0 ? "my" : "discover");
 
   let displayedCommunities = [];
-  let emptyTitle = "No groups yet";
-  let emptyDesc = "Be the first to create a group for UFAR students.";
+  let emptyTitle = "This space is quiet";
+  let emptyDesc = "Start a group for your people.";
   if (tab === "my") {
     displayedCommunities = myCommunities;
-    emptyTitle = "No joined groups";
-    emptyDesc = "You haven't joined any groups yet. Explore 'Discover' to find faculty groups, clubs, and interest groups!";
+    emptyTitle = "You're not in any groups yet";
+    emptyDesc = "Find your people in Discover, or start your own group.";
   } else if (tab === "discover") {
     displayedCommunities = others;
-    emptyTitle = "No groups to discover";
-    emptyDesc = "All groups have been joined, or none exist yet.";
+    emptyTitle = "This space is quiet";
+    emptyDesc = "Start a group for your people.";
   } else if (tab === "faculty") {
     displayedCommunities = facultyCommunities;
-    emptyTitle = "No faculty groups";
-    emptyDesc = "No faculty-specific groups have been created yet.";
+    emptyTitle = "No faculty groups yet";
+    emptyDesc = "Be the first to start one for your faculty.";
   } else if (tab === "courses") {
     displayedCommunities = courseCommunities;
-    emptyTitle = "No course groups";
-    emptyDesc = "No course or year groups have been created yet.";
+    emptyTitle = "No course groups yet";
+    emptyDesc = "Be the first to start one for your course.";
   } else if (tab === "clubs") {
     displayedCommunities = clubs;
-    emptyTitle = "No clubs";
-    emptyDesc = "No student clubs or council groups have been created yet.";
+    emptyTitle = "No clubs yet";
+    emptyDesc = "Got an idea? Start a club for your people.";
   }
 
   return (
@@ -195,6 +195,7 @@ export default async function CommunitiesPage({ searchParams }) {
             { id: "faculty", label: "Faculty Groups" },
             { id: "courses", label: "Course Groups" },
             { id: "clubs", label: "Clubs" },
+            { id: "study", label: "Study Groups", href: "/study-groups", icon: "book" },
           ].map((t) => {
             const isActive = tab === t.id;
             return (
@@ -227,54 +228,11 @@ export default async function CommunitiesPage({ searchParams }) {
         </div>
       )}
 
-      {/* Study Groups banner link */}
-      {!query && (
-        <Link
-          href="/study-groups"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            padding: "14px 18px",
-            borderRadius: 14,
-            textDecoration: "none",
-            background: "var(--bg-soft, #f8fafc)",
-            border: "1px solid var(--border-color, #e2e8f0)",
-            transition: "all 0.2s",
-          }}
-        >
-          <div
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 12,
-              background: "var(--french-blue, #2563eb)",
-              color: "#ffffff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <UiIcon name="book" size={20} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, color: "var(--text-primary)" }}>
-              Study Groups
-            </div>
-            <div style={{ fontSize: 13.5, color: "var(--text-secondary)" }}>
-              Find or create a study group to prepare for exams and courses together
-            </div>
-          </div>
-          <UiIcon name="arrow-right" size={18} color="var(--text-secondary)" />
-        </Link>
-      )}
-
       {/* Search results override */}
       {query ? (
         <SectionGrid
           title={`Search: "${query}"`}
-          emptyText="No groups matched your search."
+          emptyText="Nothing matched your search. Try another name — or start a group for your people."
           communities={allCommunities}
           joinStateFor={joinStateFor}
         />

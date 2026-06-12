@@ -79,7 +79,7 @@ export default function CommunitiesHeader({ rawQuery, tab }) {
             style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
           >
             <UiIcon name="plus" size={18} />
-            Create Group
+            Start a group
           </button>
         </form>
       </div>

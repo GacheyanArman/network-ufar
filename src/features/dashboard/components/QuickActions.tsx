@@ -8,7 +8,7 @@ type QuickActionsProps = {
 
 const ACTIONS = [
   { icon: "help", href: "/feed?filter=questions", label: "Ask classmates" },
-  { icon: "upload", href: "/study-materials", label: "Upload material" },
+  { icon: "upload", href: "/study-materials", label: "Share notes" },
   { icon: "users", href: "/communities?tab=my", label: "Open my groups" },
   { icon: "message-circle", href: "/messages", label: "Check messages" },
 ] as const;

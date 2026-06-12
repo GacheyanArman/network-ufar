@@ -175,6 +175,7 @@ export type UnifiedFeedItem =
 type UnifiedFeedResult = {
   currentUser: CurrentUser | null;
   items: UnifiedFeedItem[];
+  myCommunityIds: string[];
 };
 
 function stableNoise(id: string): number {
@@ -385,7 +386,7 @@ export const getUnifiedFeed = cache((userId: string, limit = 80) => {
 
       const currentUser = userRows[0];
       if (!currentUser) {
-        return { currentUser: null, items: [] };
+        return { currentUser: null, items: [], myCommunityIds: [] };
       }
 
       const friendIds = new Set<string>(friendRows.map((r: any) => getOtherFriendId(r, userId)));
@@ -781,7 +782,7 @@ export const getUnifiedFeed = cache((userId: string, limit = 80) => {
 
   const finalItems = applyInsertionRules(allItems);
 
-  return { currentUser, items: finalItems };
+  return { currentUser, items: finalItems, myCommunityIds: Array.from(communityIds) };
     },
     [`unified-feed-${userId}-${limit}`],
     { revalidate: 120, tags: [`feed-${userId}`, "feed"] },

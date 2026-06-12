@@ -54,9 +54,19 @@ type FeedPost = {
 type FeedClientProps = {
   initialItems: UnifiedFeedItem[];
   currentUser: CurrentUser;
+  myCommunityIds?: string[];
 };
 
-type FilterMode = "all" | "questions" | "announcements" | "my_courses";
+type FilterMode = "all" | "my_groups" | "campus" | "questions" | "events" | "materials";
+
+const FEED_FILTERS: { id: FilterMode; label: string; icon: string }[] = [
+  { id: "all", label: "All", icon: "✨" },
+  { id: "my_groups", label: "My Groups", icon: "👥" },
+  { id: "campus", label: "Campus", icon: "🏛" },
+  { id: "questions", label: "Questions", icon: "❓" },
+  { id: "events", label: "Events", icon: "📅" },
+  { id: "materials", label: "Materials", icon: "📚" },
+];
 
 /**
  * Renders a post item, wrapping announcements in a visual badge.
@@ -90,27 +100,49 @@ function renderFeedItem(item: UnifiedFeedItem, currentUser: CurrentUser) {
 }
 
 /**
- * Filters items to show only posts & announcements (academic feed).
- * Further filters by tab selection.
+ * Filters the campus life wall by tab selection.
+ * The feed only shows previews/highlights; full content lives in its own section.
  */
-function filterItems(items: UnifiedFeedItem[], filter: FilterMode): UnifiedFeedItem[] {
+function filterItems(
+  items: UnifiedFeedItem[],
+  filter: FilterMode,
+  myCommunityIds: Set<string>
+): UnifiedFeedItem[] {
   switch (filter) {
+    case "my_groups":
+      return items.filter(
+        (i) =>
+          ((i.type === "post" || i.type === "announcement") &&
+            i.communityId &&
+            myCommunityIds.has(i.communityId)) ||
+          (i.type === "study_group" && i.isMember)
+      );
+    case "campus":
+      return items.filter(
+        (i) =>
+          i.type === "announcement" ||
+          i.type === "event" ||
+          i.type === "photo" ||
+          i.type === "birthday"
+      );
     case "questions":
       return items.filter(
         (i) => i.type === "post" && "postType" in i && (i as any).postType === "question"
       );
-    case "announcements":
-      return items.filter((i) => i.type === "announcement");
-    case "my_courses":
-      return items.filter(
-        (i) => (i as any).communityId || (i as any).communityName || i.type === "material" || i.type === "study_group"
-      );
+    case "events":
+      return items.filter((i) => i.type === "event");
+    case "materials":
+      return items.filter((i) => i.type === "material");
     default:
       return items;
   }
 }
 
-export default function FeedClient({ initialItems, currentUser }: FeedClientProps) {
+export default function FeedClient({
+  initialItems,
+  currentUser,
+  myCommunityIds = [],
+}: FeedClientProps) {
   const { t } = useLanguage();
 
   const [items, addOptimisticPost] = useOptimistic(
@@ -148,8 +180,9 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
     }
   );
 
-  const [filterBy] = useState<FilterMode>("all");
-  const filtered = filterItems(items, filterBy);
+  const [filterBy, setFilterBy] = useState<FilterMode>("all");
+  const communityIdSet = new Set(myCommunityIds);
+  const filtered = filterItems(items, filterBy, communityIdSet);
   const [displayed, setDisplayed] = useState<UnifiedFeedItem[]>(filtered.slice(0, 15));
   const [hasMore, setHasMore] = useState(filtered.length > 15);
   const [isLoading, setIsLoading] = useState(false);
@@ -160,7 +193,7 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (prevFilterKey !== filterKey) {
     setPrevFilterKey(filterKey);
-    const newFiltered = filterItems(items, filterBy);
+    const newFiltered = filterItems(items, filterBy, communityIdSet);
     setDisplayed(newFiltered.slice(0, 15));
     setHasMore(newFiltered.length > 15);
   }
@@ -196,18 +229,38 @@ export default function FeedClient({ initialItems, currentUser }: FeedClientProp
         <PostComposer currentUser={currentUser} onOptimisticPost={addOptimisticPost} />
       </div>
 
+      {/* Campus life wall filters */}
+      <div className="feed-tabs">
+        {FEED_FILTERS.map((f) => (
+          <button
+            key={f.id}
+            className={"feed-tab" + (filterBy === f.id ? " feed-tab--active" : "")}
+            onClick={() => setFilterBy(f.id)}
+          >
+            <span className="feed-tab-icon">{f.icon}</span>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {/* Feed Items */}
       <div className="feed-items">
         {displayed.length === 0 ? (
           <div className="feed-empty">
             <div className="feed-empty-icon">
-              {filterBy === "questions" ? "❓" : filterBy === "announcements" ? "📢" : "📝"}
+              {FEED_FILTERS.find((f) => f.id === filterBy)?.icon || "📝"}
             </div>
             <p className="feed-empty-title">
               {filterBy === "questions"
                 ? (t("feed.noQuestions") || "No questions yet")
-                : filterBy === "announcements"
-                ? (t("feed.noAnnouncements") || "No announcements yet")
+                : filterBy === "my_groups"
+                ? "Nothing from your groups yet"
+                : filterBy === "campus"
+                ? "No campus updates yet"
+                : filterBy === "events"
+                ? "No upcoming events"
+                : filterBy === "materials"
+                ? "No trending materials yet"
                 : (t("feed.noPosts") || "No posts yet")}
             </p>
             <p className="feed-empty-hint">

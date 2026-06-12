@@ -7,13 +7,19 @@ import { PageShell } from "@/shared/ui/Layout";
 import FeedLoading from "./loading";
 
 async function FeedContent({ userId }: { userId: string }) {
-  const { currentUser, items } = await getUnifiedFeed(userId);
+  const { currentUser, items, myCommunityIds } = await getUnifiedFeed(userId);
 
   if (!currentUser) {
     redirect("/login");
   }
 
-  return <FeedClient initialItems={items} currentUser={currentUser} />;
+  return (
+    <FeedClient
+      initialItems={items}
+      currentUser={currentUser}
+      myCommunityIds={myCommunityIds}
+    />
+  );
 }
 
 export default async function FeedPage() {

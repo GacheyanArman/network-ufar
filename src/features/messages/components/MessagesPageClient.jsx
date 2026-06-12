@@ -19,6 +19,7 @@ export default function MessagesPageClient({
   sessionUserId,
   q,
   isGroupAdmin = false,
+  initialTab = "",
   children,
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -181,7 +182,11 @@ export default function MessagesPageClient({
     userGroupChats.find((g) => g.id === gid)?.course ? "courses" : "groups";
 
   const [activeTab, setActiveTab] = useState(
-    selectedGroupId ? tabForGroupId(selectedGroupId) : "direct"
+    selectedGroupId
+      ? tabForGroupId(selectedGroupId)
+      : ["direct", "groups", "courses", "unread"].includes(initialTab)
+        ? initialTab
+        : "direct"
   );
 
   const [prevSelectedGroupId, setPrevSelectedGroupId] = useState(selectedGroupId);

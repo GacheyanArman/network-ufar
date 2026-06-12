@@ -7,11 +7,10 @@ type QuickActionsProps = {
 };
 
 const ACTIONS = [
-  { icon: "graduation", href: "/courses", label: "Open courses" },
-  { icon: "message-circle", href: "/feed", label: "Write a post" },
-  { icon: "help", href: "/feed?tab=questions", label: "Ask classmates" },
-  { icon: "users", href: "/communities", label: "Join a group" },
-  { icon: "upload", href: "/study-materials", label: "Upload notes" },
+  { icon: "help", href: "/feed?filter=questions", label: "Ask classmates" },
+  { icon: "upload", href: "/study-materials", label: "Upload material" },
+  { icon: "users", href: "/communities?tab=my", label: "Open my groups" },
+  { icon: "message-circle", href: "/messages", label: "Check messages" },
 ] as const;
 
 export default function QuickActions({ t }: QuickActionsProps) {

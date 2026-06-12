@@ -6,7 +6,7 @@ type SummaryBarProps = {
   classesToday: number;
   deadlinesCount: number;
   materialsCount: number;
-  notificationsCount: number;
+  messagesCount: number;
   t: (key: string) => string;
 };
 
@@ -14,10 +14,10 @@ export default function SummaryBar({
   classesToday,
   deadlinesCount,
   materialsCount,
-  notificationsCount,
+  messagesCount,
   t,
 }: SummaryBarProps) {
-  const totalItems = classesToday + deadlinesCount + materialsCount + notificationsCount;
+  const totalItems = classesToday + deadlinesCount + materialsCount + messagesCount;
 
   if (totalItems === 0) {
     return (
@@ -61,11 +61,11 @@ export default function SummaryBar({
       subtitle: t("today.studyMaterials") || "Study materials",
     },
     {
-      href: "/notifications",
-      icon: "bell",
-      isUrgent: notificationsCount > 0,
-      title: notificationsCount > 0 ? `${notificationsCount} new` : "All caught up",
-      subtitle: "Notifications",
+      href: "/messages?tab=unread",
+      icon: "message-circle",
+      isUrgent: messagesCount > 0,
+      title: messagesCount > 0 ? `${messagesCount} unread` : "All caught up",
+      subtitle: t("today.messagesTitle") || "Messages",
     },
   ];
 

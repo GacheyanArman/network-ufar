@@ -23,6 +23,7 @@ export default async function MessagesPage({ searchParams }) {
   const activeUserId = params?.user?.toString() || "";
   const activeGroupId = params?.group?.toString() || "";
   const q = params?.q?.toString().trim() || "";
+  const initialTab = params?.tab?.toString() || "";
 
   // Get current user info
   const [currentUser] = await db
@@ -377,6 +378,7 @@ export default async function MessagesPage({ searchParams }) {
         sessionUserId={session.userId}
         q={q}
         isGroupAdmin={isGroupAdmin}
+        initialTab={initialTab}
       >
         {(selectedUserId && activeUser) || (selectedGroupId && activeGroup) ? (
           <MessagesClient

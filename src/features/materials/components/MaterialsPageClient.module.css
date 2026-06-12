@@ -36,6 +36,19 @@
   max-width: 540px;
   line-height: var(--lh-normal);
 }
+.libraryLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  text-decoration: none;
+  width: fit-content;
+}
+.libraryLink:hover {
+  color: var(--french-blue);
+  text-decoration: underline;
+}
 
 /* ------------------------------ Tabs ------------------------------ */
 .tabs {
@@ -136,6 +149,24 @@
   background: var(--french-blue-hover);
   border-color: var(--french-blue-hover);
   color: #fff;
+}
+
+.filterSelect {
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  font-family: inherit;
+  cursor: pointer;
+  max-width: 220px;
+}
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--french-blue);
+  box-shadow: 0 0 0 3px var(--french-blue-soft);
 }
 
 /* ------------------------------ Grid ------------------------------ */

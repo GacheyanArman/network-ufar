@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import UiIcon from "@/shared/ui/UiIcon";
 import {
@@ -84,10 +85,12 @@ type Props = {
 
 const TYPES_MAP = [
   { value: "lecture_notes", label: "Lecture notes" },
-  { value: "exam_prep", label: "Exam prep" },
-  { value: "past_questions", label: "Past questions" },
+  { value: "summary", label: "Summary" },
   { value: "slides", label: "Slides" },
+  { value: "past_questions", label: "Past exams" },
+  { value: "exam_prep", label: "Exam prep" },
   { value: "template", label: "Template" },
+  { value: "project_example", label: "Project example" },
   { value: "useful_link", label: "Link" },
 ];
 
@@ -102,6 +105,7 @@ const getTypeName = (type: string) => {
 const getTypeIcon = (type: string) => {
   switch (type) {
     case "lecture_notes":
+    case "summary":
       return "file-text";
     case "exam_prep":
       return "book-open";
@@ -110,6 +114,7 @@ const getTypeIcon = (type: string) => {
     case "slides":
       return "file-pdf";
     case "template":
+    case "project_example":
       return "file";
     case "useful_link":
       return "share";
@@ -462,7 +467,9 @@ export default function MaterialsPageClient({
   const [materials, setMaterials] = useState<Material[]>(initialMaterials);
   const [requests, setRequests] = useState<OpenRequest[]>(initialRequests);
   const [searchQuery, setSearchQuery] = useState("");
-  const [quickFilter, setQuickFilter] = useState("recently_added");
+  const [quickFilter, setQuickFilter] = useState("latest");
+  const [courseFilter, setCourseFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
   const [activeTab, setActiveTab] = useState<"browse" | "saved" | "requests">(
     "browse"
   );
@@ -510,20 +517,26 @@ export default function MaterialsPageClient({
       );
     }
 
+    if (courseFilter) {
+      list = list.filter(
+        (m) => m.course && m.course.toLowerCase() === courseFilter.toLowerCase()
+      );
+    }
+
+    if (typeFilter) {
+      list = list.filter((m) => m.type === typeFilter);
+    }
+
     if (quickFilter === "my_courses") {
       list = list.filter(
         (m) => m.course && enrolledCourseCodes.includes(m.course.toLowerCase())
       );
-    } else if (quickFilter === "this_semester") {
-      const fourMonthsAgo = new Date();
-      fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
-      list = list.filter((m) => new Date(m.createdAt) >= fourMonthsAgo);
-    } else if (quickFilter === "exam_prep") {
-      list = list.filter((m) => m.type === "exam_prep");
+    } else if (quickFilter === "verified") {
+      list = list.filter((m) => m.isVerified);
     }
 
     list = [...list].sort((a, b) => {
-      if (quickFilter === "most_useful") {
+      if (quickFilter === "popular") {
         return (
           b.downloadsCount - a.downloadsCount ||
           b.averageRating - a.averageRating
@@ -533,7 +546,15 @@ export default function MaterialsPageClient({
     });
 
     return list;
-  }, [materials, searchQuery, quickFilter, enrolledCourseCodes, activeTab]);
+  }, [
+    materials,
+    searchQuery,
+    quickFilter,
+    courseFilter,
+    typeFilter,
+    enrolledCourseCodes,
+    activeTab,
+  ]);
 
   // ------------------- Handlers -------------------
   const handleToggleSave = useCallback(
@@ -688,11 +709,10 @@ export default function MaterialsPageClient({
   };
 
   const QUICK_FILTERS = [
-    { id: "recently_added", label: "Recently Added", icon: "clock" },
+    { id: "latest", label: "Latest", icon: "clock" },
+    { id: "popular", label: "Popular", icon: "trending-up" },
     { id: "my_courses", label: "My Courses", icon: "graduation" },
-    { id: "this_semester", label: "This Semester", icon: "calendar" },
-    { id: "exam_prep", label: "Exam Prep", icon: "book-open" },
-    { id: "most_useful", label: "Most Useful", icon: "trending-up" },
+    { id: "verified", label: "Verified", icon: "check" },
   ];
 
   return (
@@ -702,9 +722,14 @@ export default function MaterialsPageClient({
         <div className={styles.headerText}>
           <h1 className={styles.headerTitle}>Study Materials</h1>
           <p className={styles.headerSub}>
-            Lecture notes, summaries, exam prep and academic files — shared by
-            students, for students.
+            Notes, summaries, slides, past exams, exam prep, templates and
+            project examples — shared by students, for students.
           </p>
+          <Link href="/library" className={styles.libraryLink}>
+            <UiIcon name="book-open" size={14} />
+            Looking for official books, reading lists or databases? Visit the
+            UFAR Library
+          </Link>
         </div>
         <button className="btn btn-primary" onClick={openUpload}>
           <UiIcon name="upload" size={16} />
@@ -774,6 +799,32 @@ export default function MaterialsPageClient({
                   {f.label}
                 </button>
               ))}
+              <select
+                className={styles.filterSelect}
+                value={courseFilter}
+                onChange={(e) => setCourseFilter(e.target.value)}
+                aria-label="Filter by course"
+              >
+                <option value="">All courses</option>
+                {allCourses.map((c) => (
+                  <option key={c.id} value={c.code}>
+                    {c.code} — {c.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                className={styles.filterSelect}
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                aria-label="Filter by type"
+              >
+                <option value="">All types</option>
+                {TYPES_MAP.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

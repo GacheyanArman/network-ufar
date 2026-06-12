@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/shared/db/db";
 import { groupChats, groupChatMembers } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
-import { eq, or, ilike, sql } from "drizzle-orm";
+import { and, eq, isNull, or, ilike, sql } from "drizzle-orm";
 import GroupChatsClient from "@/features/messages/components/GroupChatsClient";
 
 export default async function GroupChatsPage({ searchParams }) {
@@ -30,18 +30,22 @@ export default async function GroupChatsPage({ searchParams }) {
     .from(groupChats)
     .leftJoin(groupChatMembers, eq(groupChats.id, groupChatMembers.groupChatId))
     .where(
-      q
-        ? or(
-            ilike(groupChats.name, `%${q}%`),
-            ilike(groupChats.description, `%${q}%`),
-            ilike(groupChats.faculty, `%${q}%`),
-            ilike(groupChats.course, `%${q}%`)
-          )
-        : faculty
-        ? eq(groupChats.faculty, faculty)
-        : course
-        ? eq(groupChats.course, course)
-        : undefined
+      and(
+        // Community-linked chats are joined via their group, not from here.
+        isNull(groupChats.communityId),
+        q
+          ? or(
+              ilike(groupChats.name, `%${q}%`),
+              ilike(groupChats.description, `%${q}%`),
+              ilike(groupChats.faculty, `%${q}%`),
+              ilike(groupChats.course, `%${q}%`)
+            )
+          : faculty
+          ? eq(groupChats.faculty, faculty)
+          : course
+          ? eq(groupChats.course, course)
+          : undefined
+      )
     )
     .groupBy(groupChats.id)
     .orderBy(groupChats.createdAt);

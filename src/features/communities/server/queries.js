@@ -25,6 +25,7 @@ export const POST_TYPE_LABELS = {
 // --------- Tab configuration ---------
 export const COMMUNITY_TABS = [
   { id: "all", label: "Posts", icon: "news" },
+  { id: "chat", label: "Chat", icon: "message" },
   { id: "members", label: "Members", icon: "users" },
   { id: "materials", label: "Materials", icon: "book", postType: "material" },
   { id: "events", label: "Events", icon: "calendar", postType: "event" },

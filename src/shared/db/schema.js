@@ -458,12 +458,14 @@ export const groupChats = pgTable("group_chat", {
   avatar: text("avatar"),
   faculty: text("faculty"),
   course: text("course"),
+  communityId: text("community_id").references(() => communities.id, { onDelete: "cascade" }),
   creatorId: text("creator_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   facultyIdx: index("group_chat_faculty_idx").on(table.faculty),
   courseIdx: index("group_chat_course_idx").on(table.course),
+  communityUniqueIdx: uniqueIndex("group_chat_community_unique_idx").on(table.communityId),
 }));
 
 export const groupChatMembers = pgTable("group_chat_member", {

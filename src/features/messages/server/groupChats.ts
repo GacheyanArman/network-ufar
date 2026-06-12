@@ -127,6 +127,16 @@ export async function joinGroupChat(formData: FormData) {
       return { error: "Already a member of this group" };
     }
 
+    // Community-linked chats can only be joined through their group.
+    const [chatRow] = await db
+      .select({ communityId: groupChats.communityId })
+      .from(groupChats)
+      .where(eq(groupChats.id, groupChatId))
+      .limit(1);
+    if (chatRow?.communityId) {
+      return { error: "Join the group to access this chat" };
+    }
+
     await db.insert(groupChatMembers).values({
       groupChatId,
       userId,

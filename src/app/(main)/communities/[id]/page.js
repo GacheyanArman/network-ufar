@@ -13,6 +13,7 @@ import {
 } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
 import { getCommunityContext, COMMUNITY_TABS, resolveTab } from "@/features/communities/server/queries";
+import { openCommunityChat } from "@/features/communities/server/actions";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import CommunityPostComposer from "@/features/communities/components/CommunityPostComposer";
 import CommunityPostCard from "@/features/communities/components/CommunityPostCard";
@@ -68,6 +69,12 @@ export default async function CommunityDetailPage({ params, searchParams }) {
 
   const ctx = await getCommunityContext(id, session.userId);
   const canSeeContent = !communityRow.isPrivate || ctx.isMember || ctx.isPlatformStaff;
+
+  // Chat tab: members are taken straight to the group's chat in Messages.
+  if (activeTab.id === "chat" && ctx.isMember) {
+    const chatId = await openCommunityChat(id);
+    redirect(`/messages?group=${chatId}`);
+  }
 
   // Get join request state for guest
   let joinState = "guest";
@@ -397,6 +404,14 @@ export default async function CommunityDetailPage({ params, searchParams }) {
                 isPrivate
                 state={joinState}
               />
+            </div>
+          ) : activeTab.id === "chat" ? (
+            <div className="card uf-sidebar-card" style={{ textAlign: "center", padding: "32px 20px" }}>
+              <UiIcon name="message" size={28} />
+              <h3 style={{ margin: "12px 0 6px" }}>Group chat</h3>
+              <p className="uf-empty-description" style={{ fontSize: 14 }}>
+                Join the group to access its chat.
+              </p>
             </div>
           ) : activeTab.id === "members" ? (
             <div className="card uf-sidebar-card">

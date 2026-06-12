@@ -8,6 +8,8 @@ import {
   communityMembers,
   communityJoinRequests,
   comments,
+  groupChats,
+  groupChatMembers,
   posts,
 } from "@/shared/db/schema";
 import { getSession } from "@/shared/auth/session";
@@ -113,8 +115,103 @@ export async function createCommunity(formData) {
     role: "owner",
   });
 
+  // Every group gets its own chat (shown under the Chat tab and in Messages).
+  const [chat] = await db
+    .insert(groupChats)
+    .values({
+      name,
+      description: description || null,
+      avatar,
+      communityId: community.id,
+      creatorId: userId,
+    })
+    .returning();
+  await db.insert(groupChatMembers).values({
+    groupChatId: chat.id,
+    userId,
+    role: "admin",
+  });
+
   revalidateCommunity(community.id);
   return { ok: true, community };
+}
+
+/**
+ * Returns the chat id linked to a community, creating the chat lazily for
+ * groups that existed before community chats were introduced. Ensures the
+ * current user (who must be a member of the community) is a chat member.
+ */
+export async function openCommunityChat(communityId) {
+  const userId = await requireUserId();
+
+  const [membership] = await db
+    .select({ id: communityMembers.id })
+    .from(communityMembers)
+    .where(
+      and(
+        eq(communityMembers.communityId, communityId),
+        eq(communityMembers.userId, userId)
+      )
+    )
+    .limit(1);
+  if (!membership) throw new Error("Join the group to access its chat");
+
+  let [chat] = await db
+    .select({ id: groupChats.id })
+    .from(groupChats)
+    .where(eq(groupChats.communityId, communityId))
+    .limit(1);
+
+  if (!chat) {
+    const [community] = await db
+      .select({
+        name: communities.name,
+        description: communities.description,
+        avatar: communities.avatar,
+        creatorId: communities.creatorId,
+      })
+      .from(communities)
+      .where(eq(communities.id, communityId))
+      .limit(1);
+    if (!community) throw new Error("Community not found");
+
+    [chat] = await db
+      .insert(groupChats)
+      .values({
+        name: community.name,
+        description: community.description,
+        avatar: community.avatar,
+        communityId,
+        creatorId: community.creatorId,
+      })
+      .onConflictDoNothing({ target: groupChats.communityId })
+      .returning();
+
+    if (!chat) {
+      // Lost a race with a concurrent request — fetch the existing chat.
+      [chat] = await db
+        .select({ id: groupChats.id })
+        .from(groupChats)
+        .where(eq(groupChats.communityId, communityId))
+        .limit(1);
+    } else {
+      await db
+        .insert(groupChatMembers)
+        .values({
+          groupChatId: chat.id,
+          userId: community.creatorId,
+          role: "admin",
+        })
+        .onConflictDoNothing();
+    }
+  }
+
+  await db
+    .insert(groupChatMembers)
+    .values({ groupChatId: chat.id, userId, role: "member" })
+    .onConflictDoNothing();
+
+  return chat.id;
 }
 
 export async function updateCommunity(formData) {
@@ -282,6 +379,23 @@ export async function leaveCommunity(formData) {
         eq(communityMembers.userId, userId)
       )
     );
+
+  // Also leave the group's linked chat, if any.
+  const [chat] = await db
+    .select({ id: groupChats.id })
+    .from(groupChats)
+    .where(eq(groupChats.communityId, communityId))
+    .limit(1);
+  if (chat) {
+    await db
+      .delete(groupChatMembers)
+      .where(
+        and(
+          eq(groupChatMembers.groupChatId, chat.id),
+          eq(groupChatMembers.userId, userId)
+        )
+      );
+  }
 
   revalidateCommunity(communityId);
   return { ok: true };
